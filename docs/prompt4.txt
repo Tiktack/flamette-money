@@ -1,0 +1,9 @@
+Can you please create plans for the UI part of this api? I would like to have a UI with react 19, TS, mantine, tanstack router(file based), css modules and react query. Use tanstack docs https://tanstack.com/router/latest/docs/framework/react/quick-start
+to create a folder inside repository called frontend in a root. 
+Then also use mantine docs to properly install mantine manually
+https://mantine.dev/getting-started/
+And here llms text for their documentation per component
+https://mantine.dev/llms.txt
+For linting and formatting use Oxlint and Oxfmt. 
+
+UI I would like to have similar to snowball analytics, I attached screenshot of it. Bsaically a navigation header at the top, with submenus if neded, charts and so on. Do not customize mantine a lot, use default styles mostly for componenets, we will adjust them later.

@@ -1,0 +1,39 @@
+.header {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  color: var(--mantine-color-gray-0);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand {
+  letter-spacing: 0.02em;
+}
+
+.navGroup {
+  gap: 10px;
+}
+
+.navLink {
+  color: var(--mantine-color-gray-2);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 500;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.navLink:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--mantine-color-gray-0);
+}
+
+.navLinkActive {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: var(--mantine-color-gray-0);
+}
+
+.toolbar {
+  gap: 12px;
+}
+
+.content {
+  background: var(--mantine-color-gray-0);
+}

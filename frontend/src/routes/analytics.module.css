@@ -1,0 +1,33 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.cardTitle {
+  font-weight: 600;
+}
+
+.tableCard {
+  padding: 0;
+}
+
+.tableHeader {
+  padding: 16px 20px 0;
+}
+
+.tableContent {
+  padding: 0 20px 16px;
+}
