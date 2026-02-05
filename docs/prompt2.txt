@@ -1,0 +1,22 @@
+I created .github/spec folder. 
+I am planning to build expense tracking app, both api and frontend. 
+Can you please create multiple spec files to properly implement everything that I will describe now. It should allow incremental progress of building the app. 
+Expense tracking app should allow
+1) Manage accounts(where to register incomes/expenses)
+2) support income, expense, transfer, refund transaction types 
+2.1) Transfer means transfering from one account to another, for example withdrawing money from ATM means we transfered money from card to cash
+2.2) Refund means we can register new transactions that are refunds to already existing expenses. It's needed to keep history identical to what bank account have and to do not inflate income/expenses. And sometimes refunds can be partial. 
+3) support multiple currencies ( USD, PLN, EUR, CAD)
+4) Transactions page where I can filter by type, dates or ranges, accounts, search by notes
+5) categories and subcategories. Single transaction can be self sufficient with own category and subcategory(optional), but also it can have items inside with their own categories and subcategories. 
+6) transaction can have optional properties like merchant name, merchant adress
+7) Items inside transaction should have it's own price per unit (kg, L, 100g, and so on). count and final amount + promotion (will be like negative amount that basically will be in a formula (PricePerUnit-promotionamount)*count)
+8) Additiona feature, to upload an image that then send to Gemini flash to do ocr and convert to structured JSON with proper categorization and subcategories. 
+9) Items property will be available fo filling only when we do reciept upload with AI. 
+10) when we upload reciept we send a prompt with example of json we need and categories/subcategories we can use to tag them properly. 
+11) Reports page where we can see some summary, some insights like expenses/income per day, per week and so on. Some charts like stacked bar chart with sections representing categories 
+12) Data is stored in a sqlite with EF Core. 
+
+All these points are not ordered, I just wrote my ideas, you can think how many and how to organize spec files for incremental implementation better
+
+Gemini Pro 3
