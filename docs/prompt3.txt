@@ -1,0 +1,1 @@
+Can we continue implementation of expense tracker app. Analize already existing solution and continue implementation getting information from spec files in a #file:spec folder.

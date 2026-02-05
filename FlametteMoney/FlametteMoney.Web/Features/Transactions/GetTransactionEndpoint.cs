@@ -9,13 +9,18 @@ namespace FlametteMoney.Web.Features.Transactions;
 
 public record GetTransactionResponse(
     Guid Id,
-    DateTimeOffset Date,
+    DateTime Date,
     TransactionType Type,
     decimal Amount,
     Guid AccountId,
-    Guid CategoryId,
+    Guid? CategoryId,
     Guid? SubCategoryId,
-    string? Note);
+    Guid? TargetAccountId,
+    Guid? OriginalTransactionId,
+    bool IsRefund,
+    string? Note,
+    string? MerchantName,
+    string? Location);
 
 public sealed class GetTransactionEndpoint : ICarterModule
 {
@@ -51,6 +56,11 @@ public sealed class GetTransactionEndpoint : ICarterModule
             transaction.AccountId,
             transaction.CategoryId,
             transaction.SubCategoryId,
-            transaction.Note));
+            transaction.TargetAccountId,
+            transaction.OriginalTransactionId,
+            transaction.IsRefund,
+            transaction.Note,
+            transaction.MerchantName,
+            transaction.Location));
     }
 }
