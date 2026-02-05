@@ -361,3 +361,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+FlametteMoney/FlametteMoney.Web/flamette-money.dev.db
