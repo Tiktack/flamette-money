@@ -1,0 +1,23 @@
+ Can you help me create instructions file for asp.net with minial apis and carter.
+I want this project structure
+
+1)
+Features/[featureName]/featureNameEndpoint
+
+Or, if there multiple endpoints related to single thing, do like this
+Features/[group]/featureName/featureNameEndpoint
+
+Example
+Features/Account/AddAccount/AddAccountEndpoint
+
+Each feature folder may contain projections, validators and so on.
+All required entities for this feature should go to nested folder inside feature called Entities
+
+Infrusttucture folder, used to keep stuff related to api itself.
+So, it will have most likely these
+Infrusttucture/Database/Models/ - DB schema files
+Infrusttucture/Database/Configurations/ - configurations of EF Core
+Infrusttucture/Database/{name}DbContext.cs - ef core context.
+Infrusttucture/Options/ - DTOs of Options that gonna be used with IOptions pattern
+
+And this folder may contain other infrustructure related stuff like auth and so on.
