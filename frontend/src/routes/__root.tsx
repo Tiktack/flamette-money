@@ -16,10 +16,10 @@ const navItems = [
   { label: 'Transactions', to: '/transactions' },
 ]
 
-const toolsMenu = [
-  { label: 'Reports', to: '/analytics' },
+const menuItems = [
   { label: 'Budgets', to: '/analytics' },
-  { label: 'Tags', to: '/categories' },
+  { label: 'Reports', to: '/analytics' },
+  { label: 'Import', to: '/transactions' },
 ]
 
 export const Route = createRootRoute({
@@ -33,7 +33,7 @@ function RootLayout() {
     <AppShell header={{ height: 72 }} padding="lg">
       <AppShell.Header className={classes.header}>
         <Group h="100%" px="lg" justify="space-between" align="center">
-          <Group gap="md" align="center">
+          <Group gap="lg" align="center" wrap="nowrap">
             <Title order={3} className={classes.brand}>
               Flamette Money
             </Title>
@@ -49,12 +49,8 @@ function RootLayout() {
                     key={item.to}
                     component={Link}
                     to={item.to}
-                    variant="subtle"
-                    className={
-                      isActive
-                        ? `${classes.navLink} ${classes.navLinkActive}`
-                        : classes.navLink
-                    }
+                    variant={isActive ? 'light' : 'subtle'}
+                    className={classes.navLink}
                   >
                     {item.label}
                   </Button>
@@ -63,11 +59,11 @@ function RootLayout() {
               <Menu position="bottom-start" withinPortal>
                 <Menu.Target>
                   <Button variant="subtle" className={classes.navLink}>
-                    Tools
+                    More
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  {toolsMenu.map((item) => (
+                  {menuItems.map((item) => (
                     <Menu.Item key={item.label} component={Link} to={item.to}>
                       {item.label}
                     </Menu.Item>
@@ -77,9 +73,8 @@ function RootLayout() {
             </Group>
           </Group>
           <Group gap="xs" className={classes.toolbar}>
-            <Button variant="light">Add</Button>
-            <Button variant="default">Demo Portfolio</Button>
-            <Button variant="outline">Sign up</Button>
+            <Button variant="light">New transaction</Button>
+            <Button variant="outline">New account</Button>
           </Group>
         </Group>
       </AppShell.Header>

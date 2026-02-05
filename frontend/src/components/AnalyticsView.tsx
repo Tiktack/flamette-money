@@ -12,7 +12,7 @@ import {
 import { BarChart, DonutChart } from '@mantine/charts'
 import { useMemo } from 'react'
 import { useAccounts, useCategories, useTransactions } from '../lib/api/hooks'
-import classes from './analytics.module.css'
+import classes from '../routes/analytics.module.css'
 
 export function AnalyticsView() {
   const accountsQuery = useAccounts()
@@ -136,6 +136,7 @@ export function AnalyticsView() {
                 { name: 'income', color: 'teal.6' },
                 { name: 'expense', color: 'red.6' },
               ]}
+              tickLine="y"
               withLegend
             />
           )}
