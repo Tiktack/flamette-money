@@ -9,12 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record UpdateAccountRequest(string Name, AccountType Type);
+public record UpdateAccountRequest(string Name, string Color, AccountType Type);
 
 public record UpdateAccountResponse(
     Guid Id,
     string Name,
     string Currency,
+    string Color,
     AccountType Type,
     decimal InitialBalance,
     decimal CurrentBalance);
@@ -26,6 +27,11 @@ public sealed class UpdateAccountRequestValidator : AbstractValidator<UpdateAcco
         RuleFor(request => request.Name)
             .NotEmpty()
             .MaximumLength(200);
+
+        RuleFor(request => request.Color)
+            .NotEmpty()
+            .Matches("^#?[0-9a-fA-F]{6}$")
+            .WithMessage("Color must be a 6-digit hex value.");
     }
 }
 
@@ -62,6 +68,7 @@ public sealed class UpdateAccountEndpoint : ICarterModule
         }
 
         account.Name = request.Name.Trim();
+        account.Color = NormalizeColor(request.Color);
         account.Type = request.Type;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -70,8 +77,17 @@ public sealed class UpdateAccountEndpoint : ICarterModule
             account.Id,
             account.Name,
             account.Currency,
+            account.Color,
             account.Type,
             account.InitialBalance,
             account.CurrentBalance));
+    }
+
+    private static string NormalizeColor(string color)
+    {
+        var trimmed = color.Trim();
+        return trimmed.StartsWith('#')
+            ? trimmed.ToUpperInvariant()
+            : $"#{trimmed.ToUpperInvariant()}";
     }
 }

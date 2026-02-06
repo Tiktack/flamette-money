@@ -72,6 +72,7 @@ public sealed class SeedDataGenerator
                 Id = Guid.NewGuid(),
                 Name = definition.Name,
                 Currency = definition.Currency,
+                Color = definition.Color,
                 Type = definition.Type,
                 InitialBalance = definition.InitialBalance,
                 CurrentBalance = definition.InitialBalance
@@ -240,11 +241,11 @@ public sealed class SeedDataGenerator
     {
         return
         [
-            new AccountDefinition("Cash PLN", "PLN", AccountType.Cash, 1200m),
-            new AccountDefinition("Cash EUR", "EUR", AccountType.Cash, 400m),
-            new AccountDefinition("Card PLN", "PLN", AccountType.DebitCard, 3500m),
-            new AccountDefinition("Card EUR", "EUR", AccountType.DebitCard, 800m),
-            new AccountDefinition("Revolut Card", "EUR", AccountType.DebitCard, 1600m)
+            new AccountDefinition("Cash PLN", "PLN", "#2F9E44", AccountType.Cash, 1200m),
+            new AccountDefinition("Cash EUR", "EUR", "#0B7285", AccountType.Cash, 400m),
+            new AccountDefinition("Card PLN", "PLN", "#1971C2", AccountType.DebitCard, 3500m),
+            new AccountDefinition("Card EUR", "EUR", "#364FC7", AccountType.DebitCard, 800m),
+            new AccountDefinition("Revolut Card", "EUR", "#7048E8", AccountType.DebitCard, 1600m)
         ];
     }
 
@@ -416,5 +417,10 @@ public sealed class SeedDataGenerator
         };
     }
 
-    private sealed record AccountDefinition(string Name, string Currency, AccountType Type, decimal InitialBalance);
+    private sealed record AccountDefinition(
+        string Name,
+        string Currency,
+        string Color,
+        AccountType Type,
+        decimal InitialBalance);
 }

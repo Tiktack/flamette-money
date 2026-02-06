@@ -21,4 +21,11 @@
 
 .content {
   background: var(--mantine-color-gray-0);
+  padding: clamp(24px, 3vw, 48px) clamp(20px, 4vw, 64px) clamp(32px, 4vw, 56px);
+}
+
+.content > div {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }

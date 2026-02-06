@@ -11,6 +11,7 @@ public record GetAccountResponse(
     Guid Id,
     string Name,
     string Currency,
+    string Color,
     AccountType Type,
     decimal InitialBalance,
     decimal CurrentBalance);
@@ -45,6 +46,7 @@ public sealed class GetAccountEndpoint : ICarterModule
             account.Id,
             account.Name,
             account.Currency,
+            account.Color,
             account.Type,
             account.InitialBalance,
             account.CurrentBalance));
