@@ -3,8 +3,11 @@ using FlametteMoney.Web.Infrastructure.Database;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -37,5 +40,6 @@ if (app.Environment.IsDevelopment())
 app.UseCors("FrontendDev");
 
 app.MapCarter();
+app.MapDefaultEndpoints();
 
 app.Run();
