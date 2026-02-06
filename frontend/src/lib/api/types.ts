@@ -1,12 +1,27 @@
-export type AccountType = 'Asset' | 'Liability' | 'Income' | 'Expense' | string
+export type AccountType = 'Cash' | 'DebitCard' | 'CreditCard' | 'Savings' | string
 
 export interface AccountListItem {
   id: string
   name: string
   currency: string
+  color: string
   type: AccountType
   initialBalance: number
   currentBalance: number
+}
+
+export interface AccountCreateRequest {
+  name: string
+  currency: string
+  color: string
+  type: AccountType
+  initialBalance: number
+}
+
+export interface AccountUpdateRequest {
+  name: string
+  color: string
+  type: AccountType
 }
 
 export type CategoryType = 'Income' | 'Expense' | string

@@ -9,3 +9,76 @@
   justify-content: space-between;
   align-items: center;
 }
+
+.card {
+  border: 1px solid var(--mantine-color-gray-2);
+  background: linear-gradient(180deg, var(--mantine-color-white), var(--mantine-color-gray-0));
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  min-width: 820px;
+}
+
+.headRow th {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: var(--mantine-color-gray-6);
+  padding-bottom: 4px;
+}
+
+.row {
+  background-color: var(--mantine-color-white);
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.row td:first-child {
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+.row td:last-child {
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.colorDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px var(--mantine-color-gray-0);
+}
+
+.balance {
+  font-weight: 600;
+}
+
+.sparklineHeader {
+  text-align: left;
+}
+
+.sparklineCell {
+  width: 160px;
+}
+
+.actionsHeader {
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

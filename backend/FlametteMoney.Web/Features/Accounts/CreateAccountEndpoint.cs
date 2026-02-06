@@ -8,12 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record CreateAccountRequest(string Name, string Currency, AccountType Type, decimal InitialBalance);
+public record CreateAccountRequest(string Name, string Currency, string Color, AccountType Type, decimal InitialBalance);
 
 public record CreateAccountResponse(
     Guid Id,
     string Name,
     string Currency,
+    string Color,
     AccountType Type,
     decimal InitialBalance,
     decimal CurrentBalance);
@@ -38,6 +39,11 @@ public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAcco
             .NotEmpty()
             .Must(currency => SupportedCurrencies.Contains(currency))
             .WithMessage("Currency must be one of: USD, PLN, EUR, CAD.");
+
+        RuleFor(request => request.Color)
+            .NotEmpty()
+            .Matches("^#?[0-9a-fA-F]{6}$")
+            .WithMessage("Color must be a 6-digit hex value.");
 
         RuleFor(request => request.InitialBalance)
             .GreaterThanOrEqualTo(0);
@@ -73,6 +79,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
             Currency = request.Currency.ToUpperInvariant(),
+            Color = NormalizeColor(request.Color),
             Type = request.Type,
             InitialBalance = request.InitialBalance,
             CurrentBalance = request.InitialBalance
@@ -85,8 +92,17 @@ public sealed class CreateAccountEndpoint : ICarterModule
             account.Id,
             account.Name,
             account.Currency,
+            account.Color,
             account.Type,
             account.InitialBalance,
             account.CurrentBalance));
+    }
+
+    private static string NormalizeColor(string color)
+    {
+        var trimmed = color.Trim();
+        return trimmed.StartsWith('#')
+            ? trimmed.ToUpperInvariant()
+            : $"#{trimmed.ToUpperInvariant()}";
     }
 }
