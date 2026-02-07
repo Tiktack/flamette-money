@@ -14,6 +14,8 @@ import { useMemo } from 'react'
 import { useAccounts, useCategories, useTransactions } from '../lib/api/hooks'
 import classes from '../routes/analytics.module.css'
 
+const toNumber = (value: number | string) => (typeof value === 'number' ? value : Number(value))
+
 export function AnalyticsView() {
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
@@ -21,7 +23,7 @@ export function AnalyticsView() {
 
   const accountTotal = useMemo(() => {
     return (accountsQuery.data ?? []).reduce(
-      (sum, account) => sum + account.currentBalance,
+      (sum, account) => sum + toNumber(account.currentBalance),
       0,
     )
   }, [accountsQuery.data])
@@ -36,9 +38,9 @@ export function AnalyticsView() {
       })
       const entry = map.get(key) ?? { income: 0, expense: 0 }
       if (transaction.type.toLowerCase() === 'income') {
-        entry.income += transaction.amount
+        entry.income += toNumber(transaction.amount)
       } else if (transaction.type.toLowerCase() === 'expense') {
-        entry.expense += transaction.amount
+        entry.expense += toNumber(transaction.amount)
       }
       map.set(key, entry)
     }
@@ -184,7 +186,7 @@ export function AnalyticsView() {
                       {new Date(row.date).toLocaleDateString()}
                     </Table.Td>
                     <Table.Td>{row.type}</Table.Td>
-                    <Table.Td>{row.amount.toLocaleString()}</Table.Td>
+                    <Table.Td>{toNumber(row.amount).toLocaleString()}</Table.Td>
                     <Table.Td>{row.note ?? row.merchantName ?? '-'}</Table.Td>
                   </Table.Tr>
                 ))}

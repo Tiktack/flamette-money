@@ -1,17 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiDelete, apiGet, apiPost, apiPut } from './client'
-import type {
-  AccountCreateRequest,
-  AccountListItem,
-  AccountUpdateRequest,
-  CategoryHierarchy,
-  TransactionListItem,
-} from './types'
+import {
+  deleteApiAccountsById,
+  getApiAccounts,
+  getApiCategories,
+  getApiTransactions,
+  postApiAccounts,
+  putApiAccountsById,
+} from './generated/sdk.gen'
+import type { AccountCreateRequest, AccountUpdateRequest } from './types'
 
 export function useAccounts() {
   return useQuery({
     queryKey: ['accounts'],
-    queryFn: () => apiGet<AccountListItem[]>('/api/accounts'),
+    queryFn: () => getApiAccounts({ throwOnError: true }),
+    select: (result) => result.data ?? [],
   })
 }
 
@@ -20,7 +22,7 @@ export function useCreateAccount() {
 
   return useMutation({
     mutationFn: (request: AccountCreateRequest) =>
-      apiPost<AccountListItem, AccountCreateRequest>('/api/accounts', request),
+      postApiAccounts({ body: request, throwOnError: true }).then((result) => result.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
   })
 }
@@ -30,7 +32,9 @@ export function useUpdateAccount() {
 
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: AccountUpdateRequest }) =>
-      apiPut<AccountListItem, AccountUpdateRequest>(`/api/accounts/${id}`, request),
+      putApiAccountsById({ path: { id }, body: request, throwOnError: true }).then(
+        (result) => result.data,
+      ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
   })
 }
@@ -39,7 +43,8 @@ export function useDeleteAccount() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => apiDelete(`/api/accounts/${id}`),
+    mutationFn: (id: string) =>
+      deleteApiAccountsById({ path: { id }, throwOnError: true }).then(() => undefined),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['accounts'] }),
   })
 }
@@ -47,18 +52,19 @@ export function useDeleteAccount() {
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
-    queryFn: () => apiGet<CategoryHierarchy[]>('/api/categories'),
+    queryFn: () => getApiCategories({ throwOnError: true }),
+    select: (result) => result.data ?? [],
   })
 }
 
 export function useTransactions(page = 1, pageSize = 50) {
-  const searchParams = new URLSearchParams({
-    page: String(page),
-    pageSize: String(pageSize),
-  })
-
   return useQuery({
     queryKey: ['transactions', page, pageSize],
-    queryFn: () => apiGet<TransactionListItem[]>(`/api/transactions?${searchParams}`),
+    queryFn: () =>
+      getApiTransactions({
+        query: { page, pageSize },
+        throwOnError: true,
+      }),
+    select: (result) => result.data ?? [],
   })
 }
