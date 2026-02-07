@@ -62,6 +62,8 @@ const formatBalance = (amount: number, currency: string) =>
     maximumFractionDigits: 2,
   }).format(amount)
 
+const toNumber = (value: number | string) => (typeof value === 'number' ? value : Number(value))
+
 const normalizeHexColor = (value?: string | null) => {
   if (!value) {
     return defaultAccountColor
@@ -267,7 +269,7 @@ function AccountsPage() {
                       </Table.Td>
                       <Table.Td>
                         <Text fw={600} className={classes.balance}>
-                          {formatBalance(account.currentBalance, account.currency)}
+                          {formatBalance(toNumber(account.currentBalance), account.currency)}
                         </Text>
                       </Table.Td>
                       <Table.Td className={classes.sparklineCell}>

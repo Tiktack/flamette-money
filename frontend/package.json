@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "openapi:build": "dotnet build ../backend/FlametteMoney.Web/FlametteMoney.Web.csproj",
+    "openapi:generate": "openapi-ts",
+    "openapi:all": "npm run openapi:build && npm run openapi:generate",
+    "prebuild": "npm run openapi:all",
     "build": "tsc -b && vite build",
     "lint": "oxlint .",
     "format": "oxfmt -w .",
@@ -25,6 +29,8 @@
     "recharts": "^3.7.0"
   },
   "devDependencies": {
+    "@hey-api/client-fetch": "0.13.1",
+    "@hey-api/openapi-ts": "0.92.3",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",

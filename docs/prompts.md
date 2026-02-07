@@ -32,3 +32,12 @@ Microsoft.AspNetCore.Http.BadHttpRequestException: Failed to read parameter "Cre
 ----------------------------
 2026-02-06 21:55:13
 Colors are randomly generated, I would like to save them in API and let me edit them or specify during creation.
+----------------------------
+2026-02-07 00:26:46
+Use links that I provided 
+https://learn.microsoft.com/en-us/aspnet/core/fundamentals/openapi/aspnetcore-openapi?view=aspnetcore-10.0&tabs=visual-studio%2Cvisual-studio-code
+and https://github.com/hey-api/openapi-ts
+to properly implement built time schema generation from dotnet and generation of fetch client instead of manual writing.
+----------------------------
+2026-02-07 00:44:25
+Alright, then remove #file:client.ts and migrate usage of api to the generated files.
