@@ -5,11 +5,13 @@ import {
   getApiAccounts,
   getApiCategories,
   getApiTransactions,
+  getApiTransactionsSearch,
   postApiAccounts,
   postApiCategories,
   putApiAccountsById,
   putApiCategoriesById,
 } from './generated/sdk.gen'
+import type { GetApiTransactionsSearchData } from './generated/types.gen'
 import type {
   AccountCreateRequest,
   AccountUpdateRequest,
@@ -105,6 +107,17 @@ export function useTransactions(page = 1, pageSize = 50) {
         query: { page, pageSize },
         throwOnError: true,
       }),
+    select: (result) => result.data ?? [],
+  })
+}
+
+export function useTransactionsSearch(query?: GetApiTransactionsSearchData['query']) {
+  return useQuery({
+    queryKey: ['transactions-search', query ?? {}],
+    queryFn: () =>
+      getApiTransactionsSearch(
+        query ? { query, throwOnError: true } : { throwOnError: true },
+      ),
     select: (result) => result.data ?? [],
   })
 }

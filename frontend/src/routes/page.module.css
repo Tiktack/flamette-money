@@ -95,6 +95,85 @@
   border-radius: 999px;
 }
 
+.filtersCard {
+  border: 1px dashed var(--mantine-color-gray-3);
+  background: var(--mantine-color-gray-0);
+  display: grid;
+  gap: 12px;
+}
+
+.dateBar {
+  border: 1px solid var(--mantine-color-gray-2);
+  background: linear-gradient(140deg, rgba(241, 243, 255, 0.6), var(--mantine-color-white));
+  display: grid;
+  gap: 12px;
+}
+
+.dateNav {
+  background: var(--mantine-color-gray-0);
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--mantine-color-gray-2);
+}
+
+.rangePicker {
+  max-width: 360px;
+}
+
+.accountCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.accountBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--mantine-color-white);
+  font-weight: 600;
+}
+
+.accountTransfer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.accountArrow {
+  color: var(--mantine-color-gray-6);
+}
+
+.categoryCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.amountPositive {
+  color: var(--mantine-color-green-7);
+}
+
+.amountNegative {
+  color: var(--mantine-color-red-7);
+}
+
+.amountWarning {
+  color: var(--mantine-color-orange-7);
+}
+
+.amountNeutral {
+  color: var(--mantine-color-gray-7);
+}
+
+.dateCell {
+  color: var(--mantine-color-gray-6);
+}
+
 .statCard {
   border: 1px solid var(--mantine-color-gray-2);
   background: linear-gradient(140deg, var(--mantine-color-white), var(--mantine-color-gray-0));

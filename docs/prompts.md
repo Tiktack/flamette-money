@@ -83,3 +83,30 @@ and
 https://mantine.dev/charts/donut-chart/?t=props
 and 
 https://mantine.dev/charts/donut-chart/?t=styles-api
+
+----------------------------
+2026-02-07 00:00:00
+Cool, let's now do transactions. I want a global state for filters, use zustand for this. On transaction page I should have beatiful table, that shows transactions based of a filters selected. I don't really want pagination from a API. It just shoud return based on a filters. By default, we wanna show current month data. Transactions table should have pagination. 
+Filters I want: dates(custom range, or chips current month, current year, all time), modal to select accounts, modal to select categories and subcategories, also ablility to select transaction amount range. 
+Some of this filters kinda advanced, so maybe makes sense to have date filter and some way to show advanced filters quickly.
+
+----------------------------
+2026-02-07 00:00:00
+I am not asking, I am forcing you to read the documentation and examples 
+https://mantine.dev/core/multi-select/
+And then fix the issues. It's not fixed!
+
+----------------------------
+2026-02-07 00:00:00
+I don't like that it's modal for custom filters. I think, it should work as expander. When you click this filters button, make new card line appear below with options to select categories/subcategories accounts, transaction type, amounts and so on
+
+----------------------------
+2026-02-07 00:00:00
+I don't like segmented for selectin date range, because it basically allows us to select only current month/year. But I want, if month selected, a way to basically switch to next one or previous, same applies to a year. 
+2) I don't like that we have 2 different cards for custom range filter and advanced filters. I believe, when we select custom range, we can use 
+https://mantine.dev/dates/date-picker/
+with type="range"
+Also, table is not very easy to read. I am not that subcategories are shown there, it's very monotonic. Also, it would be nice to have some representation for transfers or refunds. Also, income amount can be green and expenses red, refunds can be orange and transfers grey. With that we don't need to have transaction type in a table. Colors will tell
+Note is not very important thing in a transaction. The most Important part is Account from what it was charget or applied, we can have account icon there with color, then category/subcategory, then amount, then note and then date in a format like this 15-01-2026. Also, as I said, for refunds and transfers good to have something also useful, maybe for transfers in accounts column we might Dsiplay two accounts like this Icon1 Account1 -> Icon2Account . 
+
+For refunds I have no ideas, please come up with something.
