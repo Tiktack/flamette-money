@@ -41,3 +41,45 @@ to properly implement built time schema generation from dotnet and generation of
 ----------------------------
 2026-02-07 00:44:25
 Alright, then remove #file:client.ts and migrate usage of api to the generated files.
+
+----------------------------
+2026-02-07 00:00:00
+We need to improve categories page. I want there a categories cards or something, with icons and colors from backend and label. Clicking on category should open editing menu, where I can edit it. Also there should be an option to add new categories. Be creatie about this page in terms of UI and UX. 
+
+----------------------------
+2026-02-07 00:00:00
+Remove these "stats" cards from the top. 
+Instead I have different idea. I want a donut chart in a middle, that with sections representing expenses/incomes for current month and around it we will have circles with categories. Clicking on a category will initiate a transaction with already pre-selected category ( but transaction adding/modal will be implemented in a future, for now just open empty modal). There should be a switch between expenses/incomes, that will switch categories for selected type. also, there should edit or manage button somewhere. Clicking on it, will switch toedit mode and clicking on category will open an editing modal of category. I attached image from 1money application, basically something like I want.
+
+----------------------------
+2026-02-07 00:00:00
+Getting 
+Cannot read properties of undefined (reading 'map') when clicking on a category in edit mode. 
+Also, make this category pie big, basically to have in a middle of the screen almost full height we have(excluding header and buttons ofc), and categories gonna be at the left and right side of it. I think it makes sense to have 2 columns of categories on each side.
+
+----------------------------
+2026-02-07 00:00:00
+Still getting an error, here is more details
+installHook.js:1 
+ TypeError: Cannot read properties of undefined (reading 'map')
+	at parseItem (get-parsed-combobox-data.ts:29:25)
+	at get-parsed-combobox-data.ts:43:29
+	at Array.map (<anonymous>)
+	at getParsedComboboxData (get-parsed-combobox-data.ts:43:15)
+	at Select.tsx:180:36
+	at mountMemo (react-dom-client.development.js:8777:23)
+	at Object.useMemo (react-dom-client.development.js:26216:18)
+	at exports.useMemo (react.development.js:1251:34)
+	at @mantine/core/Select (Select.tsx:180:22)
+	at Object.react_stack_bottom_frame (react-dom-client.development.js:25904:20)
+
+The above error occurred in the <@mantine/core/Select> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl.
+
+Chart is still very small. Use mantine documentation to properly make in a middle of the card, maybe like 85% of height. And since we have not square screens, we have space at the right and left sides. There I want basically 2 columns of categories, right now you have just category buttons very wide. This is wrong. Also, labels messed ap in a chart, use mantine doc to properly work with it. 
+https://mantine.dev/charts/donut-chart/
+and 
+https://mantine.dev/charts/donut-chart/?t=props
+and 
+https://mantine.dev/charts/donut-chart/?t=styles-api

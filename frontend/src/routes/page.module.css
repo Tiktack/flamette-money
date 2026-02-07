@@ -82,3 +82,244 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.segmented {
+  background: var(--mantine-color-gray-1);
+  border-radius: 999px;
+}
+
+.statCard {
+  border: 1px solid var(--mantine-color-gray-2);
+  background: linear-gradient(140deg, var(--mantine-color-white), var(--mantine-color-gray-0));
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.statValue {
+  letter-spacing: -0.02em;
+}
+
+.categoryHero {
+  border: 1px solid var(--mantine-color-gray-2);
+  background: linear-gradient(160deg, rgba(76, 110, 245, 0.08), rgba(255, 255, 255, 0.9));
+  position: relative;
+  overflow: hidden;
+}
+
+.categoryHero::before {
+  content: '';
+  position: absolute;
+  inset: -20% 40% auto auto;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(76, 110, 245, 0.22), transparent 70%);
+  filter: blur(0px);
+  pointer-events: none;
+}
+
+.emptyState {
+  padding: 24px 0 12px;
+  text-align: center;
+}
+
+.editBanner {
+  border: 1px dashed var(--mantine-color-blue-3);
+  background: rgba(76, 110, 245, 0.08);
+}
+
+.donutCard {
+  border: 1px solid var(--mantine-color-gray-2);
+  background: radial-gradient(circle at top, rgba(76, 110, 245, 0.1), transparent 55%),
+    var(--mantine-color-white);
+  overflow: hidden;
+}
+
+.donutStage {
+  position: relative;
+  min-height: clamp(560px, 78vh, 900px);
+  display: grid;
+  grid-template-columns: minmax(150px, 180px) minmax(360px, 1fr) minmax(150px, 180px);
+  gap: 28px;
+  align-items: center;
+}
+
+.donutWrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  z-index: 1;
+  height: 85%;
+  aspect-ratio: 1;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.categoryColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(180px, 100%);
+}
+
+.categoryColumnLeft {
+  align-items: flex-end;
+  justify-self: end;
+}
+
+.categoryColumnRight {
+  align-items: flex-start;
+  justify-self: start;
+}
+
+.categoryPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  width: 100%;
+  max-width: 170px;
+}
+
+.categoryPill:hover {
+  transform: translateY(-1px);
+  border-color: var(--pill-color);
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
+}
+
+.categoryPillIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pill-color) 18%, white);
+  display: grid;
+  place-items: center;
+}
+
+.categoryPillLabel {
+  font-weight: 600;
+  color: var(--mantine-color-dark-7);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.categoryPillHint {
+  margin-left: auto;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mantine-color-blue-6);
+}
+
+@media (max-width: 900px) {
+  .donutStage {
+    grid-template-columns: 1fr;
+    min-height: 560px;
+  }
+
+  .categoryColumn {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.categoryCardButton {
+  text-align: left;
+  width: 100%;
+  display: block;
+}
+
+.categoryCard {
+  height: 100%;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(248, 249, 255, 0.9));
+  border: 1px solid rgba(76, 110, 245, 0.14);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+
+.categoryCardButton:hover .categoryCard {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
+}
+
+.categoryCardHeader {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.categoryIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+}
+
+.categoryMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subcategoryList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subcategoryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--mantine-color-gray-2);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--mantine-color-dark-7);
+  background: var(--mantine-color-white);
+  cursor: pointer;
+}
+
+.subcategoryButton:hover {
+  border-color: var(--mantine-color-blue-3);
+  color: var(--mantine-color-blue-7);
+}
+
+.subcategoryDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.optionIcon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+}
