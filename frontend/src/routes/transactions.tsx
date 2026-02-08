@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
   Collapse,
   Group,
+  Modal,
   MultiSelect,
   NumberInput,
   Pagination,
@@ -16,9 +18,15 @@ import {
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useEffect, useMemo, useState } from 'react'
-import { useAccounts, useCategories, useTransactionsSearch } from '../lib/api/hooks'
+import {
+  useAccounts,
+  useCategories,
+  useDeleteTransaction,
+  useTransactionsSearch,
+} from '../lib/api/hooks'
 import { useTransactionsFilters } from '../lib/state/transactionsFilters'
 import type { CategoryHierarchy, TransactionListItem, TransactionType } from '../lib/api/types'
+import { Route as RootRoute } from './__root'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/transactions')({
@@ -28,10 +36,14 @@ export const Route = createFileRoute('/transactions')({
 function TransactionsPage() {
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
+  const deleteTransaction = useDeleteTransaction()
   const filters = useTransactionsFilters()
   const [filtersOpened, setFiltersOpened] = useState(false)
   const [page, setPage] = useState(1)
+  const navigate = RootRoute.useNavigate()
   const pageSize = 12
+  const [deleteTarget, setDeleteTarget] = useState<TransactionListItem | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, CategoryHierarchy>()
@@ -283,20 +295,15 @@ function TransactionsPage() {
   )
 
   const customRangeValue = useMemo(() => {
-    if (!filters.customStartDate || !filters.customEndDate) {
-      return [null, null] as [Date | null, Date | null]
-    }
-
-    return [
-      new Date(`${filters.customStartDate}T00:00:00`),
-      new Date(`${filters.customEndDate}T00:00:00`),
-    ]
+    const start = filters.customStartDate || null
+    const end = filters.customEndDate || null
+    return [start, end] as [string | null, string | null]
   }, [filters.customEndDate, filters.customStartDate])
 
-  const handleRangeChange = (value: [Date | null, Date | null]) => {
+  const handleRangeChange = (value: [string | null, string | null]) => {
     const [start, end] = value
-    filters.setCustomStartDate(start ? start.toISOString().slice(0, 10) : '')
-    filters.setCustomEndDate(end ? end.toISOString().slice(0, 10) : '')
+    filters.setCustomStartDate(start ?? '')
+    filters.setCustomEndDate(end ?? '')
   }
 
   const buildAccountBadge = (accountId: string) => {
@@ -315,6 +322,35 @@ function TransactionsPage() {
     const year = date.getFullYear()
     return `${day}-${month}-${year}`
   }
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return
+    }
+
+    setDeleteError(null)
+    try {
+      await deleteTransaction.mutateAsync(deleteTarget.id)
+      setDeleteTarget(null)
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Unable to delete transaction.')
+    }
+  }
+
+  const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M4 20h4l10.5-10.5-4-4L4 16v4z" />
+      <path d="M13.5 5.5l4 4" />
+    </svg>
+  )
+
+  const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M6 6l1 14h10l1-14" />
+    </svg>
+  )
 
   return (
     <Stack className={classes.page}>
@@ -388,6 +424,7 @@ function TransactionsPage() {
             placeholder="Pick dates"
             value={customRangeValue}
             onChange={handleRangeChange}
+            valueFormat="YYYY-MM-DD"
             className={classes.rangePicker}
           />
         ) : null}
@@ -468,6 +505,7 @@ function TransactionsPage() {
                   <Table.Th>Amount</Table.Th>
                   <Table.Th>Note</Table.Th>
                   <Table.Th>Date</Table.Th>
+                  <Table.Th className={classes.actionsHeader}>Actions</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
@@ -543,6 +581,35 @@ function TransactionsPage() {
                           {formatDate(transaction.date)}
                         </Text>
                       </Table.Td>
+                      <Table.Td>
+                        <div className={classes.actions}>
+                          <ActionIcon
+                            variant="subtle"
+                            aria-label="Edit transaction"
+                            onClick={() =>
+                              navigate({
+                                search: (previous) => ({
+                                  ...previous,
+                                  transactionMode: 'edit',
+                                  transactionId: transaction.id,
+                                  transactionCategoryId: undefined,
+                                  transactionType: undefined,
+                                }),
+                              })
+                            }
+                          >
+                            <EditIcon width={16} height={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            aria-label="Remove transaction"
+                            onClick={() => setDeleteTarget(transaction)}
+                          >
+                            <TrashIcon width={16} height={16} />
+                          </ActionIcon>
+                        </div>
+                      </Table.Td>
                     </Table.Tr>
                   )
                 })}
@@ -558,6 +625,29 @@ function TransactionsPage() {
         </Text>
         <Pagination value={page} onChange={setPage} total={pageCount} />
       </Group>
+
+      <Modal
+        opened={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Remove transaction"
+      >
+        <Stack gap="sm">
+          <Text size="sm">Remove this transaction? This action cannot be undone.</Text>
+          {deleteError ? (
+            <Text size="sm" c="red">
+              {deleteError}
+            </Text>
+          ) : null}
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button color="red" onClick={handleDelete} loading={deleteTransaction.isPending}>
+              Remove
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
     </Stack>
   )

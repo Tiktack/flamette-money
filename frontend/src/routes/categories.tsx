@@ -24,6 +24,7 @@ import {
   useUpdateCategory,
 } from '../lib/api/hooks'
 import type { CategoryHierarchy, CategoryType } from '../lib/api/types'
+import { Route as RootRoute } from './__root'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/categories')({
@@ -128,7 +129,7 @@ function CategoriesPage() {
   const [editMode, setEditMode] = useState(false)
   const [createOpened, setCreateOpened] = useState(false)
   const [editCategory, setEditCategory] = useState<CategoryHierarchy | null>(null)
-  const [transactionTarget, setTransactionTarget] = useState<CategoryHierarchy | null>(null)
+  const navigate = RootRoute.useNavigate()
   const [deleteTarget, setDeleteTarget] = useState<CategoryHierarchy | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
@@ -271,7 +272,15 @@ function CategoriesPage() {
       return
     }
 
-    setTransactionTarget(category)
+    navigate({
+      search: (previous) => ({
+        ...previous,
+        transactionMode: 'new',
+        transactionId: undefined,
+        transactionCategoryId: category.id,
+        transactionType: category.type,
+      }),
+    })
   }
 
   const handleCreate = async () => {
@@ -590,24 +599,6 @@ function CategoriesPage() {
                 Save
               </Button>
             </Group>
-          </Group>
-        </Stack>
-      </Modal>
-
-      <Modal
-        opened={!!transactionTarget}
-        onClose={() => setTransactionTarget(null)}
-        title="New transaction"
-      >
-        <Stack gap="sm">
-          <Text size="sm" c="dimmed">
-            Category pre-selected: {transactionTarget?.name}
-          </Text>
-          <Text size="sm">Transaction form will land here soon.</Text>
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={() => setTransactionTarget(null)}>
-              Close
-            </Button>
           </Group>
         </Stack>
       </Modal>

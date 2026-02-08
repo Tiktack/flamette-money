@@ -68,6 +68,7 @@ const buildDefaultState = (): Omit<
   | 'setCustomEndDate'
   | 'setAccountIds'
   | 'setCategoryIds'
+  | 'setTransactionTypes'
   | 'setAmountMin'
   | 'setAmountMax'
   | 'resetFilters'
