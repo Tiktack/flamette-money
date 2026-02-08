@@ -5,8 +5,11 @@ export type {
   CategoryType,
   CreateAccountRequest as AccountCreateRequest,
   CreateCategoryRequest as CategoryCreateRequest,
+  CreateTransactionRequest as TransactionCreateRequest,
+  GetTransactionResponse as TransactionDetail,
   TransactionListItemResponse as TransactionListItem,
   TransactionType,
   UpdateAccountRequest as AccountUpdateRequest,
   UpdateCategoryRequest as CategoryUpdateRequest,
+  UpdateTransactionRequest as TransactionUpdateRequest,
 } from './generated/types.gen'

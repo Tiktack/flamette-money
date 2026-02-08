@@ -38,6 +38,14 @@
   box-shadow: var(--mantine-shadow-xs);
 }
 
+.transactionRow {
+  cursor: pointer;
+}
+
+.transactionRow:hover {
+  box-shadow: var(--mantine-shadow-sm);
+}
+
 .row td:first-child {
   border-top-left-radius: 14px;
   border-bottom-left-radius: 14px;

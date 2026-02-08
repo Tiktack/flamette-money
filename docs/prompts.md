@@ -110,3 +110,15 @@ Also, table is not very easy to read. I am not that subcategories are shown ther
 Note is not very important thing in a transaction. The most Important part is Account from what it was charget or applied, we can have account icon there with color, then category/subcategory, then amount, then note and then date in a format like this 15-01-2026. Also, as I said, for refunds and transfers good to have something also useful, maybe for transfers in accounts column we might Dsiplay two accounts like this Icon1 Account1 -> Icon2Account . 
 
 For refunds I have no ideas, please come up with something.
+
+----------------------------
+2026-02-07 00:00:00
+Make transactions editable, make button "New transaction" work, in categories bind click on category to new transaction modal passing parameter. This modal should be shared basically. Check how to better do that with tanstack router and mantine.
+
+----------------------------
+2026-02-07 00:00:00
+instead of whole row clickable, I want edit/remove actions button in a last column.
+
+----------------------------
+2026-02-08 00:00:00
+icons only. and make amount text to be red/green/orange/grey based on transaction type ( expense, income, transfer, refund)

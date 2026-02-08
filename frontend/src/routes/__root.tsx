@@ -7,6 +7,8 @@ import {
   Menu,
   Title,
 } from '@mantine/core'
+import { TransactionEditorModal, type TransactionModalMode } from '../components/TransactionEditorModal'
+import type { TransactionType } from '../lib/api/types'
 import classes from './rootLayout.module.css'
 
 const navItems = [
@@ -22,12 +24,47 @@ const menuItems = [
   { label: 'Import', to: '/transactions' },
 ]
 
+type RootSearch = {
+  transactionMode?: TransactionModalMode
+  transactionId?: string
+  transactionCategoryId?: string
+  transactionType?: TransactionType
+}
+
+const isTransactionMode = (value: unknown): value is TransactionModalMode =>
+  value === 'new' || value === 'edit'
+
+const isTransactionType = (value: unknown): value is TransactionType =>
+  value === 'Income' || value === 'Expense' || value === 'Transfer' || value === 'Refund'
+
 export const Route = createRootRoute({
   component: RootLayout,
+  validateSearch: (search: Record<string, unknown>): RootSearch => ({
+    transactionMode: isTransactionMode(search.transactionMode) ? search.transactionMode : undefined,
+    transactionId: typeof search.transactionId === 'string' ? search.transactionId : undefined,
+    transactionCategoryId:
+      typeof search.transactionCategoryId === 'string' ? search.transactionCategoryId : undefined,
+    transactionType: isTransactionType(search.transactionType) ? search.transactionType : undefined,
+  }),
 })
 
 function RootLayout() {
   const { location } = useRouterState()
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+
+  const modalOpened = Boolean(search.transactionMode)
+  const handleClose = () => {
+    navigate({
+      search: (previous) => ({
+        ...previous,
+        transactionMode: undefined,
+        transactionId: undefined,
+        transactionCategoryId: undefined,
+        transactionType: undefined,
+      }),
+    })
+  }
 
   return (
     <AppShell header={{ height: 72 }} padding="lg">
@@ -73,7 +110,22 @@ function RootLayout() {
             </Group>
           </Group>
           <Group gap="xs" className={classes.toolbar}>
-            <Button variant="light">New transaction</Button>
+            <Button
+              variant="light"
+              onClick={() =>
+                navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    transactionMode: 'new',
+                    transactionId: undefined,
+                    transactionCategoryId: undefined,
+                    transactionType: undefined,
+                  }),
+                })
+              }
+            >
+              New transaction
+            </Button>
             <Button variant="outline">New account</Button>
           </Group>
         </Group>
@@ -83,6 +135,14 @@ function RootLayout() {
           <Outlet />
         </Box>
       </AppShell.Main>
+      <TransactionEditorModal
+        opened={modalOpened}
+        mode={search.transactionMode ?? 'new'}
+        transactionId={search.transactionId}
+        presetCategoryId={search.transactionCategoryId}
+        presetType={search.transactionType}
+        onClose={handleClose}
+      />
     </AppShell>
   )
 }

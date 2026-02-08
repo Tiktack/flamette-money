@@ -5,11 +5,15 @@ import {
   getApiAccounts,
   getApiCategories,
   getApiTransactions,
+  getApiTransactionsById,
   getApiTransactionsSearch,
+  deleteApiTransactionsById,
   postApiAccounts,
   postApiCategories,
+  postApiTransactions,
   putApiAccountsById,
   putApiCategoriesById,
+  putApiTransactionsById,
 } from './generated/sdk.gen'
 import type { GetApiTransactionsSearchData } from './generated/types.gen'
 import type {
@@ -17,6 +21,8 @@ import type {
   AccountUpdateRequest,
   CategoryCreateRequest,
   CategoryUpdateRequest,
+  TransactionCreateRequest,
+  TransactionUpdateRequest,
 } from './types'
 
 export function useAccounts() {
@@ -119,5 +125,55 @@ export function useTransactionsSearch(query?: GetApiTransactionsSearchData['quer
         query ? { query, throwOnError: true } : { throwOnError: true },
       ),
     select: (result) => result.data ?? [],
+  })
+}
+
+export function useTransaction(id?: string) {
+  return useQuery({
+    queryKey: ['transactions', id],
+    queryFn: () => getApiTransactionsById({ path: { id: id ?? '' }, throwOnError: true }),
+    select: (result) => result.data,
+    enabled: Boolean(id),
+  })
+}
+
+export function useCreateTransaction() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: TransactionCreateRequest) =>
+      postApiTransactions({ body: request, throwOnError: true }).then((result) => result.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
+}
+
+export function useUpdateTransaction() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: TransactionUpdateRequest }) =>
+      putApiTransactionsById({ path: { id }, body: request, throwOnError: true }).then(
+        (result) => result.data,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
+}
+
+export function useDeleteTransaction() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      deleteApiTransactionsById({ path: { id }, throwOnError: true }).then(() => undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
   })
 }
