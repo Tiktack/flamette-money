@@ -514,16 +514,17 @@ function TransactionsPage() {
                   const targetInfo = transaction.targetAccountId
                     ? buildAccountBadge(transaction.targetAccountId)
                     : null
-                  const amountTone =
-                    transaction.type === 'Income'
-                      ? classes.amountPositive
+                  const isRefund = transaction.isRefund || transaction.type === 'Refund'
+                  const amountColor = isRefund
+                    ? 'gray.7'
+                    : transaction.type === 'Income'
+                      ? 'green.7'
                       : transaction.type === 'Expense'
-                        ? classes.amountNegative
-                        : transaction.type === 'Refund'
-                          ? classes.amountWarning
-                          : classes.amountNeutral
+                        ? 'red.7'
+                        : transaction.type === 'Transfer'
+                          ? 'orange.7'
+                          : 'gray.7'
                   const isTransfer = transaction.type === 'Transfer'
-                  const isRefund = transaction.type === 'Refund'
 
                   return (
                     <Table.Tr key={transaction.id} className={classes.row}>
@@ -567,7 +568,7 @@ function TransactionsPage() {
                         </div>
                       </Table.Td>
                       <Table.Td>
-                        <Text fw={600} className={amountTone}>
+                        <Text fw={600} c={amountColor}>
                           {formatAmount(transaction)}
                         </Text>
                       </Table.Td>

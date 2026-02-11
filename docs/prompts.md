@@ -122,3 +122,12 @@ instead of whole row clickable, I want edit/remove actions button in a last colu
 ----------------------------
 2026-02-08 00:00:00
 icons only. and make amount text to be red/green/orange/grey based on transaction type ( expense, income, transfer, refund)
+
+----------------------------
+2026-02-08 22:15:25
+If it already maps something, then it doesn't work. 
+Attached screenshot. All amount text is regular black
+
+----------------------------
+2026-02-08 22:16:46
+Cool, only thing, that tranfer should be orange and grey for refunds
