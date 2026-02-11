@@ -362,6 +362,63 @@
         }
       }
     },
+    "/api/receipts/scan": {
+      "post": {
+        "tags": [
+          "Receipts"
+        ],
+        "summary": "Scan receipt",
+        "description": "Upload a receipt image and create a transaction with categorized items using AI.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file",
+                  "accountId"
+                ],
+                "type": "object",
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "file": {
+                        "$ref": "#/components/schemas/IFormFile"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "accountId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanReceiptResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
     "/api/categories": {
       "post": {
         "tags": [
@@ -940,6 +997,67 @@
           }
         }
       },
+      "CreateTransactionItemRequest": {
+        "required": [
+          "name",
+          "quantity",
+          "unit",
+          "unitPrice",
+          "promotionAmount",
+          "categoryId",
+          "subCategoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unitPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "promotionAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "subCategoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "CreateTransactionRequest": {
         "required": [
           "date",
@@ -952,7 +1070,8 @@
           "originalTransactionId",
           "note",
           "merchantName",
-          "location"
+          "location",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -1020,6 +1139,15 @@
               "null",
               "string"
             ]
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CreateTransactionItemRequest"
+            }
           }
         }
       },
@@ -1037,7 +1165,8 @@
           "isRefund",
           "note",
           "merchantName",
-          "location"
+          "location",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -1112,6 +1241,12 @@
               "null",
               "string"
             ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionItemResponse"
+            }
           }
         }
       },
@@ -1175,7 +1310,8 @@
           "isRefund",
           "note",
           "merchantName",
-          "location"
+          "location",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -1250,6 +1386,12 @@
               "null",
               "string"
             ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionItemResponse"
+            }
           }
         }
       },
@@ -1296,6 +1438,137 @@
               "items": {
                 "type": "string"
               }
+            }
+          }
+        }
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
+      "ReceiptItemResponse": {
+        "required": [
+          "name",
+          "quantity",
+          "unit",
+          "unitPrice",
+          "promotionAmount",
+          "finalAmount",
+          "categoryName",
+          "categoryId",
+          "subCategoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unitPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "promotionAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "finalAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "categoryName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "subCategoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ScanReceiptResponse": {
+        "required": [
+          "transactionId",
+          "merchant",
+          "date",
+          "amount",
+          "currency",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchant": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReceiptItemResponse"
             }
           }
         }
@@ -1353,6 +1626,81 @@
           }
         }
       },
+      "TransactionItemResponse": {
+        "required": [
+          "id",
+          "name",
+          "quantity",
+          "unit",
+          "unitPrice",
+          "promotionAmount",
+          "finalAmount",
+          "categoryId",
+          "subCategoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unitPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "promotionAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "finalAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "subCategoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
       "TransactionListItemResponse": {
         "required": [
           "id",
@@ -1367,7 +1715,8 @@
           "isRefund",
           "note",
           "merchantName",
-          "location"
+          "location",
+          "itemCount"
         ],
         "type": "object",
         "properties": {
@@ -1442,6 +1791,14 @@
               "null",
               "string"
             ]
+          },
+          "itemCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -1593,7 +1950,8 @@
           "originalTransactionId",
           "note",
           "merchantName",
-          "location"
+          "location",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -1661,6 +2019,15 @@
               "null",
               "string"
             ]
+          },
+          "items": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CreateTransactionItemRequest"
+            }
           }
         }
       },
@@ -1678,7 +2045,8 @@
           "isRefund",
           "note",
           "merchantName",
-          "location"
+          "location",
+          "items"
         ],
         "type": "object",
         "properties": {
@@ -1753,6 +2121,12 @@
               "null",
               "string"
             ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionItemResponse"
+            }
           }
         }
       }
@@ -1764,6 +2138,9 @@
     },
     {
       "name": "Seed"
+    },
+    {
+      "name": "Receipts"
     },
     {
       "name": "Categories"

@@ -20,7 +20,8 @@ public record UpdateTransactionRequest(
     Guid? OriginalTransactionId,
     string? Note,
     string? MerchantName,
-    string? Location);
+    string? Location,
+    List<CreateTransactionItemRequest>? Items);
 
 public record UpdateTransactionResponse(
     Guid Id,
@@ -35,7 +36,8 @@ public record UpdateTransactionResponse(
     bool IsRefund,
     string? Note,
     string? MerchantName,
-    string? Location);
+    string? Location,
+    List<TransactionItemResponse> Items);
 
 public sealed class UpdateTransactionRequestValidator : AbstractValidator<UpdateTransactionRequest>
 {
@@ -84,7 +86,9 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
             return TypedResults.BadRequest(new ValidationProblemDetails(validationResult.ToProblemDetails()));
         }
 
-        var transaction = await dbContext.Transactions.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+        var transaction = await dbContext.Transactions
+            .Include(t => t.Items)
+            .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (transaction is null)
         {
             return TypedResults.NotFound();
@@ -345,7 +349,37 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
         transaction.MerchantName = request.MerchantName?.Trim();
         transaction.Location = request.Location?.Trim();
 
+        // Replace items
+        dbContext.TransactionItems.RemoveRange(transaction.Items);
+        transaction.Items.Clear();
+
+        if (request.Items is { Count: > 0 })
+        {
+            foreach (var itemReq in request.Items)
+            {
+                var quantity = itemReq.Quantity > 0 ? itemReq.Quantity : 1;
+                var finalAmount = (itemReq.UnitPrice * quantity) - itemReq.PromotionAmount;
+
+                transaction.Items.Add(new TransactionItem
+                {
+                    Id = Guid.NewGuid(),
+                    Name = itemReq.Name,
+                    Quantity = quantity,
+                    Unit = itemReq.Unit,
+                    UnitPrice = itemReq.UnitPrice,
+                    PromotionAmount = itemReq.PromotionAmount,
+                    FinalAmount = finalAmount,
+                    CategoryId = itemReq.CategoryId,
+                    SubCategoryId = itemReq.SubCategoryId,
+                });
+            }
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        var responseItems = transaction.Items.Select(i => new TransactionItemResponse(
+            i.Id, i.Name, i.Quantity, i.Unit, i.UnitPrice,
+            i.PromotionAmount, i.FinalAmount, i.CategoryId, i.SubCategoryId)).ToList();
 
         return TypedResults.Ok(new UpdateTransactionResponse(
             transaction.Id,
@@ -360,7 +394,8 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
             transaction.IsRefund,
             transaction.Note,
             transaction.MerchantName,
-            transaction.Location));
+            transaction.Location,
+            responseItems));
     }
 
     private static bool TypeMatches(CategoryType categoryType, TransactionType transactionType)

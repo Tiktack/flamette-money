@@ -63,6 +63,16 @@ export type CreateCategoryResponse = {
     parentId: null | string;
 };
 
+export type CreateTransactionItemRequest = {
+    name: string;
+    quantity: number | string;
+    unit: null | string;
+    unitPrice: number | string;
+    promotionAmount: number | string;
+    categoryId: null | string;
+    subCategoryId: null | string;
+};
+
 export type CreateTransactionRequest = {
     date: string;
     type: TransactionType;
@@ -75,6 +85,7 @@ export type CreateTransactionRequest = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
+    items: null | Array<CreateTransactionItemRequest>;
 };
 
 export type CreateTransactionResponse = {
@@ -91,6 +102,7 @@ export type CreateTransactionResponse = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
+    items: Array<TransactionItemResponse>;
 };
 
 export type GetAccountResponse = {
@@ -117,6 +129,7 @@ export type GetTransactionResponse = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
+    items: Array<TransactionItemResponse>;
 };
 
 export type HttpValidationProblemDetails = {
@@ -130,6 +143,29 @@ export type HttpValidationProblemDetails = {
     };
 };
 
+export type IFormFile = Blob | File;
+
+export type ReceiptItemResponse = {
+    name: string;
+    quantity: number | string;
+    unit: null | string;
+    unitPrice: number | string;
+    promotionAmount: number | string;
+    finalAmount: number | string;
+    categoryName: null | string;
+    categoryId: null | string;
+    subCategoryId: null | string;
+};
+
+export type ScanReceiptResponse = {
+    transactionId: string;
+    merchant: null | string;
+    date: null | string;
+    amount: number | string;
+    currency: null | string;
+    items: Array<ReceiptItemResponse>;
+};
+
 export type SeedDemoResponse = {
     accountsAdded: number | string;
     transactionsAdded: number | string;
@@ -137,6 +173,18 @@ export type SeedDemoResponse = {
     refundsAdded: number | string;
     startDate: string;
     endDate: string;
+};
+
+export type TransactionItemResponse = {
+    id: string;
+    name: string;
+    quantity: number | string;
+    unit: null | string;
+    unitPrice: number | string;
+    promotionAmount: number | string;
+    finalAmount: number | string;
+    categoryId: null | string;
+    subCategoryId: null | string;
 };
 
 export type TransactionListItemResponse = {
@@ -153,6 +201,7 @@ export type TransactionListItemResponse = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
+    itemCount: number | string;
 };
 
 export type TransactionType = 'Income' | 'Expense' | 'Transfer' | 'Refund';
@@ -201,6 +250,7 @@ export type UpdateTransactionRequest = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
+    items: null | Array<CreateTransactionItemRequest>;
 };
 
 export type UpdateTransactionResponse = {
@@ -217,6 +267,7 @@ export type UpdateTransactionResponse = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
+    items: Array<TransactionItemResponse>;
 };
 
 export type GetApiTransactionsData = {
@@ -387,6 +438,33 @@ export type PostApiSeedDemoResponses = {
 };
 
 export type PostApiSeedDemoResponse = PostApiSeedDemoResponses[keyof PostApiSeedDemoResponses];
+
+export type PostApiReceiptsScanData = {
+    body: {
+        file: IFormFile;
+    } & {
+        accountId: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/receipts/scan';
+};
+
+export type PostApiReceiptsScanErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiReceiptsScanResponses = {
+    /**
+     * OK
+     */
+    200: ScanReceiptResponse;
+};
+
+export type PostApiReceiptsScanResponse = PostApiReceiptsScanResponses[keyof PostApiReceiptsScanResponses];
 
 export type GetApiCategoriesData = {
     body?: never;

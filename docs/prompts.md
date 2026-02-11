@@ -131,3 +131,15 @@ Attached screenshot. All amount text is regular black
 ----------------------------
 2026-02-08 22:16:46
 Cool, only thing, that tranfer should be orange and grey for refunds
+
+----------------------------
+2026-02-09 00:00:00
+Inspect the backend and spec folders and also UI frontend and implement endpoint, where can upload an image of receipt and it gets processed by google gemini flash 3 and we have tagged/categorized separate items in a single transaction. Make UI for that and also make sure all works correctly with that new information, like UI transactions tables
+
+----------------------------
+2026-02-11 00:00:00
+Add more categories to seed function, especially for expenses, like groceries that have sub categories like alcohol, sweets, fruits, veges, and so on. Also household, shopping with clothes, electronics, restaurants with delivery, offline, tips, etc.
+
+Instead of returning JSON draft to UI for receipt scanning, parse receipt data properly in backend and create the transaction directly. User can update from transactions page later.
+
+Instead of having a separate "Scan receipt" button, integrate it into the new transaction modal using Mantine Tabs (Manual / AI). Make the Gemini prompt more explicit that only exact category names from the list can be used, not made-up data. Remove the duplicate spinner during scanning - loading button is enough.

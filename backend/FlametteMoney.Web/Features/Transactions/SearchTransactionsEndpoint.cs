@@ -104,7 +104,8 @@ public sealed class SearchTransactionsEndpoint : ICarterModule
                 transaction.IsRefund,
                 transaction.Note,
                 transaction.MerchantName,
-                transaction.Location))
+                transaction.Location,
+                transaction.Items.Count))
             .ToListAsync(cancellationToken);
 
         return TypedResults.Ok(results);

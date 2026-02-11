@@ -7,6 +7,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlametteMoney.Web.Features.Transactions;
 
+public record TransactionItemResponse(
+    Guid Id,
+    string Name,
+    decimal Quantity,
+    string? Unit,
+    decimal UnitPrice,
+    decimal PromotionAmount,
+    decimal FinalAmount,
+    Guid? CategoryId,
+    Guid? SubCategoryId);
+
 public record GetTransactionResponse(
     Guid Id,
     DateTime Date,
@@ -20,7 +31,8 @@ public record GetTransactionResponse(
     bool IsRefund,
     string? Note,
     string? MerchantName,
-    string? Location);
+    string? Location,
+    List<TransactionItemResponse> Items);
 
 public sealed class GetTransactionEndpoint : ICarterModule
 {
@@ -41,12 +53,17 @@ public sealed class GetTransactionEndpoint : ICarterModule
     {
         var transaction = await dbContext.Transactions
             .AsNoTracking()
+            .Include(t => t.Items)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
         if (transaction is null)
         {
             return TypedResults.NotFound();
         }
+
+        var items = transaction.Items.Select(i => new TransactionItemResponse(
+            i.Id, i.Name, i.Quantity, i.Unit, i.UnitPrice,
+            i.PromotionAmount, i.FinalAmount, i.CategoryId, i.SubCategoryId)).ToList();
 
         return TypedResults.Ok(new GetTransactionResponse(
             transaction.Id,
@@ -61,6 +78,7 @@ public sealed class GetTransactionEndpoint : ICarterModule
             transaction.IsRefund,
             transaction.Note,
             transaction.MerchantName,
-            transaction.Location));
+            transaction.Location,
+            items));
     }
 }
