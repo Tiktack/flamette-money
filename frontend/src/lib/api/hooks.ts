@@ -10,6 +10,7 @@ import {
   deleteApiTransactionsById,
   postApiAccounts,
   postApiCategories,
+  postApiReceiptsScan,
   postApiTransactions,
   putApiAccountsById,
   putApiCategoriesById,
@@ -174,6 +175,22 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
+}
+
+export function useScanReceipt() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ file, accountId }: { file: File; accountId: string }) =>
+      postApiReceiptsScan({ body: { file, accountId }, throwOnError: true }).then(
+        (result) => result.data,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
 }

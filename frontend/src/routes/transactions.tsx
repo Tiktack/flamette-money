@@ -576,6 +576,11 @@ function TransactionsPage() {
                         <Text size="sm" c="dimmed">
                           {transaction.note ?? transaction.merchantName ?? '-'}
                         </Text>
+                        {Number(transaction.itemCount) > 0 ? (
+                          <Badge variant="light" size="xs" color="blue" mt={2}>
+                            {transaction.itemCount} items
+                          </Badge>
+                        ) : null}
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" className={classes.dateCell}>

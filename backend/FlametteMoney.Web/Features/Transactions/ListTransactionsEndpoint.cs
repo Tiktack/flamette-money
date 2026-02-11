@@ -20,7 +20,8 @@ public record TransactionListItemResponse(
     bool IsRefund,
     string? Note,
     string? MerchantName,
-    string? Location);
+    string? Location,
+    int ItemCount);
 
 public sealed class ListTransactionsEndpoint : ICarterModule
 {
@@ -60,7 +61,8 @@ public sealed class ListTransactionsEndpoint : ICarterModule
                 transaction.IsRefund,
                 transaction.Note,
                 transaction.MerchantName,
-                transaction.Location))
+                transaction.Location,
+                transaction.Items.Count))
             .ToListAsync(cancellationToken);
 
         return TypedResults.Ok(transactions);

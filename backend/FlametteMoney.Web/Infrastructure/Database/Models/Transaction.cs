@@ -21,6 +21,7 @@ public sealed class Transaction
     public Account? TargetAccount { get; set; }
     public Category? Category { get; set; }
     public Category? SubCategory { get; set; }
+    public ICollection<TransactionItem> Items { get; set; } = new List<TransactionItem>();
 }
 
 public enum TransactionType

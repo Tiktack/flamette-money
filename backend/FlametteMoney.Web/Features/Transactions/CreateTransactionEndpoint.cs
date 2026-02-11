@@ -9,6 +9,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlametteMoney.Web.Features.Transactions;
 
+public record CreateTransactionItemRequest(
+    string Name,
+    decimal Quantity,
+    string? Unit,
+    decimal UnitPrice,
+    decimal PromotionAmount,
+    Guid? CategoryId,
+    Guid? SubCategoryId);
+
 public record CreateTransactionRequest(
     DateTime Date,
     TransactionType Type,
@@ -20,7 +29,8 @@ public record CreateTransactionRequest(
     Guid? OriginalTransactionId,
     string? Note,
     string? MerchantName,
-    string? Location);
+    string? Location,
+    List<CreateTransactionItemRequest>? Items);
 
 public record CreateTransactionResponse(
     Guid Id,
@@ -35,7 +45,8 @@ public record CreateTransactionResponse(
     bool IsRefund,
     string? Note,
     string? MerchantName,
-    string? Location);
+    string? Location,
+    List<TransactionItemResponse> Items);
 
 public sealed class CreateTransactionRequestValidator : AbstractValidator<CreateTransactionRequest>
 {
@@ -324,9 +335,35 @@ public sealed class CreateTransactionEndpoint : ICarterModule
             Location = request.Location?.Trim()
         };
 
+        if (request.Items is { Count: > 0 })
+        {
+            foreach (var itemReq in request.Items)
+            {
+                var quantity = itemReq.Quantity > 0 ? itemReq.Quantity : 1;
+                var finalAmount = (itemReq.UnitPrice * quantity) - itemReq.PromotionAmount;
+
+                transaction.Items.Add(new TransactionItem
+                {
+                    Id = Guid.NewGuid(),
+                    Name = itemReq.Name,
+                    Quantity = quantity,
+                    Unit = itemReq.Unit,
+                    UnitPrice = itemReq.UnitPrice,
+                    PromotionAmount = itemReq.PromotionAmount,
+                    FinalAmount = finalAmount,
+                    CategoryId = itemReq.CategoryId,
+                    SubCategoryId = itemReq.SubCategoryId,
+                });
+            }
+        }
+
         ApplyBalances(account, targetAccount, transaction.Type, transaction.Amount);
         dbContext.Transactions.Add(transaction);
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        var responseItems = transaction.Items.Select(i => new TransactionItemResponse(
+            i.Id, i.Name, i.Quantity, i.Unit, i.UnitPrice,
+            i.PromotionAmount, i.FinalAmount, i.CategoryId, i.SubCategoryId)).ToList();
 
         return TypedResults.Created($"/api/transactions/{transaction.Id}", new CreateTransactionResponse(
             transaction.Id,
@@ -341,7 +378,8 @@ public sealed class CreateTransactionEndpoint : ICarterModule
             transaction.IsRefund,
             transaction.Note,
             transaction.MerchantName,
-            transaction.Location));
+            transaction.Location,
+            responseItems));
     }
 
     private static bool TypeMatches(CategoryType categoryType, TransactionType transactionType)
