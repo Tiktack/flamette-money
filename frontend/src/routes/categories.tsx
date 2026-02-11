@@ -1,5 +1,5 @@
 import { DonutChart } from '@mantine/charts'
-import { useMediaQuery } from '@mantine/hooks'
+import { useElementSize, useMediaQuery } from '@mantine/hooks'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   Badge,
@@ -14,7 +14,9 @@ import {
   Stack,
   Text,
   TextInput,
+  ThemeIcon,
   Title,
+  UnstyledButton,
 } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import {
@@ -153,22 +155,29 @@ function CategoriesPage() {
     () => categories.filter((category) => category.parentId === null),
     [categories],
   )
+
+  const visibleParentCategories = useMemo(
+    () => parentCategories.filter((category) => category.type === typeFilter),
+    [parentCategories, typeFilter],
+  )
+
   const isCompact = useMediaQuery('(max-width: 900px)')
-  const donutSize = isCompact ? 320 : 520
-  const flatCategories = useMemo(() => {
-    const items: CategoryHierarchy[] = []
+  const donutBounds = useElementSize()
+  const donutSize = useMemo(() => {
+    const width = donutBounds.width
+    const height = donutBounds.height
+    const minSide = Math.floor(Math.min(width, height))
+    if (!minSide || minSide < 100) {
+      return isCompact ? 320 : 560
+    }
 
-    categories.forEach((category) => {
-      items.push(category)
-      ;(category.subcategories ?? []).forEach((subcategory) => items.push(subcategory))
-    })
+    const maxSize = isCompact ? 560 : 860
+    return Math.max(260, Math.min(maxSize, Math.floor(minSide * 0.92)))
+  }, [donutBounds.height, donutBounds.width, isCompact])
 
-    return items
-  }, [categories])
-
-  const visibleCategories = useMemo(
-    () => flatCategories.filter((category) => category.type === typeFilter),
-    [flatCategories, typeFilter],
+  const donutThickness = useMemo(
+    () => Math.max(26, Math.min(48, Math.floor(donutSize * 0.085))),
+    [donutSize],
   )
 
   const parentOptions = useMemo(
@@ -210,14 +219,38 @@ function CategoriesPage() {
     [editParentOptions],
   )
 
-  const donutData = useMemo(
-    () =>
-      (visibleCategories ?? []).map((category) => ({
-        name: category.name,
-        value: Math.max(1, category.subcategories.length || 1),
-        color: normalizeHexColor(category.color),
-      })),
-    [visibleCategories],
+  const categoryAmounts = useMemo(() => {
+    const map = new Map<string, number>()
+    const parents = visibleParentCategories ?? []
+
+    for (const category of parents) {
+      const seed = `${typeFilter}:${category.id}:${category.name}`
+      let hash = 0
+      for (let index = 0; index < seed.length; index += 1) {
+        hash = (hash * 31 + seed.charCodeAt(index)) % 100000
+      }
+
+      const base = typeFilter === 'Income' ? 300 : 50
+      const spread = typeFilter === 'Income' ? 3500 : 2200
+      const value = base + (hash % spread)
+      map.set(category.id, value)
+    }
+
+    return map
+  }, [typeFilter, visibleParentCategories])
+
+  const donutData = useMemo(() => {
+    const parents = visibleParentCategories ?? []
+    return parents.map((category) => ({
+      name: category.name,
+      value: categoryAmounts.get(category.id) ?? 0,
+      color: normalizeHexColor(category.color),
+    }))
+  }, [categoryAmounts, visibleParentCategories])
+
+  const donutTotal = useMemo(
+    () => donutData.reduce((sum, item) => sum + item.value, 0),
+    [donutData],
   )
 
   const monthLabel = useMemo(
@@ -228,15 +261,6 @@ function CategoriesPage() {
       }),
     [],
   )
-
-  const splitCategories = useMemo(() => {
-    const safe = visibleCategories ?? []
-    const midpoint = Math.ceil(safe.length / 2)
-    return {
-      left: safe.slice(0, midpoint),
-      right: safe.slice(midpoint),
-    }
-  }, [visibleCategories])
 
   const openCreate = (parent?: CategoryHierarchy) => {
     setCreateError(null)
@@ -352,6 +376,7 @@ function CategoriesPage() {
             data={['Expense', 'Income']}
             className={classes.segmented}
           />
+          <Button onClick={() => openCreate()}>Add category</Button>
           <Button
             variant={editMode ? 'light' : 'subtle'}
             onClick={() => {
@@ -361,22 +386,13 @@ function CategoriesPage() {
           >
             {editMode ? 'Done' : 'Manage'}
           </Button>
-          {editMode ? (
-            <Button onClick={() => openCreate()}>Add category</Button>
-          ) : null}
         </Group>
       </Group>
-
-      {editMode ? (
-        <Card padding="sm" radius="md" className={classes.editBanner}>
-          <Text size="sm">Edit mode: tap a category to update its details.</Text>
-        </Card>
-      ) : null}
 
       <Card shadow="sm" radius="lg" padding="lg" className={classes.donutCard}>
         {categoriesQuery.isLoading ? (
           <Skeleton height={320} />
-        ) : visibleCategories.length === 0 ? (
+        ) : visibleParentCategories.length === 0 ? (
           <Stack align="center" className={classes.emptyState}>
             <Text fw={600}>No {typeFilter.toLowerCase()} categories yet</Text>
             <Text size="sm" c="dimmed">
@@ -385,44 +401,49 @@ function CategoriesPage() {
             <Button onClick={() => openCreate()}>Create category</Button>
           </Stack>
         ) : (
-          <div className={classes.donutStage}>
-            <div className={`${classes.categoryColumn} ${classes.categoryColumnLeft}`}>
-              {(splitCategories.left ?? []).map((category) => (
-                <CategoryPill
-                  key={category.id}
-                  category={category}
-                  onClick={() => handleCategoryClick(category)}
-                  highlight={editMode}
+          <div className={classes.categoriesStage}>
+            <div className={classes.donutArea} ref={donutBounds.ref}>
+              <div className={classes.donutSizer}>
+                <DonutChart
+                  size={donutSize}
+                  data={donutData}
+                  pieProps={{
+                    isAnimationActive:true,
+                    animationDuration: 800,
+                    animationBegin: 0,
+                  }}
+                  withLabels={false}
+                  withLabelsLine={false}
+                  thickness={donutThickness}
+                  paddingAngle={2}
+                  tooltipDataSource="segment"
+                  valueFormatter={(value) => value.toLocaleString('en-US')}
                 />
-              ))}
-            </div>
-            <div className={classes.donutWrap}>
-              <DonutChart
-                size={donutSize}
-                data={donutData}
-                withLabels={false}
-                withLabelsLine={false}
-                thickness={28}
-                paddingAngle={2}
-              />
-              <div className={classes.donutCenter}>
-                <Text fw={700} size="xl">
-                  {typeFilter}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {monthLabel}
-                </Text>
+                <div className={classes.donutCenter}>
+                  <Text fw={800} size={isCompact ? 'xl' : '34px'} lh={1.1}>
+                    {typeFilter}
+                  </Text>
+                  <Text fw={700} size={isCompact ? 'lg' : 'xl'} lh={1.2}>
+                    {donutTotal.toLocaleString('en-US')}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {monthLabel}
+                  </Text>
+                </div>
               </div>
             </div>
-            <div className={`${classes.categoryColumn} ${classes.categoryColumnRight}`}>
-              {(splitCategories.right ?? []).map((category) => (
-                <CategoryPill
-                  key={category.id}
-                  category={category}
-                  onClick={() => handleCategoryClick(category)}
-                  highlight={editMode}
-                />
-              ))}
+
+            <div className={classes.categoriesPane}>
+              <div className={isCompact ? classes.categoriesGridCompact : classes.categoriesGrid}>
+                {visibleParentCategories.map((category) => (
+                  <CategoryTile
+                    key={category.id}
+                    category={category}
+                    amount={categoryAmounts.get(category.id) ?? 0}
+                    onClickCategory={() => handleCategoryClick(category)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -578,6 +599,46 @@ function CategoriesPage() {
             searchable
             placeholder="No parent"
           />
+
+          {editCategory && editCategory.parentId === null ? (
+            <Stack gap="xs">
+              <Group justify="space-between" align="center">
+                <Text fw={600} size="sm">
+                  Subcategories
+                </Text>
+                <Button size="xs" variant="light" onClick={() => openCreate(editCategory)}>
+                  Add subcategory
+                </Button>
+              </Group>
+              {editCategory.subcategories?.length ? (
+                <Stack gap={6}>
+                  {editCategory.subcategories.map((subcategory) => (
+                    <UnstyledButton
+                      key={subcategory.id}
+                      type="button"
+                      onClick={() => openEdit(subcategory)}
+                      style={{ textAlign: 'left' }}
+                    >
+                      <Card withBorder radius="md" padding="xs">
+                        <Group justify="space-between" align="center" wrap="nowrap">
+                          <Text size="sm" fw={600} lineClamp={1}>
+                            {subcategory.name}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            Edit
+                          </Text>
+                        </Group>
+                      </Card>
+                    </UnstyledButton>
+                  ))}
+                </Stack>
+              ) : (
+                <Text size="sm" c="dimmed">
+                  No subcategories yet.
+                </Text>
+              )}
+            </Stack>
+          ) : null}
           {editError ? (
             <Text size="sm" c="red">
               {editError}
@@ -627,31 +688,50 @@ function CategoriesPage() {
   )
 }
 
-function CategoryPill({
+function CategoryTile({
   category,
-  onClick,
-  highlight,
+  amount,
+  onClickCategory,
 }: {
   category: CategoryHierarchy
-  onClick: () => void
-  highlight: boolean
+  amount: number
+  onClickCategory: () => void
 }) {
   const color = normalizeHexColor(category.color)
 
   return (
-    <button
+    <UnstyledButton
       type="button"
-      className={classes.categoryPill}
-      onClick={onClick}
-      style={{
-        ['--pill-color' as string]: color,
-      }}
+      className={classes.categoryCardButton}
+      onClick={onClickCategory}
     >
-      <span className={classes.categoryPillIcon}>
-        <CategoryIcon icon={category.icon} color={color} />
-      </span>
-      <span className={classes.categoryPillLabel}>{category.name}</span>
-      {highlight ? <span className={classes.categoryPillHint}>Edit</span> : null}
-    </button>
+      <Card withBorder radius="md" padding="sm" className={classes.categoryCard}>
+        <div className={classes.categoryCardHeader}>
+          <ThemeIcon
+            radius="md"
+            size={44}
+            variant="light"
+            style={{
+              backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
+              color,
+            }}
+          >
+            <CategoryIcon icon={category.icon} color={color} />
+          </ThemeIcon>
+          <div className={classes.categoryMeta}>
+            <Group gap={6} wrap="nowrap">
+              <Text fw={600} size="sm" lineClamp={1}>
+                {category.name}
+              </Text>
+            </Group>
+            <Group gap={8} wrap="nowrap">
+              <Text size="xs" fw={700}>
+                {amount.toLocaleString('en-US')}
+              </Text>
+            </Group>
+          </div>
+        </div>
+      </Card>
+    </UnstyledButton>
   )
 }

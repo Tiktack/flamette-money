@@ -31,7 +31,6 @@ import type {
   ReceiptScanResult,
   TransactionCreateRequest,
   TransactionDetail,
-  TransactionItemCreateRequest,
   TransactionType,
   TransactionUpdateRequest,
 } from '../lib/api/types'
@@ -877,7 +876,7 @@ export function TransactionEditorModal({
                 Items ({scanResult.items.length})
               </Text>
               <div style={{ overflowX: 'auto' }}>
-                <Table verticalSpacing="xs" horizontalSpacing="xs" fontSize="sm">
+                <Table verticalSpacing="xs" horizontalSpacing="xs">
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>Name</Table.Th>
