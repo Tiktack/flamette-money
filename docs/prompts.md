@@ -156,3 +156,8 @@ https://mantine.dev/llms.txt
 2026-02-12 00:25:05
 Much better, But I still some issues, with chart, in some different resolutions it scales a little bad and overlaps the categories. So, probably this is good solution for mobile view, but in a desktop, let's probably change the layout a little, to have the chart  a little smaller, place it on the left side of the card, and categories just well aligned on a grid on the right side, I would say, 30-35% of width should be chart, and the rest goes to categories. 
 Also, categories right now show percentage in a card, I don't need it. I can see it in a chart. I want to see a Name, Colored Icon and amount. That's it. Make sure they have a proper width to do not cut the text.
+
+----------------------------
+2026-02-12 00:49:44
+awesome, can we now check whole app and make sure we have categories showing correctly. What I mean is that we show their colors/icons. For example, in a transactions page in a talbe I want to see category icons and colors, maybe like chip/tag or something else. When adding transaction, I want to see a dropdown for category selection, but for subcategory selection, I want something like Deselect radio chip in this examples https://mantine.dev/llms/core-chip.md
+cip will have an icon and name.

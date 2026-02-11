@@ -14,6 +14,7 @@ import {
   Stack,
   Table,
   Text,
+  ThemeIcon,
   Title,
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
@@ -24,6 +25,7 @@ import {
   useDeleteTransaction,
   useTransactionsSearch,
 } from '../lib/api/hooks'
+import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
 import { useTransactionsFilters } from '../lib/state/transactionsFilters'
 import type { CategoryHierarchy, TransactionListItem, TransactionType } from '../lib/api/types'
 import { Route as RootRoute } from './__root'
@@ -525,6 +527,14 @@ function TransactionsPage() {
                           ? 'orange.7'
                           : 'gray.7'
                   const isTransfer = transaction.type === 'Transfer'
+                  const categoryId =
+                    transaction.type === 'Transfer'
+                      ? null
+                      : transaction.subCategoryId ?? transaction.categoryId
+                  const category = categoryId ? categoryMap.get(categoryId) ?? null : null
+                  const categoryColor = category ? normalizeCategoryColor(category.color) : '#CED4DA'
+                  const categoryIcon = category?.icon ?? 'tag'
+                  const categoryLabel = buildCategoryLabel(transaction)
 
                   return (
                     <Table.Tr key={transaction.id} className={classes.row}>
@@ -557,8 +567,19 @@ function TransactionsPage() {
                       </Table.Td>
                       <Table.Td>
                         <div className={classes.categoryCell}>
+                          <ThemeIcon
+                            radius="xl"
+                            size={30}
+                            variant="light"
+                            style={{
+                              backgroundColor: `color-mix(in srgb, ${categoryColor} 16%, transparent)`,
+                              color: categoryColor,
+                            }}
+                          >
+                            <CategoryIcon icon={categoryIcon} color={categoryColor} size={18} />
+                          </ThemeIcon>
                           <Text fw={600} size="sm">
-                            {buildCategoryLabel(transaction)}
+                            {categoryLabel}
                           </Text>
                           {isRefund ? (
                             <Badge variant="light" size="xs" color="orange">

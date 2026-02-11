@@ -3,6 +3,7 @@ import {
   Badge,
   Button,
   Card,
+  Chip,
   Divider,
   FileInput,
   Group,
@@ -12,6 +13,7 @@ import {
   Select,
   Stack,
   Table,
+  ThemeIcon,
   Tabs,
   Text,
   TextInput,
@@ -34,6 +36,7 @@ import type {
   TransactionType,
   TransactionUpdateRequest,
 } from '../lib/api/types'
+import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
 
 export type TransactionModalMode = 'new' | 'edit'
 
@@ -242,21 +245,32 @@ export function TransactionEditorModal({
     return categoryOptions.filter((group) => group.group === allowedType)
   }, [categoryOptions, form.type])
 
-  const subcategoryOptions = useMemo(() => {
+
+  const selectedCategory = useMemo(
+    () => (form.categoryId ? categoryMap.get(form.categoryId) ?? null : null),
+    [categoryMap, form.categoryId],
+  )
+
+  const selectedCategoryColor = useMemo(() => {
+    if (!selectedCategory) {
+      return null
+    }
+
+    return normalizeCategoryColor(selectedCategory.color)
+  }, [selectedCategory])
+
+  const selectedParentCategory = useMemo(() => {
     if (!form.categoryId) {
-      return []
+      return null
     }
 
-    const parent = categories.find((category) => category.id === form.categoryId)
-    if (!parent) {
-      return []
-    }
-
-    return parent.subcategories.map((subcategory) => ({
-      value: subcategory.id,
-      label: subcategory.name,
-    }))
+    return categories.find((category) => category.id === form.categoryId) ?? null
   }, [categories, form.categoryId])
+
+  const subcategoriesForParent = useMemo(
+    () => selectedParentCategory?.subcategories ?? [],
+    [selectedParentCategory],
+  )
 
   const typeOptions = useMemo(
     () => [
@@ -537,20 +551,93 @@ export function TransactionEditorModal({
               clearable
               placeholder="Select category"
               disabled={isEditingLoading}
-            />
-            <Select
-              label="Subcategory"
-              data={subcategoryOptions}
-              value={form.subCategoryId}
-              onChange={(value) =>
-                setForm((state) => ({ ...state, subCategoryId: value ?? null }))
+              leftSection={
+                selectedCategory && selectedCategoryColor ? (
+                  <CategoryIcon
+                    icon={selectedCategory.icon ?? 'tag'}
+                    color={selectedCategoryColor}
+                    size={18}
+                  />
+                ) : null
               }
-              searchable
-              clearable
-              placeholder="Select subcategory"
-              disabled={isEditingLoading || !form.categoryId || subcategoryOptions.length === 0}
+              leftSectionPointerEvents="none"
+              renderOption={({ option }) => {
+                const category = categoryMap.get(option.value)
+                const color = normalizeCategoryColor(category?.color)
+
+                return (
+                  <Group gap="sm" wrap="nowrap">
+                    <ThemeIcon
+                      radius="xl"
+                      size={28}
+                      variant="light"
+                      style={{
+                        backgroundColor: `color-mix(in srgb, ${color} 16%, transparent)`,
+                        color,
+                      }}
+                    >
+                      <CategoryIcon icon={category?.icon ?? 'tag'} color={color} size={18} />
+                    </ThemeIcon>
+                    <Text size="sm" fw={600}>
+                      {option.label}
+                    </Text>
+                  </Group>
+                )
+              }}
             />
           </Group>
+
+          {form.categoryId && subcategoriesForParent.length > 0 ? (
+            <Stack gap={6}>
+              <Text size="sm" fw={600}>
+                Subcategory
+              </Text>
+              <Chip.Group
+                multiple={false}
+                value={form.subCategoryId}
+                onChange={(value) =>
+                  setForm((state) => ({
+                    ...state,
+                    subCategoryId: typeof value === 'string' ? value : null,
+                  }))
+                }
+              >
+                <Group gap="xs" wrap="wrap">
+                  {subcategoriesForParent.map((subcategory) => {
+                    const color = normalizeCategoryColor(subcategory.color)
+
+                    return (
+                      <Chip
+                        key={subcategory.id}
+                        value={subcategory.id}
+                        disabled={isEditingLoading}
+                        variant="light"
+                        radius="xl"
+                        color={color}
+                        onClick={(event) => {
+                          if (event.currentTarget.value === form.subCategoryId) {
+                            setForm((state) => ({ ...state, subCategoryId: null }))
+                          }
+                        }}
+                      >
+                        <Group gap={6} wrap="nowrap">
+                          <CategoryIcon
+                            icon={subcategory.icon ?? 'tag'}
+                            color={color}
+                            size={16}
+                          />
+                          <Text size="sm" fw={600}>
+                            {subcategory.name}
+                          </Text>
+                        </Group>
+                      </Chip>
+                    )
+                  })}
+                </Group>
+              </Chip.Group>
+            </Stack>
+          ) : null}
+
           {typeHint ? (
             <Badge variant="light" color={categoryType === 'Income' ? 'teal' : 'red'}>
               {typeHint}

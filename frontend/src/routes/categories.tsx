@@ -25,6 +25,12 @@ import {
   useDeleteCategory,
   useUpdateCategory,
 } from '../lib/api/hooks'
+import {
+  CategoryIcon,
+  categoryIconOptions,
+  defaultCategoryColor,
+  normalizeCategoryColor,
+} from '../lib/categories/visuals'
 import type { CategoryHierarchy, CategoryType } from '../lib/api/types'
 import { Route as RootRoute } from './__root'
 import classes from './page.module.css'
@@ -33,94 +39,8 @@ export const Route = createFileRoute('/categories')({
   component: CategoriesPage,
 })
 
-const defaultCategoryColor = '#5C7CFA'
-const iconOptions = [
-  { value: 'food', label: 'Food' },
-  { value: 'cart', label: 'Cart' },
-  { value: 'home', label: 'Home' },
-  { value: 'car', label: 'Car' },
-  { value: 'salary', label: 'Salary' },
-  { value: 'tag', label: 'Tag' },
-]
-
-const normalizeHexColor = (value?: string | null) => {
-  if (!value) {
-    return defaultCategoryColor
-  }
-
-  return value.startsWith('#') ? value : `#${value}`
-}
-
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Something went wrong. Please try again.'
-
-const ForkIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M6 3v8" />
-    <path d="M10 3v8" />
-    <path d="M6 7h4" />
-    <path d="M8 11v10" />
-    <path d="M16 3v6" />
-    <path d="M16 9c0 2-1 3-3 4v8" />
-  </svg>
-)
-
-const CartIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M3 5h2l2.5 9h9.5l2-6H7.5" />
-    <circle cx="10" cy="18" r="1.5" />
-    <circle cx="17" cy="18" r="1.5" />
-  </svg>
-)
-
-const HomeIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M4 10l8-6 8 6" />
-    <path d="M6 9v10h12V9" />
-  </svg>
-)
-
-const CarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M4 13l2-5h12l2 5" />
-    <path d="M6 13h12" />
-    <circle cx="7" cy="17" r="1.5" />
-    <circle cx="17" cy="17" r="1.5" />
-  </svg>
-)
-
-const WalletIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M4 7h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4z" />
-    <path d="M16 11h4" />
-    <path d="M4 7l2-3h12" />
-  </svg>
-)
-
-const TagIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M7 3h6l7 7-6 6-7-7z" />
-    <circle cx="9.5" cy="6.5" r="1" />
-  </svg>
-)
-
-const iconMap: Record<
-  string,
-  (props: React.SVGProps<SVGSVGElement>) => React.ReactElement
-> = {
-  food: ForkIcon,
-  cart: CartIcon,
-  home: HomeIcon,
-  car: CarIcon,
-  salary: WalletIcon,
-  tag: TagIcon,
-}
-
-const CategoryIcon = ({ icon, color }: { icon: string; color: string }) => {
-  const Icon = iconMap[icon] ?? TagIcon
-
-  return <Icon width={22} height={22} style={{ color }} />
-}
 
 function CategoriesPage() {
   const categoriesQuery = useCategories()
@@ -209,7 +129,7 @@ function CategoriesPage() {
       }))
   }, [editCategory, parentCategories, parentOptions])
 
-  const safeIconOptions = useMemo(() => iconOptions.filter(Boolean), [])
+  const safeIconOptions = useMemo(() => categoryIconOptions.filter(Boolean), [])
   const safeParentOptions = useMemo(
     () => (Array.isArray(parentOptions) ? parentOptions : []).filter(Boolean),
     [parentOptions],
@@ -244,7 +164,7 @@ function CategoriesPage() {
     return parents.map((category) => ({
       name: category.name,
       value: categoryAmounts.get(category.id) ?? 0,
-      color: normalizeHexColor(category.color),
+      color: normalizeCategoryColor(category.color),
     }))
   }, [categoryAmounts, visibleParentCategories])
 
@@ -267,7 +187,7 @@ function CategoriesPage() {
     const parentType = parent?.type ?? typeFilter
     setCreateForm({
       name: '',
-      color: normalizeHexColor(parent?.color ?? defaultCategoryColor),
+      color: normalizeCategoryColor(parent?.color ?? defaultCategoryColor),
       icon: parent?.icon ?? 'food',
       type: parentType,
       parentId: parent?.id ?? null,
@@ -280,7 +200,7 @@ function CategoriesPage() {
     setEditCategory(category)
     setEditForm({
       name: category.name,
-      color: normalizeHexColor(category.color),
+      color: normalizeCategoryColor(category.color),
       icon: category.icon,
       parentId: category.parentId,
     })
@@ -310,13 +230,13 @@ function CategoriesPage() {
   const handleCreate = async () => {
     setCreateError(null)
     try {
-      await createCategory.mutateAsync({
-        name: createForm.name,
-        color: normalizeHexColor(createForm.color),
-        icon: createForm.icon,
-        type: createForm.type,
-        parentId: createForm.parentId,
-      })
+          await createCategory.mutateAsync({
+            name: createForm.name,
+            color: normalizeCategoryColor(createForm.color),
+            icon: createForm.icon,
+            type: createForm.type,
+            parentId: createForm.parentId,
+          })
       setCreateOpened(false)
     } catch (error) {
       setCreateError(getErrorMessage(error))
@@ -334,7 +254,7 @@ function CategoriesPage() {
         id: editCategory.id,
         request: {
           name: editForm.name,
-          color: normalizeHexColor(editForm.color),
+          color: normalizeCategoryColor(editForm.color),
           icon: editForm.icon,
           parentId: editForm.parentId,
         },
@@ -473,7 +393,7 @@ function CategoriesPage() {
             onChange={(value) =>
               setCreateForm((current) => ({
                 ...current,
-                color: normalizeHexColor(value),
+                color: normalizeCategoryColor(value),
               }))
             }
           />
@@ -558,7 +478,7 @@ function CategoriesPage() {
             onChange={(value) =>
               setEditForm((current) => ({
                 ...current,
-                color: normalizeHexColor(value),
+                color: normalizeCategoryColor(value),
               }))
             }
           />
@@ -697,7 +617,7 @@ function CategoryTile({
   amount: number
   onClickCategory: () => void
 }) {
-  const color = normalizeHexColor(category.color)
+  const color = normalizeCategoryColor(category.color)
 
   return (
     <UnstyledButton
