@@ -143,3 +143,16 @@ Add more categories to seed function, especially for expenses, like groceries th
 Instead of returning JSON draft to UI for receipt scanning, parse receipt data properly in backend and create the transaction directly. User can update from transactions page later.
 
 Instead of having a separate "Scan receipt" button, integrate it into the new transaction modal using Mantine Tabs (Manual / AI). Make the Gemini prompt more explicit that only exact category names from the list can be used, not made-up data. Remove the duplicate spinner during scanning - loading button is enough.
+
+----------------------------
+2026-02-12 00:02:10
+I attached screenshot how currently categories pages looks like right now... It has subcategories listed in two columns and also chart missplaced... 
+Can you revamp this page completely. The idea for this page is to have a donut chart in a middle that shows expenses/incomes by categories (for now can be mocked hardcoded data). It's quite big in a middle. Around it we should have categories aligned like in a grid (but not overlaping the chart ofc). On a regular mode, clicking on category, should open a new transaction creation model with preselected category. In edit mode I should be able to edit categories and subcategories. 
+check the #file:backend and #file:frontend and implement it all properly with mantine. 
+here is mantine LLM texts file, where you can find links for proper componenets documentation. Please do use MCP to make sure you implement all properly. 
+https://mantine.dev/llms.txt
+
+----------------------------
+2026-02-12 00:25:05
+Much better, But I still some issues, with chart, in some different resolutions it scales a little bad and overlaps the categories. So, probably this is good solution for mobile view, but in a desktop, let's probably change the layout a little, to have the chart  a little smaller, place it on the left side of the card, and categories just well aligned on a grid on the right side, I would say, 30-35% of width should be chart, and the rest goes to categories. 
+Also, categories right now show percentage in a card, I don't need it. I can see it in a chart. I want to see a Name, Colored Icon and amount. That's it. Make sure they have a proper width to do not cut the text.

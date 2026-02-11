@@ -227,6 +227,74 @@
   overflow: hidden;
 }
 
+.categoriesStage {
+  position: relative;
+  min-height: clamp(560px, 78vh, 900px);
+  display: grid;
+  grid-template-columns: minmax(320px, 35%) 1fr;
+  gap: var(--mantine-spacing-xl);
+  align-items: center;
+}
+
+.categoriesPane {
+  width: 100%;
+  align-self: stretch;
+}
+
+.categoriesSide {
+  display: flex;
+  justify-content: center;
+  justify-self: stretch;
+}
+
+.categoriesGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--mantine-spacing-sm);
+}
+
+.donutArea {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+}
+
+.donutSizer {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  max-width: 520px;
+  max-height: 520px;
+  aspect-ratio: 1;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  text-align: center;
+  z-index: 2;
+}
+
+.categoriesBottom {
+  margin-top: var(--mantine-spacing-md);
+}
+
+.categoriesGridCompact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm);
+}
+
 .donutStage {
   position: relative;
   min-height: clamp(560px, 78vh, 900px);
@@ -245,14 +313,7 @@
   aspect-ratio: 1;
 }
 
-.donutCenter {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  text-align: center;
-}
+/* donutCenter is defined above for the new Categories layout */
 
 .categoryColumn {
   display: flex;
@@ -320,16 +381,18 @@
 }
 
 @media (max-width: 900px) {
-  .donutStage {
+  .categoriesStage {
     grid-template-columns: 1fr;
-    min-height: 560px;
+    min-height: 0;
   }
 
-  .categoryColumn {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
+  .donutSizer {
+    max-width: 560px;
+    max-height: 560px;
+  }
+
+  .categoriesGridCompact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -341,16 +404,17 @@
 
 .categoryCard {
   height: 100%;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(248, 249, 255, 0.9));
-  border: 1px solid rgba(76, 110, 245, 0.14);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-  transition: transform 150ms ease, box-shadow 150ms ease;
+  background: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-gray-2);
+  box-shadow: var(--mantine-shadow-xs);
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
   cursor: pointer;
 }
 
 .categoryCardButton:hover .categoryCard {
   transform: translateY(-2px);
-  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
+  box-shadow: var(--mantine-shadow-sm);
+  border-color: var(--mantine-color-blue-3);
 }
 
 .categoryCardHeader {
