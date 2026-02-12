@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses } from './types.gen';
+import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -80,6 +80,13 @@ export const getApiTransactionsSearch = <ThrowOnError extends boolean = false>(o
  * Seed demo accounts and transactions for development.
  */
 export const postApiSeedDemo = <ThrowOnError extends boolean = false>(options?: Options<PostApiSeedDemoData, ThrowOnError>) => (options?.client ?? client).post<PostApiSeedDemoResponses, unknown, ThrowOnError>({ url: '/api/seed/demo', ...options });
+
+/**
+ * Get category series report
+ *
+ * Returns category split report for selected period and interval.
+ */
+export const getApiReportsCategorySeries = <ThrowOnError extends boolean = false>(options?: Options<GetApiReportsCategorySeriesData, ThrowOnError>) => (options?.client ?? client).get<GetApiReportsCategorySeriesResponses, GetApiReportsCategorySeriesErrors, ThrowOnError>({ url: '/api/reports/category-series', ...options });
 
 /**
  * Scan receipt

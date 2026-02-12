@@ -4,6 +4,7 @@ import {
   deleteApiCategoriesById,
   getApiAccounts,
   getApiCategories,
+  getApiReportsCategorySeries,
   getApiTransactions,
   getApiTransactionsById,
   getApiTransactionsSearch,
@@ -16,7 +17,7 @@ import {
   putApiCategoriesById,
   putApiTransactionsById,
 } from './generated/sdk.gen'
-import type { GetApiTransactionsSearchData } from './generated/types.gen'
+import type { GetApiReportsCategorySeriesData, GetApiTransactionsSearchData } from './generated/types.gen'
 import type {
   AccountCreateRequest,
   AccountUpdateRequest,
@@ -126,6 +127,17 @@ export function useTransactionsSearch(query?: GetApiTransactionsSearchData['quer
         query ? { query, throwOnError: true } : { throwOnError: true },
       ),
     select: (result) => result.data ?? [],
+  })
+}
+
+export function useCategorySeriesReport(query?: GetApiReportsCategorySeriesData['query']) {
+  return useQuery({
+    queryKey: ['reports-category-series', query ?? {}],
+    queryFn: () =>
+      getApiReportsCategorySeries(
+        query ? { query, throwOnError: true } : { throwOnError: true },
+      ),
+    select: (result) => result.data,
   })
 }
 

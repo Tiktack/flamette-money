@@ -4,6 +4,34 @@
   gap: 20px;
 }
 
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dateCard {
+  border: 1px solid var(--mantine-color-gray-2);
+  background: linear-gradient(140deg, rgba(241, 243, 255, 0.6), var(--mantine-color-white));
+}
+
+.reportGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .reportGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.categoryList {
+  max-height: 320px;
+  overflow: auto;
+}
+
 .hero {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

@@ -20,17 +20,23 @@ import {
 } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import {
+  useCategorySeriesReport,
   useCategories,
   useCreateCategory,
   useDeleteCategory,
   useUpdateCategory,
 } from '../lib/api/hooks'
+import { SharedDateRangeChips } from '../components/SharedDateRangeChips'
 import {
   CategoryIcon,
   categoryIconOptions,
   defaultCategoryColor,
   normalizeCategoryColor,
 } from '../lib/categories/visuals'
+import {
+  resolveSharedDateRange,
+  useSharedDateRangeFilters,
+} from '../lib/state/sharedDateRangeFilters'
 import type { CategoryHierarchy, CategoryType } from '../lib/api/types'
 import { Route as RootRoute } from './__root'
 import classes from './page.module.css'
@@ -51,6 +57,7 @@ function CategoriesPage() {
   const [editMode, setEditMode] = useState(false)
   const [createOpened, setCreateOpened] = useState(false)
   const [editCategory, setEditCategory] = useState<CategoryHierarchy | null>(null)
+  const dateFilters = useSharedDateRangeFilters()
   const navigate = RootRoute.useNavigate()
   const [deleteTarget, setDeleteTarget] = useState<CategoryHierarchy | null>(null)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -80,6 +87,32 @@ function CategoriesPage() {
     () => parentCategories.filter((category) => category.type === typeFilter),
     [parentCategories, typeFilter],
   )
+
+  const resolvedDateRange = useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+
+  const reportQuery = useMemo(() => {
+    const query: {
+      StartDate?: string
+      EndDate?: string
+      Type: CategoryType
+      Interval: 'None'
+    } = {
+      Type: typeFilter,
+      Interval: 'None',
+    }
+
+    if (resolvedDateRange.start) {
+      query.StartDate = resolvedDateRange.start.toISOString()
+    }
+
+    if (resolvedDateRange.end) {
+      query.EndDate = resolvedDateRange.end.toISOString()
+    }
+
+    return query
+  }, [resolvedDateRange.end, resolvedDateRange.start, typeFilter])
+
+  const reportQueryResult = useCategorySeriesReport(reportQuery)
 
   const isCompact = useMediaQuery('(max-width: 900px)')
   const donutBounds = useElementSize()
@@ -141,31 +174,21 @@ function CategoriesPage() {
 
   const categoryAmounts = useMemo(() => {
     const map = new Map<string, number>()
-    const parents = visibleParentCategories ?? []
-
-    for (const category of parents) {
-      const seed = `${typeFilter}:${category.id}:${category.name}`
-      let hash = 0
-      for (let index = 0; index < seed.length; index += 1) {
-        hash = (hash * 31 + seed.charCodeAt(index)) % 100000
-      }
-
-      const base = typeFilter === 'Income' ? 300 : 50
-      const spread = typeFilter === 'Income' ? 3500 : 2200
-      const value = base + (hash % spread)
-      map.set(category.id, value)
+    for (const entry of reportQueryResult.data?.series ?? []) {
+      map.set(entry.key, Number(entry.total))
     }
-
     return map
-  }, [typeFilter, visibleParentCategories])
+  }, [reportQueryResult.data?.series])
 
   const donutData = useMemo(() => {
     const parents = visibleParentCategories ?? []
-    return parents.map((category) => ({
-      name: category.name,
-      value: categoryAmounts.get(category.id) ?? 0,
-      color: normalizeCategoryColor(category.color),
-    }))
+    return parents
+      .map((category) => ({
+        name: category.name,
+        value: categoryAmounts.get(category.id) ?? 0,
+        color: normalizeCategoryColor(category.color),
+      }))
+      .filter((item) => item.value !== 0)
   }, [categoryAmounts, visibleParentCategories])
 
   const donutTotal = useMemo(
@@ -173,14 +196,34 @@ function CategoriesPage() {
     [donutData],
   )
 
-  const monthLabel = useMemo(
-    () =>
-      new Date().toLocaleString('en-US', {
-        month: 'long',
-        year: 'numeric',
-      }),
-    [],
-  )
+  const rangeLabel = useMemo(() => {
+    if (dateFilters.preset === 'all') {
+      return 'All time'
+    }
+
+    if (dateFilters.preset === 'month') {
+      const anchor = dateFilters.monthAnchor
+        ? new Date(`${dateFilters.monthAnchor}T00:00:00`)
+        : new Date()
+      return anchor.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+    }
+
+    if (dateFilters.preset === 'year') {
+      return String(dateFilters.yearAnchor)
+    }
+
+    if (!resolvedDateRange.start || !resolvedDateRange.end) {
+      return 'Custom range'
+    }
+
+    return `${resolvedDateRange.start.toLocaleDateString()} - ${resolvedDateRange.end.toLocaleDateString()}`
+  }, [
+    dateFilters.monthAnchor,
+    dateFilters.preset,
+    dateFilters.yearAnchor,
+    resolvedDateRange.end,
+    resolvedDateRange.start,
+  ])
 
   const openCreate = (parent?: CategoryHierarchy) => {
     setCreateError(null)
@@ -310,7 +353,12 @@ function CategoriesPage() {
       </Group>
 
       <Card shadow="sm" radius="lg" padding="lg" className={classes.donutCard}>
-        {categoriesQuery.isLoading ? (
+        <Stack gap="md">
+          <Card shadow="sm" radius="md" padding="md" className={classes.dateBar}>
+            <SharedDateRangeChips />
+          </Card>
+
+        {categoriesQuery.isLoading || reportQueryResult.isLoading ? (
           <Skeleton height={320} />
         ) : visibleParentCategories.length === 0 ? (
           <Stack align="center" className={classes.emptyState}>
@@ -347,7 +395,7 @@ function CategoriesPage() {
                     {donutTotal.toLocaleString('en-US')}
                   </Text>
                   <Text size="sm" c="dimmed">
-                    {monthLabel}
+                    {rangeLabel}
                   </Text>
                 </div>
               </div>
@@ -367,6 +415,7 @@ function CategoriesPage() {
             </div>
           </div>
         )}
+        </Stack>
       </Card>
 
       <Modal
