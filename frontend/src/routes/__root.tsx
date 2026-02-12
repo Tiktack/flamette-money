@@ -1,12 +1,16 @@
 import { createRootRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import {
   AppShell,
+  Avatar,
   Box,
-  Button,
+  Burger,
+  Container,
   Group,
-  Menu,
+  Text,
   Title,
+  UnstyledButton,
 } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 import { TransactionEditorModal, type TransactionModalMode } from '../components/TransactionEditorModal'
 import type { TransactionType } from '../lib/api/types'
 import classes from './rootLayout.module.css'
@@ -18,11 +22,12 @@ const navItems = [
   { label: 'Transactions', to: '/transactions' },
 ]
 
-const menuItems = [
-  { label: 'Budgets', to: '/analytics' },
-  { label: 'Reports', to: '/analytics' },
-  { label: 'Import', to: '/transactions' },
-]
+const user = {
+  name: 'Alex Johnson',
+  email: 'alex@flamette.money',
+  image:
+    'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-5.png',
+}
 
 type RootSearch = {
   transactionMode?: TransactionModalMode
@@ -50,6 +55,7 @@ export const Route = createRootRoute({
 
 function RootLayout() {
   const { location } = useRouterState()
+  const [opened, { toggle }] = useDisclosure(false)
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
 
@@ -69,12 +75,12 @@ function RootLayout() {
   return (
     <AppShell header={{ height: 72 }} padding="lg">
       <AppShell.Header className={classes.header}>
-        <Group h="100%" px="lg" justify="space-between" align="center">
+        <Container size="xl" className={classes.inner}>
           <Group gap="lg" align="center" wrap="nowrap">
             <Title order={3} className={classes.brand}>
               Flamette Money
             </Title>
-            <Group gap="xs" className={classes.navGroup}>
+            <Group gap={5} visibleFrom="xs" className={classes.links}>
               {navItems.map((item) => {
                 const isActive =
                   item.to === '/'
@@ -82,53 +88,44 @@ function RootLayout() {
                     : location.pathname.startsWith(item.to)
 
                 return (
-                  <Button
+                  <Link
                     key={item.to}
-                    component={Link}
                     to={item.to}
-                    variant={isActive ? 'light' : 'subtle'}
-                    className={classes.navLink}
+                    className={classes.link}
+                    data-active={isActive || undefined}
                   >
                     {item.label}
-                  </Button>
+                  </Link>
                 )
               })}
-              <Menu position="bottom-start" withinPortal>
-                <Menu.Target>
-                  <Button variant="subtle" className={classes.navLink}>
-                    More
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {menuItems.map((item) => (
-                    <Menu.Item key={item.label} component={Link} to={item.to}>
-                      {item.label}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
             </Group>
           </Group>
-          <Group gap="xs" className={classes.toolbar}>
-            <Button
-              variant="light"
-              onClick={() =>
-                navigate({
-                  search: (previous) => ({
-                    ...previous,
-                    transactionMode: 'new',
-                    transactionId: undefined,
-                    transactionCategoryId: undefined,
-                    transactionType: undefined,
-                  }),
-                })
-              }
-            >
-              New transaction
-            </Button>
-            <Button variant="outline">New account</Button>
+          <Group gap="sm" align="center" wrap="nowrap">
+            <UnstyledButton className={classes.user}>
+              <Group gap={7} wrap="nowrap">
+                <Avatar src={user.image} alt={user.name} radius="xl" size={28} />
+                <div className={classes.userInfo}>
+                  <Text fw={500} size="sm" lh={1.1}>
+                    {user.name}
+                  </Text>
+                  <Text size="xs" c="dimmed" lh={1.1}>
+                    {user.email}
+                  </Text>
+                </div>
+                <Text size="sm" c="dimmed" aria-hidden="true">
+                  ▾
+                </Text>
+              </Group>
+            </UnstyledButton>
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="xs"
+              size="sm"
+              aria-label="Toggle navigation"
+            />
           </Group>
-        </Group>
+        </Container>
       </AppShell.Header>
       <AppShell.Main className={classes.content}>
         <Box>
