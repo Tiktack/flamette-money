@@ -1,200 +1,255 @@
 import {
   Badge,
+  Box,
   Card,
   Group,
+  Progress,
+  SegmentedControl,
+  Select,
   SimpleGrid,
   Skeleton,
   Stack,
-  Table,
   Text,
   Title,
 } from '@mantine/core'
-import { BarChart, DonutChart } from '@mantine/charts'
-import { useMemo } from 'react'
-import { useAccounts, useCategories, useTransactions } from '../lib/api/hooks'
+import { BarChart } from '@mantine/charts'
+import { useMemo, useState } from 'react'
+import { useCategorySeriesReport } from '../lib/api/hooks'
+import { SharedDateRangeChips } from './SharedDateRangeChips'
+import {
+  resolveSharedDateRange,
+  useSharedDateRangeFilters,
+} from '../lib/state/sharedDateRangeFilters'
 import classes from '../routes/analytics.module.css'
+
+type AnalyticsMode = 'Expense' | 'Income'
+type AggregationPeriod = 'Auto' | 'Day' | 'Week' | 'Month'
 
 const toNumber = (value: number | string) => (typeof value === 'number' ? value : Number(value))
 
+function formatCurrencyLike(value: number | string | undefined) {
+  const numeric = toNumber(value ?? 0)
+  const rounded = Math.round(numeric * 100) / 100
+  return rounded.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+}
+
 export function AnalyticsView() {
-  const accountsQuery = useAccounts()
-  const categoriesQuery = useCategories()
-  const transactionsQuery = useTransactions(1, 120)
+  const [mode, setMode] = useState<AnalyticsMode>('Expense')
+  const [aggregation, setAggregation] = useState<AggregationPeriod>('Auto')
+  const dateFilters = useSharedDateRangeFilters()
+  const resolvedDateRange = useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
 
-  const accountTotal = useMemo(() => {
-    return (accountsQuery.data ?? []).reduce(
-      (sum, account) => sum + toNumber(account.currentBalance),
-      0,
-    )
-  }, [accountsQuery.data])
-
-  const transactionsByMonth = useMemo(() => {
-    const map = new Map<string, { income: number; expense: number }>()
-    for (const transaction of transactionsQuery.data ?? []) {
-      const date = new Date(transaction.date)
-      const key = date.toLocaleString('en-US', {
-        month: 'short',
-        year: '2-digit',
-      })
-      const entry = map.get(key) ?? { income: 0, expense: 0 }
-      if (transaction.type.toLowerCase() === 'income') {
-        entry.income += toNumber(transaction.amount)
-      } else if (transaction.type.toLowerCase() === 'expense') {
-        entry.expense += toNumber(transaction.amount)
-      }
-      map.set(key, entry)
+  const reportQuery = useMemo(() => {
+    const query: {
+      StartDate?: string
+      EndDate?: string
+      Type: AnalyticsMode
+      Interval: AggregationPeriod
+    } = {
+      Type: mode,
+      Interval: aggregation,
     }
 
-    return Array.from(map.entries()).map(([month, values]) => ({
-      month,
-      income: Math.round(values.income * 100) / 100,
-      expense: Math.round(values.expense * 100) / 100,
-    }))
-  }, [transactionsQuery.data])
-
-  const categorySplit = useMemo(() => {
-    const categories = categoriesQuery.data ?? []
-    const totals = new Map<string, number>()
-
-    const visit = (items: typeof categories) => {
-      for (const item of items) {
-        const key = item.type || 'Other'
-        totals.set(key, (totals.get(key) ?? 0) + 1)
-        visit(item.subcategories)
-      }
+    if (resolvedDateRange.start) {
+      query.StartDate = resolvedDateRange.start.toISOString()
     }
 
-    visit(categories)
+    if (resolvedDateRange.end) {
+      query.EndDate = resolvedDateRange.end.toISOString()
+    }
 
-    const colors = ['indigo.6', 'teal.6', 'orange.6', 'grape.6', 'cyan.6']
-    return Array.from(totals.entries()).map(([name, value], index) => ({
-      name,
-      value,
-      color: colors[index % colors.length],
+    return query
+  }, [aggregation, mode, resolvedDateRange.end, resolvedDateRange.start])
+
+  const reportQueryResult = useCategorySeriesReport(reportQuery)
+
+  const report = useMemo(() => {
+    const payload = reportQueryResult.data
+
+    const series = (payload?.series ?? []).map((entry) => ({
+      name: entry.key,
+      color: entry.color,
+      label: entry.label,
     }))
-  }, [categoriesQuery.data])
+
+    const data = (payload?.data ?? []).map((point) => {
+      const row: Record<string, number | string> = { period: point.bucketLabel }
+      for (const entry of series) {
+        row[entry.name] = toNumber(point.values?.[entry.name] ?? 0)
+      }
+      return row
+    })
+
+    const categoryList = (payload?.series ?? []).map((entry) => ({
+      id: entry.key,
+      name: entry.label,
+      color: entry.color,
+      amount: toNumber(entry.total),
+      percent: toNumber(entry.percentageOfMax),
+    }))
+
+    return {
+      interval: payload?.interval ?? 'Auto',
+      total: toNumber(payload?.summary?.total ?? 0),
+      avgPerDay: toNumber(payload?.summary?.averagePerDay ?? 0),
+      avgPerWeek: toNumber(payload?.summary?.averagePerWeek ?? 0),
+      series,
+      data,
+      categoryList,
+    }
+  }, [reportQueryResult.data])
 
   return (
     <Stack className={classes.page}>
       <Group justify="space-between" align="center">
-        <Title order={2}>Analytics Overview</Title>
-        <Badge variant="light">Live data</Badge>
+        <Title order={2}>Reports</Title>
+        <Badge variant="light">Backend aggregated</Badge>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} className={classes.hero}>
+      <Group className={classes.controls} align="end">
+        <SegmentedControl
+          value={mode}
+          onChange={(value) => setMode(value as AnalyticsMode)}
+          data={[
+            { label: 'Expenses', value: 'Expense' },
+            { label: 'Income', value: 'Income' },
+          ]}
+        />
+
+        <Select
+          label="Aggregation"
+          value={aggregation}
+          onChange={(value) => setAggregation((value as AggregationPeriod) ?? 'Auto')}
+          data={[
+            { label: 'Auto', value: 'Auto' },
+            { label: 'Day', value: 'Day' },
+            { label: 'Week', value: 'Week' },
+            { label: 'Month', value: 'Month' },
+          ]}
+          w={140}
+        />
+      </Group>
+
+      <Card shadow="sm" radius="md" padding="md" className={classes.dateCard}>
+        <SharedDateRangeChips />
+      </Card>
+
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <Card shadow="sm" radius="md" padding="lg">
           <Text size="sm" c="dimmed">
-            Portfolio value
+            Avg / day
           </Text>
-          {accountsQuery.isLoading ? (
+          {reportQueryResult.isLoading ? (
             <Skeleton height={28} mt={8} />
           ) : (
-            <Title order={3}>{accountTotal.toLocaleString()}</Title>
+            <Title order={3}>{formatCurrencyLike(report.avgPerDay)}</Title>
           )}
         </Card>
         <Card shadow="sm" radius="md" padding="lg">
           <Text size="sm" c="dimmed">
-            Accounts
+            Avg / week
           </Text>
-          {accountsQuery.isLoading ? (
+          {reportQueryResult.isLoading ? (
             <Skeleton height={28} mt={8} />
           ) : (
-            <Title order={3}>{accountsQuery.data?.length ?? 0}</Title>
+            <Title order={3}>{formatCurrencyLike(report.avgPerWeek)}</Title>
           )}
         </Card>
         <Card shadow="sm" radius="md" padding="lg">
           <Text size="sm" c="dimmed">
-            Categories
+            Total
           </Text>
-          {categoriesQuery.isLoading ? (
+          {reportQueryResult.isLoading ? (
             <Skeleton height={28} mt={8} />
           ) : (
-            <Title order={3}>{categorySplit.length}</Title>
-          )}
-        </Card>
-        <Card shadow="sm" radius="md" padding="lg">
-          <Text size="sm" c="dimmed">
-            Transactions loaded
-          </Text>
-          {transactionsQuery.isLoading ? (
-            <Skeleton height={28} mt={8} />
-          ) : (
-            <Title order={3}>{transactionsQuery.data?.length ?? 0}</Title>
+            <Title order={3}>{formatCurrencyLike(report.total)}</Title>
           )}
         </Card>
       </SimpleGrid>
 
-      <div className={classes.charts}>
+      <div className={classes.reportGrid}>
         <Card shadow="sm" radius="md" padding="lg">
-          <Text className={classes.cardTitle}>Income vs Expense</Text>
-          {transactionsQuery.isLoading ? (
-            <Skeleton height={220} mt="md" />
+          <Group justify="space-between" align="center">
+            <Text className={classes.cardTitle}>
+              {mode === 'Expense' ? 'Expenses' : 'Income'} by category
+            </Text>
+            <Text size="sm" c="dimmed">
+              {String(report.interval).toUpperCase()} buckets
+            </Text>
+          </Group>
+
+          {reportQueryResult.isLoading ? (
+            <Skeleton height={320} mt="md" />
+          ) : report.series.length === 0 ? (
+            <Text c="dimmed" mt="md">
+              No data for selected range.
+            </Text>
           ) : (
             <BarChart
-              h={220}
-              data={transactionsByMonth}
-              dataKey="month"
-              series={[
-                { name: 'income', color: 'teal.6' },
-                { name: 'expense', color: 'red.6' },
-              ]}
+              h={320}
+              mt="md"
+              data={report.data}
+              dataKey="period"
+              series={report.series}
+              type="stacked"
               tickLine="y"
-              withLegend
             />
           )}
         </Card>
+
         <Card shadow="sm" radius="md" padding="lg">
-          <Text className={classes.cardTitle}>Category mix</Text>
-          {categoriesQuery.isLoading ? (
-            <Skeleton height={220} mt="md" />
+          <Group justify="space-between" align="center">
+            <Text className={classes.cardTitle}>Categories</Text>
+            {reportQueryResult.isLoading ? null : (
+              <Text size="sm" c="dimmed">
+                {report.categoryList.length}
+              </Text>
+            )}
+          </Group>
+
+          {reportQueryResult.isLoading ? (
+            <Skeleton height={320} mt="md" />
+          ) : report.categoryList.length === 0 ? (
+            <Text c="dimmed" mt="md">
+              No categories in range.
+            </Text>
           ) : (
-            <DonutChart
-              h={220}
-              data={categorySplit}
-              withLabelsLine={false}
-              withLabels
-              strokeWidth={2}
-            />
+            <Stack gap="sm" mt="md" className={classes.categoryList}>
+              {report.categoryList.map((item) => (
+                <div key={item.id}>
+                  <Group justify="space-between" gap="xs">
+                    <Group gap="xs">
+                      <Box
+                        w={10}
+                        h={10}
+                        style={{
+                          borderRadius: 999,
+                          backgroundColor: item.color,
+                        }}
+                      />
+                      <Text size="sm" fw={500} lineClamp={1}>
+                        {item.name}
+                      </Text>
+                    </Group>
+                    <Text size="sm" c="dimmed">
+                      {formatCurrencyLike(item.amount)}
+                    </Text>
+                  </Group>
+                  <Progress
+                    value={item.percent}
+                    color={item.color}
+                    radius="xl"
+                    mt={6}
+                  />
+                </div>
+              ))}
+            </Stack>
           )}
         </Card>
       </div>
-
-      <Card shadow="sm" radius="md" className={classes.tableCard}>
-        <Group justify="space-between" className={classes.tableHeader}>
-          <Text className={classes.cardTitle}>Recent transactions</Text>
-          <Text size="sm" c="dimmed">
-            Showing {Math.min(transactionsQuery.data?.length ?? 0, 6)} entries
-          </Text>
-        </Group>
-        <div className={classes.tableContent}>
-          {transactionsQuery.isLoading ? (
-            <Skeleton height={180} mt="md" />
-          ) : (
-            <Table highlightOnHover verticalSpacing="sm">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Date</Table.Th>
-                  <Table.Th>Type</Table.Th>
-                  <Table.Th>Amount</Table.Th>
-                  <Table.Th>Note</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {(transactionsQuery.data ?? []).slice(0, 6).map((row) => (
-                  <Table.Tr key={row.id}>
-                    <Table.Td>
-                      {new Date(row.date).toLocaleDateString()}
-                    </Table.Td>
-                    <Table.Td>{row.type}</Table.Td>
-                    <Table.Td>{toNumber(row.amount).toLocaleString()}</Table.Td>
-                    <Table.Td>{row.note ?? row.merchantName ?? '-'}</Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          )}
-        </div>
-      </Card>
     </Stack>
   )
 }

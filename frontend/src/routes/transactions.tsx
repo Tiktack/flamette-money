@@ -17,7 +17,6 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
-import { DatePickerInput } from '@mantine/dates'
 import { useEffect, useMemo, useState } from 'react'
 import {
   useAccounts,
@@ -26,6 +25,11 @@ import {
   useTransactionsSearch,
 } from '../lib/api/hooks'
 import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
+import { SharedDateRangeChips } from '../components/SharedDateRangeChips'
+import {
+  resolveSharedDateRange,
+  useSharedDateRangeFilters,
+} from '../lib/state/sharedDateRangeFilters'
 import { useTransactionsFilters } from '../lib/state/transactionsFilters'
 import type { CategoryHierarchy, TransactionListItem, TransactionType } from '../lib/api/types'
 import { Route as RootRoute } from './__root'
@@ -40,6 +44,7 @@ function TransactionsPage() {
   const categoriesQuery = useCategories()
   const deleteTransaction = useDeleteTransaction()
   const filters = useTransactionsFilters()
+  const dateFilters = useSharedDateRangeFilters()
   const [filtersOpened, setFiltersOpened] = useState(false)
   const [page, setPage] = useState(1)
   const navigate = RootRoute.useNavigate()
@@ -146,40 +151,8 @@ function TransactionsPage() {
   )
 
   const resolvedDateRange = useMemo(() => {
-    if (filters.datePreset === 'month') {
-      const anchor = filters.monthAnchor
-        ? new Date(`${filters.monthAnchor}T00:00:00`)
-        : new Date()
-      const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
-      const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 23, 59, 59, 999)
-      return { start, end }
-    }
-
-    if (filters.datePreset === 'year') {
-      const year = filters.yearAnchor || new Date().getFullYear()
-      const start = new Date(year, 0, 1)
-      const end = new Date(year, 11, 31, 23, 59, 59, 999)
-      return { start, end }
-    }
-
-    if (filters.datePreset === 'custom') {
-      const start = filters.customStartDate
-        ? new Date(`${filters.customStartDate}T00:00:00`)
-        : null
-      const end = filters.customEndDate
-        ? new Date(`${filters.customEndDate}T23:59:59`)
-        : null
-      return { start, end }
-    }
-
-    return { start: null, end: null }
-  }, [
-    filters.customEndDate,
-    filters.customStartDate,
-    filters.datePreset,
-    filters.monthAnchor,
-    filters.yearAnchor,
-  ])
+    return resolveSharedDateRange(dateFilters)
+  }, [dateFilters])
 
   const searchQuery = useMemo(() => {
     const query: {
@@ -284,30 +257,6 @@ function TransactionsPage() {
     return category.name
   }
 
-  const monthLabel = useMemo(() => {
-    const anchor = filters.monthAnchor
-      ? new Date(`${filters.monthAnchor}T00:00:00`)
-      : new Date()
-    return anchor.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-  }, [filters.monthAnchor])
-
-  const yearLabel = useMemo(
-    () => String(filters.yearAnchor || new Date().getFullYear()),
-    [filters.yearAnchor],
-  )
-
-  const customRangeValue = useMemo(() => {
-    const start = filters.customStartDate || null
-    const end = filters.customEndDate || null
-    return [start, end] as [string | null, string | null]
-  }, [filters.customEndDate, filters.customStartDate])
-
-  const handleRangeChange = (value: [string | null, string | null]) => {
-    const [start, end] = value
-    filters.setCustomStartDate(start ?? '')
-    filters.setCustomEndDate(end ?? '')
-  }
-
   const buildAccountBadge = (accountId: string) => {
     const account = accountMap.get(accountId)
     if (!account) {
@@ -369,67 +318,7 @@ function TransactionsPage() {
       </Group>
 
       <Card shadow="sm" radius="md" padding="md" className={classes.dateBar}>
-        <Group gap="sm" wrap="wrap" justify="space-between">
-          <Group gap="xs">
-            <Button
-              variant={filters.datePreset === 'month' ? 'light' : 'subtle'}
-              onClick={() => filters.setDatePreset('month')}
-            >
-              Month
-            </Button>
-            <Button
-              variant={filters.datePreset === 'year' ? 'light' : 'subtle'}
-              onClick={() => filters.setDatePreset('year')}
-            >
-              Year
-            </Button>
-            <Button
-              variant={filters.datePreset === 'all' ? 'light' : 'subtle'}
-              onClick={() => filters.setDatePreset('all')}
-            >
-              All time
-            </Button>
-            <Button
-              variant={filters.datePreset === 'custom' ? 'light' : 'subtle'}
-              onClick={() => filters.setDatePreset('custom')}
-            >
-              Custom
-            </Button>
-          </Group>
-          {filters.datePreset === 'month' ? (
-            <Group gap="xs" className={classes.dateNav}>
-              <Button variant="subtle" onClick={() => filters.shiftMonth(-1)}>
-                Prev
-              </Button>
-              <Text fw={600}>{monthLabel}</Text>
-              <Button variant="subtle" onClick={() => filters.shiftMonth(1)}>
-                Next
-              </Button>
-            </Group>
-          ) : null}
-          {filters.datePreset === 'year' ? (
-            <Group gap="xs" className={classes.dateNav}>
-              <Button variant="subtle" onClick={() => filters.shiftYear(-1)}>
-                Prev
-              </Button>
-              <Text fw={600}>{yearLabel}</Text>
-              <Button variant="subtle" onClick={() => filters.shiftYear(1)}>
-                Next
-              </Button>
-            </Group>
-          ) : null}
-        </Group>
-        {filters.datePreset === 'custom' ? (
-          <DatePickerInput
-            type="range"
-            label="Custom range"
-            placeholder="Pick dates"
-            value={customRangeValue}
-            onChange={handleRangeChange}
-            valueFormat="YYYY-MM-DD"
-            className={classes.rangePicker}
-          />
-        ) : null}
+        <SharedDateRangeChips />
       </Card>
 
       <Collapse in={filtersOpened} transitionDuration={180}>

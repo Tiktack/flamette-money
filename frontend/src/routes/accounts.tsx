@@ -275,6 +275,9 @@ function AccountsPage() {
                       <Table.Td className={classes.sparklineCell}>
                         <Sparkline
                           data={sparkline}
+                          areaProps={{
+                            isAnimationActive: true
+                          }}
                           h={36}
                           w={140}
                           curveType="monotone"

@@ -26,6 +26,17 @@ export type CategoryHierarchyResponse = {
     subcategories: Array<CategoryHierarchyResponse>;
 };
 
+export type CategorySeriesReportResponse = {
+    type: CategoryType;
+    interval: ReportInterval;
+    startDate: null | string;
+    endDate: null | string;
+    buckets: Array<ReportBucketResponse>;
+    series: Array<ReportSeriesEntryResponse>;
+    data: Array<ReportPointResponse>;
+    summary: ReportSummaryResponse;
+};
+
 export type CategoryType = 'Income' | 'Expense';
 
 export type CreateAccountRequest = {
@@ -155,6 +166,38 @@ export type ReceiptItemResponse = {
     categoryName: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
+};
+
+export type ReportBucketResponse = {
+    key: string;
+    label: string;
+};
+
+export type ReportInterval = 'Auto' | 'None' | 'Day' | 'Week' | 'Month';
+
+export type ReportPointResponse = {
+    bucketKey: string;
+    bucketLabel: string;
+    values: {
+        [key: string]: number | string;
+    };
+    total: number | string;
+};
+
+export type ReportSeriesEntryResponse = {
+    key: string;
+    label: string;
+    color: string;
+    total: number | string;
+    percentageOfMax: number | string;
+};
+
+export type ReportSummaryResponse = {
+    total: number | string;
+    averagePerDay: number | string;
+    averagePerWeek: number | string;
+    dayCount: number | string;
+    bucketCount: number | string;
 };
 
 export type ScanReceiptResponse = {
@@ -438,6 +481,36 @@ export type PostApiSeedDemoResponses = {
 };
 
 export type PostApiSeedDemoResponse = PostApiSeedDemoResponses[keyof PostApiSeedDemoResponses];
+
+export type GetApiReportsCategorySeriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        StartDate?: string;
+        EndDate?: string;
+        Type?: CategoryType;
+        Interval?: ReportInterval;
+    };
+    url: '/api/reports/category-series';
+};
+
+export type GetApiReportsCategorySeriesErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+};
+
+export type GetApiReportsCategorySeriesError = GetApiReportsCategorySeriesErrors[keyof GetApiReportsCategorySeriesErrors];
+
+export type GetApiReportsCategorySeriesResponses = {
+    /**
+     * OK
+     */
+    200: CategorySeriesReportResponse;
+};
+
+export type GetApiReportsCategorySeriesResponse = GetApiReportsCategorySeriesResponses[keyof GetApiReportsCategorySeriesResponses];
 
 export type PostApiReceiptsScanData = {
     body: {

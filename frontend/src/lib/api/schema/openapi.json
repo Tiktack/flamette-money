@@ -362,6 +362,71 @@
         }
       }
     },
+    "/api/reports/category-series": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get category series report",
+        "description": "Returns category split report for selected period and interval.",
+        "parameters": [
+          {
+            "name": "StartDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "EndDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "Type",
+            "in": "query",
+            "schema": {
+              "default": "Expense",
+              "$ref": "#/components/schemas/CategoryType"
+            }
+          },
+          {
+            "name": "Interval",
+            "in": "query",
+            "schema": {
+              "default": "Auto",
+              "$ref": "#/components/schemas/ReportInterval"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategorySeriesReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/receipts/scan": {
       "post": {
         "tags": [
@@ -843,6 +908,62 @@
             "items": {
               "$ref": "#/components/schemas/CategoryHierarchyResponse"
             }
+          }
+        }
+      },
+      "CategorySeriesReportResponse": {
+        "required": [
+          "type",
+          "interval",
+          "startDate",
+          "endDate",
+          "buckets",
+          "series",
+          "data",
+          "summary"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/CategoryType"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/ReportInterval"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportBucketResponse"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportSeriesEntryResponse"
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportPointResponse"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ReportSummaryResponse"
           }
         }
       },
@@ -1523,6 +1644,155 @@
           }
         }
       },
+      "ReportBucketResponse": {
+        "required": [
+          "key",
+          "label"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "ReportInterval": {
+        "enum": [
+          "Auto",
+          "None",
+          "Day",
+          "Week",
+          "Month"
+        ]
+      },
+      "ReportPointResponse": {
+        "required": [
+          "bucketKey",
+          "bucketLabel",
+          "values",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "bucketKey": {
+            "type": "string"
+          },
+          "bucketLabel": {
+            "type": "string"
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ReportSeriesEntryResponse": {
+        "required": [
+          "key",
+          "label",
+          "color",
+          "total",
+          "percentageOfMax"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percentageOfMax": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "ReportSummaryResponse": {
+        "required": [
+          "total",
+          "averagePerDay",
+          "averagePerWeek",
+          "dayCount",
+          "bucketCount"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averagePerDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averagePerWeek": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "dayCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "bucketCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "ScanReceiptResponse": {
         "required": [
           "transactionId",
@@ -2138,6 +2408,9 @@
     },
     {
       "name": "Seed"
+    },
+    {
+      "name": "Reports"
     },
     {
       "name": "Receipts"

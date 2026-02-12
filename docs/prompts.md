@@ -120,6 +120,27 @@ Make transactions editable, make button "New transaction" work, in categories bi
 instead of whole row clickable, I want edit/remove actions button in a last column.
 
 ----------------------------
+2026-02-12 00:00:00
+Can we re-build analytics page? What I want is like stacked bar chart for expenses/incomes by category for selected range (it's separate for income and expenses, we can control it with segmented). If selected range is month - then single column is day (for all days, even that not even happened in a current month and the ones that have no transactions, basically it should be empty space in a chart with no column, but not removed enterely from a chart). If selected a year, single column is month and same goes for any range bigger than 3 months. Or maybe we can add an interval or aggregation period as an options with default that I mentioned, but use can change them.
+Want some cards to shows insights about average day spending, average week spending and total spending for current range selected.
+Next to this stacked barchart, would be ncie to have like a list of categories with bars representing comparable spendings/income.
+For biggest expense category - 100%, for other, percent calculated compared to the biggest one.
+
+----------------------------
+2026-02-12 00:00:00
+I want most of the charts logic to be on a backend. I don't wanna load 1000s of transaction to UI and calculate it there. Also, dates filters should be shared with transactions and categories page. I want chip filters for selecting type of range (month, year, all time, custom)
+Chips like here Deselect radio chip in this link: https://mantine.dev/llms/core-chip.md
+
+When custom selected new date input like you already have will appear. think through what endpoints better to implement on backend, I believe one of them to provide split by categories, it will be used in a chart with day split and in a categories split, with no split.
+I think also that all report endpoints should return same response if possible, it can be liek an object with series information.
+
+----------------------------
+2026-02-12 00:00:00
+Not bad, but can you re-do the piece, with says current month/year and has arrows to move next/previous. It looks ugly. Remove this strange pill around. Just use some text and Action Icons on the left and right, at the end it will look close to how pagination component looks, just with no pages :D
+
+Also, inout for custom dates should appear next to chips, not on another row!
+
+----------------------------
 2026-02-08 00:00:00
 icons only. and make amount text to be red/green/orange/grey based on transaction type ( expense, income, transfer, refund)
 
