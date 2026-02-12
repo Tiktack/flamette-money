@@ -194,8 +194,11 @@ export type ReportSeriesEntryResponse = {
 
 export type ReportSummaryResponse = {
     total: number | string;
+    previousTotal: number | string;
     averagePerDay: number | string;
+    previousAveragePerDay: number | string;
     averagePerWeek: number | string;
+    previousAveragePerWeek: number | string;
     dayCount: number | string;
     bucketCount: number | string;
 };
