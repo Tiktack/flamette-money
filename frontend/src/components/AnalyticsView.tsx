@@ -1,5 +1,4 @@
 import {
-  Badge,
   Box,
   Card,
   Group,
@@ -106,10 +105,6 @@ export function AnalyticsView() {
     <Stack className={classes.page}>
       <Group justify="space-between" align="center">
         <Title order={2}>Reports</Title>
-        <Badge variant="light">Backend aggregated</Badge>
-      </Group>
-
-      <Group className={classes.controls} align="end">
         <SegmentedControl
           value={mode}
           onChange={(value) => setMode(value as AnalyticsMode)}
@@ -117,19 +112,6 @@ export function AnalyticsView() {
             { label: 'Expenses', value: 'Expense' },
             { label: 'Income', value: 'Income' },
           ]}
-        />
-
-        <Select
-          label="Aggregation"
-          value={aggregation}
-          onChange={(value) => setAggregation((value as AggregationPeriod) ?? 'Auto')}
-          data={[
-            { label: 'Auto', value: 'Auto' },
-            { label: 'Day', value: 'Day' },
-            { label: 'Week', value: 'Week' },
-            { label: 'Month', value: 'Month' },
-          ]}
-          w={140}
         />
       </Group>
 
@@ -176,9 +158,17 @@ export function AnalyticsView() {
             <Text className={classes.cardTitle}>
               {mode === 'Expense' ? 'Expenses' : 'Income'} by category
             </Text>
-            <Text size="sm" c="dimmed">
-              {String(report.interval).toUpperCase()} buckets
-            </Text>
+            <Select
+              value={aggregation}
+              onChange={(value) => setAggregation((value as AggregationPeriod) ?? 'Auto')}
+              data={[
+                { label: 'Auto', value: 'Auto' },
+                { label: 'Day', value: 'Day' },
+                { label: 'Week', value: 'Week' },
+                { label: 'Month', value: 'Month' },
+              ]}
+              w={140}
+            />
           </Group>
 
           {reportQueryResult.isLoading ? (
@@ -193,6 +183,9 @@ export function AnalyticsView() {
               mt="md"
               data={report.data}
               dataKey="period"
+              barProps={{
+                isAnimationActive: true
+              }}
               series={report.series}
               type="stacked"
               tickLine="y"

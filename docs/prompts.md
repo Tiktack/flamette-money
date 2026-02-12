@@ -141,6 +141,17 @@ Not bad, but can you re-do the piece, with says current month/year and has arrow
 Also, inout for custom dates should appear next to chips, not on another row!
 
 ----------------------------
+2026-02-12 00:00:00
+when custom range selected, I still want this thing at the right side to move next/previous. We just should move same amount of days. For example, if we selected 2 weeks, this arrows will move as next 14 days or previous.
+Also, in analytics page remove this strange chip "Backend aggregated".
+Move aggregationg selector inside chart card, where right now it says "WEEK buckets"
+And income/expense segmented control move to the place of Backend aggregated chip
+
+----------------------------
+2026-02-12 00:00:00
+Cool! The only issue, when month chip selected and I use this thing at the right to move next/previous it does some strange moves. For example Currently selected January 2026, next doesn't work at all, previous moves us to Noevember 2025, skipping december. Please, make it move properly. It should not depend on transactions or something, should just move months.
+
+----------------------------
 2026-02-08 00:00:00
 icons only. and make amount text to be red/green/orange/grey based on transaction type ( expense, income, transfer, refund)
 

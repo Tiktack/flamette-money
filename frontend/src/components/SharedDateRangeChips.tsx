@@ -8,6 +8,13 @@ import classes from '../routes/page.module.css'
 export function SharedDateRangeChips() {
   const filters = useSharedDateRangeFilters()
 
+  const formatDateInput = (value: Date) => {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   const monthLabel = useMemo(() => {
     const anchor = filters.monthAnchor
       ? new Date(`${filters.monthAnchor}T00:00:00`)
@@ -31,6 +38,38 @@ export function SharedDateRangeChips() {
     filters.setCustomStartDate(start ?? '')
     filters.setCustomEndDate(end ?? '')
   }
+
+  const shiftCustomRange = (direction: -1 | 1) => {
+    if (!filters.customStartDate || !filters.customEndDate) {
+      return
+    }
+
+    const start = new Date(`${filters.customStartDate}T00:00:00`)
+    const end = new Date(`${filters.customEndDate}T00:00:00`)
+    const dayDiff = Math.floor((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000))
+    const span = Math.max(1, dayDiff + 1)
+    const offset = direction * span
+
+    const nextStart = new Date(start)
+    nextStart.setDate(start.getDate() + offset)
+
+    const nextEnd = new Date(end)
+    nextEnd.setDate(end.getDate() + offset)
+
+    filters.setCustomStartDate(formatDateInput(nextStart))
+    filters.setCustomEndDate(formatDateInput(nextEnd))
+  }
+
+  const customLabel = useMemo(() => {
+    if (!filters.customStartDate || !filters.customEndDate) {
+      return 'Custom range'
+    }
+
+    const start = new Date(`${filters.customStartDate}T00:00:00`)
+    const end = new Date(`${filters.customEndDate}T00:00:00`)
+
+    return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`
+  }, [filters.customEndDate, filters.customStartDate])
 
   const handleChipClick = (event: MouseEvent<HTMLInputElement>) => {
     if (event.currentTarget.value === filters.preset) {
@@ -100,6 +139,28 @@ export function SharedDateRangeChips() {
           </ActionIcon>
           <Text fw={600}>{yearLabel}</Text>
           <ActionIcon variant="subtle" aria-label="Next year" onClick={() => filters.shiftYear(1)}>
+            ›
+          </ActionIcon>
+        </Group>
+      ) : null}
+
+      {filters.preset === 'custom' ? (
+        <Group gap="xs" align="center" wrap="nowrap">
+          <ActionIcon
+            variant="subtle"
+            aria-label="Previous custom range"
+            onClick={() => shiftCustomRange(-1)}
+            disabled={!filters.customStartDate || !filters.customEndDate}
+          >
+            ‹
+          </ActionIcon>
+          <Text fw={600}>{customLabel}</Text>
+          <ActionIcon
+            variant="subtle"
+            aria-label="Next custom range"
+            onClick={() => shiftCustomRange(1)}
+            disabled={!filters.customStartDate || !filters.customEndDate}
+          >
             ›
           </ActionIcon>
         </Group>
