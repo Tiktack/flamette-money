@@ -18,7 +18,10 @@ const queryClient = new QueryClient()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <MantineProvider theme={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+      <MantineProvider
+        defaultColorScheme="light"
+        theme={{ fontFamily: 'Space Grotesk, sans-serif' }}
+      >
         <Notifications position="top-right" />
         <RouterProvider router={router} />
         {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}

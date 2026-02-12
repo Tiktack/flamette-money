@@ -11,8 +11,11 @@
 }
 
 .dateCard {
-  border: 1px solid var(--mantine-color-gray-2);
-  background: linear-gradient(140deg, rgba(241, 243, 255, 0.6), var(--mantine-color-white));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(
+    linear-gradient(140deg, rgba(241, 243, 255, 0.6), var(--mantine-color-white)),
+    linear-gradient(140deg, rgba(45, 55, 72, 0.65), var(--mantine-color-dark-6))
+  );
 }
 
 .reportGrid {
