@@ -1,7 +1,17 @@
 import {
+  IconArrowDownRight,
+  IconArrowUpRight,
+  IconCalendar,
+  IconCalendarWeek,
+  IconCoin,
+  type Icon,
+  IconReceipt2,
+} from '@tabler/icons-react'
+import {
   Box,
   Card,
   Group,
+  Paper,
   Progress,
   SegmentedControl,
   Select,
@@ -33,6 +43,14 @@ function formatCurrencyLike(value: number | string | undefined) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })
+}
+
+function toPercentDiff(current: number, previous: number) {
+  if (previous === 0) {
+    return current === 0 ? 0 : 100
+  }
+
+  return Math.round(((current - previous) / Math.abs(previous)) * 100)
 }
 
 export function AnalyticsView() {
@@ -94,13 +112,42 @@ export function AnalyticsView() {
     return {
       interval: payload?.interval ?? 'Auto',
       total: toNumber(payload?.summary?.total ?? 0),
+      previousTotal: toNumber(payload?.summary?.previousTotal ?? 0),
       avgPerDay: toNumber(payload?.summary?.averagePerDay ?? 0),
+      previousAvgPerDay: toNumber(payload?.summary?.previousAveragePerDay ?? 0),
       avgPerWeek: toNumber(payload?.summary?.averagePerWeek ?? 0),
+      previousAvgPerWeek: toNumber(payload?.summary?.previousAveragePerWeek ?? 0),
       series,
       data,
       categoryList,
     }
   }, [reportQueryResult.data])
+
+  const statCards = useMemo(
+    () => [
+      {
+        title: 'Avg / day',
+        value: report.avgPerDay,
+        previousValue: report.previousAvgPerDay,
+        icon: IconCalendar,
+      },
+      {
+        title: 'Avg / week',
+        value: report.avgPerWeek,
+        previousValue: report.previousAvgPerWeek,
+        icon: IconCalendarWeek,
+      },
+      {
+        title: 'Total',
+        value: report.total,
+        previousValue: report.previousTotal,
+        icon: mode === 'Expense' ? IconReceipt2 : IconCoin,
+      },
+    ],
+    [mode, report.avgPerDay, report.avgPerWeek, report.previousAvgPerDay, report.previousAvgPerWeek, report.previousTotal, report.total],
+  )
+
+  const hasData = report.series.length > 0
 
   return (
     <Stack className={classes.page}>
@@ -120,40 +167,50 @@ export function AnalyticsView() {
         <SharedDateRangeChips />
       </Card>
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Card shadow="sm" radius="md" padding="lg">
-          <Text size="sm" c="dimmed">
-            Avg / day
-          </Text>
-          {isInitialLoading ? (
-            <Skeleton height={28} mt={8} />
-          ) : (
-            <Title order={3}>{formatCurrencyLike(report.avgPerDay)}</Title>
-          )}
-        </Card>
-        <Card shadow="sm" radius="md" padding="lg">
-          <Text size="sm" c="dimmed">
-            Avg / week
-          </Text>
-          {isInitialLoading ? (
-            <Skeleton height={28} mt={8} />
-          ) : (
-            <Title order={3}>{formatCurrencyLike(report.avgPerWeek)}</Title>
-          )}
-        </Card>
-        <Card shadow="sm" radius="md" padding="lg">
-          <Text size="sm" c="dimmed">
-            Total
-          </Text>
-          {isInitialLoading ? (
-            <Skeleton height={28} mt={8} />
-          ) : (
-            <Title order={3}>{formatCurrencyLike(report.total)}</Title>
-          )}
-        </Card>
-      </SimpleGrid>
+      {isInitialLoading || hasData ? (
+        <>
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            {statCards.map((stat) => {
+              const diff = toPercentDiff(stat.value, stat.previousValue)
+              const DiffIcon = diff >= 0 ? IconArrowUpRight : IconArrowDownRight
+              const StatIcon: Icon = stat.icon
+              const isGoodTrend = mode === 'Income' ? diff >= 0 : diff <= 0
 
-      <div className={classes.reportGrid}>
+              return (
+                <Paper withBorder p="md" radius="md" key={stat.title}>
+                  <Group justify="space-between">
+                    <Text size="xs" c="dimmed" className={classes.statTitle}>
+                      {stat.title}
+                    </Text>
+                    <StatIcon className={classes.statIcon} size={22} stroke={1.5} />
+                  </Group>
+
+                  {isInitialLoading ? (
+                    <Skeleton height={28} mt={20} />
+                  ) : (
+                    <Group align="flex-end" gap="xs" mt={10}>
+                      <Text className={classes.statValue}>{formatCurrencyLike(stat.value)}</Text>
+                      <Text
+                        c={isGoodTrend ? 'teal' : 'red'}
+                        fz="sm"
+                        fw={500}
+                        className={classes.statDiff}
+                      >
+                        <span>{Math.abs(diff)}%</span>
+                        <DiffIcon size={16} stroke={1.5} />
+                      </Text>
+                    </Group>
+                  )}
+
+                  <Text fz="xs" c="dimmed" mt={5}>
+                    Compared to previous range
+                  </Text>
+                </Paper>
+              )
+            })}
+          </SimpleGrid>
+
+          <div className={classes.reportGrid}>
         <Card shadow="sm" radius="md" padding="lg">
           <Group justify="space-between" align="center">
             <Text className={classes.cardTitle}>
@@ -246,7 +303,19 @@ export function AnalyticsView() {
             </Box>
           )}
         </Card>
-      </div>
+          </div>
+        </>
+      ) : (
+        <Card shadow="sm" radius="md" padding="xl" className={classes.emptyCard}>
+          <Stack align="center" gap={6}>
+            <Text className={classes.emptyEmoji}>🫠</Text>
+            <Title order={4}>No data in this range yet</Title>
+            <Text c="dimmed" ta="center">
+              No transactions matched this filter. Try another range and let&apos;s make this chart party start.
+            </Text>
+          </Stack>
+        </Card>
+      )}
     </Stack>
   )
 }

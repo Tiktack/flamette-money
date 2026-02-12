@@ -41,8 +41,11 @@ public sealed record ReportPointResponse(
 
 public sealed record ReportSummaryResponse(
     decimal Total,
+    decimal PreviousTotal,
     decimal AveragePerDay,
+    decimal PreviousAveragePerDay,
     decimal AveragePerWeek,
+    decimal PreviousAveragePerWeek,
     int DayCount,
     int BucketCount);
 
@@ -252,10 +255,48 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
         var dayCount = Math.Max(1, (endDate.Value.Date - startDate.Value.Date).Days + 1);
         var weekCount = Math.Max(1m, dayCount / 7m);
 
+        var previousRangeEnd = startDate.Value.Date.AddDays(-1);
+        var elapsedEnd = endDate.Value.Date < DateTime.UtcNow.Date
+            ? endDate.Value.Date
+            : DateTime.UtcNow.Date;
+        var elapsedDayCount = Math.Clamp((elapsedEnd - startDate.Value.Date).Days + 1, 1, dayCount);
+
+        var previousTotalStart = previousRangeEnd.AddDays(-(elapsedDayCount - 1));
+        var previousFullStart = previousRangeEnd.AddDays(-(dayCount - 1));
+        var previousEndOfDay = previousRangeEnd.Date.AddDays(1).AddTicks(-1);
+
+        var previousTransactions = await dbContext.Transactions
+            .AsNoTracking()
+            .Where(transaction =>
+                transaction.Date >= previousFullStart &&
+                transaction.Date <= previousEndOfDay)
+            .Select(transaction => new
+            {
+                transaction.Date,
+                transaction.Type,
+                transaction.Amount,
+                transaction.IsRefund,
+            })
+            .ToListAsync(cancellationToken);
+
+        var previousFullTotal = Math.Round(previousTransactions
+            .Select(transaction => GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund))
+            .Sum(), 2);
+
+        var previousTotal = Math.Round(previousTransactions
+            .Where(transaction => transaction.Date >= previousTotalStart)
+            .Select(transaction => GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund))
+            .Sum(), 2);
+
+        var previousFullWeekCount = Math.Max(1m, dayCount / 7m);
+
         var summary = new ReportSummaryResponse(
             reportTotal,
+            previousTotal,
             Math.Round(reportTotal / dayCount, 2),
+            Math.Round(previousFullTotal / dayCount, 2),
             Math.Round(reportTotal / weekCount, 2),
+            Math.Round(previousFullTotal / previousFullWeekCount, 2),
             dayCount,
             buckets.Count);
 

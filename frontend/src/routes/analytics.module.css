@@ -51,6 +51,37 @@
   font-weight: 600;
 }
 
+.statTitle {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.statDiff {
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.statIcon {
+  color: light-dark(var(--mantine-color-gray-4), var(--mantine-color-dark-3));
+}
+
+.emptyCard {
+  border: 1px dashed light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+}
+
+.emptyEmoji {
+  font-size: 36px;
+  line-height: 1;
+}
+
 .tableCard {
   padding: 0;
 }

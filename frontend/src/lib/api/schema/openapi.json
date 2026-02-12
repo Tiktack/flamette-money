@@ -1744,14 +1744,25 @@
       "ReportSummaryResponse": {
         "required": [
           "total",
+          "previousTotal",
           "averagePerDay",
+          "previousAveragePerDay",
           "averagePerWeek",
+          "previousAveragePerWeek",
           "dayCount",
           "bucketCount"
         ],
         "type": "object",
         "properties": {
           "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "previousTotal": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "number",
@@ -1767,7 +1778,23 @@
             ],
             "format": "double"
           },
+          "previousAveragePerDay": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
           "averagePerWeek": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "previousAveragePerWeek": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "number",
