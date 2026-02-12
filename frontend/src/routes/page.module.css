@@ -11,8 +11,11 @@
 }
 
 .card {
-  border: 1px solid var(--mantine-color-gray-2);
-  background: linear-gradient(180deg, var(--mantine-color-white), var(--mantine-color-gray-0));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(
+    linear-gradient(180deg, var(--mantine-color-white), var(--mantine-color-gray-0)),
+    linear-gradient(180deg, var(--mantine-color-dark-6), var(--mantine-color-dark-7))
+  );
 }
 
 .tableWrap {
@@ -34,7 +37,7 @@
 }
 
 .row {
-  background-color: var(--mantine-color-white);
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
   box-shadow: var(--mantine-shadow-xs);
 }
 
@@ -66,7 +69,7 @@
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  box-shadow: 0 0 0 4px var(--mantine-color-gray-0);
+  box-shadow: 0 0 0 4px light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8));
 }
 
 .balance {
@@ -99,29 +102,32 @@
 }
 
 .segmented {
-  background: var(--mantine-color-gray-1);
+  background: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-6));
   border-radius: 999px;
 }
 
 .filtersCard {
-  border: 1px dashed var(--mantine-color-gray-3);
-  background: var(--mantine-color-gray-0);
+  border: 1px dashed light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
   display: grid;
   gap: 12px;
 }
 
 .dateBar {
-  border: 1px solid var(--mantine-color-gray-2);
-  background: linear-gradient(140deg, rgba(241, 243, 255, 0.6), var(--mantine-color-white));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(
+    linear-gradient(140deg, rgba(241, 243, 255, 0.6), var(--mantine-color-white)),
+    linear-gradient(140deg, rgba(45, 55, 72, 0.65), var(--mantine-color-dark-6))
+  );
   display: grid;
   gap: 12px;
 }
 
 .dateNav {
-  background: var(--mantine-color-gray-0);
+  background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid var(--mantine-color-gray-2);
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
 }
 
 .rangePicker {
@@ -183,8 +189,11 @@
 }
 
 .statCard {
-  border: 1px solid var(--mantine-color-gray-2);
-  background: linear-gradient(140deg, var(--mantine-color-white), var(--mantine-color-gray-0));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(
+    linear-gradient(140deg, var(--mantine-color-white), var(--mantine-color-gray-0)),
+    linear-gradient(140deg, var(--mantine-color-dark-6), var(--mantine-color-dark-7))
+  );
   box-shadow: var(--mantine-shadow-xs);
 }
 
@@ -193,8 +202,11 @@
 }
 
 .categoryHero {
-  border: 1px solid var(--mantine-color-gray-2);
-  background: linear-gradient(160deg, rgba(76, 110, 245, 0.08), rgba(255, 255, 255, 0.9));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(
+    linear-gradient(160deg, rgba(76, 110, 245, 0.08), rgba(255, 255, 255, 0.9)),
+    linear-gradient(160deg, rgba(76, 110, 245, 0.16), rgba(28, 32, 40, 0.9))
+  );
   position: relative;
   overflow: hidden;
 }
@@ -216,14 +228,17 @@
 }
 
 .editBanner {
-  border: 1px dashed var(--mantine-color-blue-3);
-  background: rgba(76, 110, 245, 0.08);
+  border: 1px dashed light-dark(var(--mantine-color-blue-3), var(--mantine-color-blue-6));
+  background: light-dark(rgba(76, 110, 245, 0.08), rgba(76, 110, 245, 0.2));
 }
 
 .donutCard {
-  border: 1px solid var(--mantine-color-gray-2);
-  background: radial-gradient(circle at top, rgba(76, 110, 245, 0.1), transparent 55%),
-    var(--mantine-color-white);
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  background: light-dark(
+    radial-gradient(circle at top, rgba(76, 110, 245, 0.1), transparent 55%),
+    radial-gradient(circle at top, rgba(76, 110, 245, 0.2), transparent 55%)
+  ),
+    light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
   overflow: hidden;
 }
 
@@ -338,9 +353,9 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(76, 110, 245, 0.18);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  border: 1px solid light-dark(rgba(76, 110, 245, 0.18), rgba(96, 165, 250, 0.32));
+  background: light-dark(rgba(255, 255, 255, 0.9), rgba(40, 44, 52, 0.9));
+  box-shadow: light-dark(0 10px 20px rgba(15, 23, 42, 0.08), 0 8px 18px rgba(0, 0, 0, 0.35));
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
   width: 100%;
@@ -350,21 +365,24 @@
 .categoryPill:hover {
   transform: translateY(-1px);
   border-color: var(--pill-color);
-  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
+  box-shadow: light-dark(0 14px 24px rgba(15, 23, 42, 0.12), 0 10px 20px rgba(0, 0, 0, 0.45));
 }
 
 .categoryPillIcon {
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--pill-color) 18%, white);
+  background: light-dark(
+    color-mix(in srgb, var(--pill-color) 18%, white),
+    color-mix(in srgb, var(--pill-color) 26%, var(--mantine-color-dark-5))
+  );
   display: grid;
   place-items: center;
 }
 
 .categoryPillLabel {
   font-weight: 600;
-  color: var(--mantine-color-dark-7);
+  color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-dark-0));
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -404,8 +422,8 @@
 
 .categoryCard {
   height: 100%;
-  background: var(--mantine-color-white);
-  border: 1px solid var(--mantine-color-gray-2);
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
   box-shadow: var(--mantine-shadow-xs);
   transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
   cursor: pointer;
@@ -448,12 +466,12 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--mantine-color-gray-2);
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
-  color: var(--mantine-color-dark-7);
-  background: var(--mantine-color-white);
+  color: light-dark(var(--mantine-color-dark-7), var(--mantine-color-dark-0));
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
   cursor: pointer;
 }
 

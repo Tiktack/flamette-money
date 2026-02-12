@@ -1,16 +1,22 @@
 import { createRootRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import {
+  ActionIcon,
   AppShell,
   Avatar,
   Box,
   Burger,
   Container,
   Group,
+  Menu,
+  Switch,
   Text,
   Title,
+  useComputedColorScheme,
+  useMantineColorScheme,
   UnstyledButton,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { useState } from 'react'
 import { TransactionEditorModal, type TransactionModalMode } from '../components/TransactionEditorModal'
 import type { TransactionType } from '../lib/api/types'
 import classes from './rootLayout.module.css'
@@ -56,6 +62,9 @@ export const Route = createRootRoute({
 function RootLayout() {
   const { location } = useRouterState()
   const [opened, { toggle }] = useDisclosure(false)
+  const [userMenuOpened, setUserMenuOpened] = useState(false)
+  const { setColorScheme } = useMantineColorScheme()
+  const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true })
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
 
@@ -70,6 +79,10 @@ function RootLayout() {
         transactionType: undefined,
       }),
     })
+  }
+
+  const handleToggleColorScheme = () => {
+    setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark')
   }
 
   return (
@@ -101,22 +114,74 @@ function RootLayout() {
             </Group>
           </Group>
           <Group gap="sm" align="center" wrap="nowrap">
-            <UnstyledButton className={classes.user}>
-              <Group gap={7} wrap="nowrap">
-                <Avatar src={user.image} alt={user.name} radius="xl" size={28} />
-                <div className={classes.userInfo}>
-                  <Text fw={500} size="sm" lh={1.1}>
-                    {user.name}
-                  </Text>
-                  <Text size="xs" c="dimmed" lh={1.1}>
-                    {user.email}
-                  </Text>
-                </div>
-                <Text size="sm" c="dimmed" aria-hidden="true">
-                  ▾
-                </Text>
-              </Group>
-            </UnstyledButton>
+            <ActionIcon
+              variant="light"
+              size="lg"
+              radius="sm"
+              aria-label="New transaction"
+              onClick={() =>
+                navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    transactionMode: 'new',
+                    transactionId: undefined,
+                    transactionCategoryId: undefined,
+                    transactionType: undefined,
+                  }),
+                })
+              }
+            >
+              <Text fw={700} size="lg" lh={1}>
+                +
+              </Text>
+            </ActionIcon>
+            <Menu
+              width={240}
+              position="bottom-end"
+              onOpen={() => setUserMenuOpened(true)}
+              onClose={() => setUserMenuOpened(false)}
+              transitionProps={{ transition: 'pop-top-right' }}
+              withinPortal
+            >
+              <Menu.Target>
+                <UnstyledButton className={`${classes.user} ${userMenuOpened ? classes.userActive : ''}`}>
+                  <Group gap={7} wrap="nowrap">
+                    <Avatar src={user.image} alt={user.name} radius="xl" size={28} />
+                    <div className={classes.userInfo}>
+                      <Text fw={500} size="sm" lh={1.1}>
+                        {user.name}
+                      </Text>
+                      <Text size="xs" c="dimmed" lh={1.1}>
+                        {user.email}
+                      </Text>
+                    </div>
+                    <Text size="sm" c="dimmed" aria-hidden="true">
+                      ▾
+                    </Text>
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>Account</Menu.Label>
+                <Menu.Item>Settings</Menu.Item>
+                <Menu.Item>Profile</Menu.Item>
+                <Menu.Divider />
+                <Box px="sm" py={6}>
+                  <Group justify="space-between" wrap="nowrap" gap="sm">
+                    <Text size="sm">Dark mode</Text>
+                    <Switch
+                      size="sm"
+                      checked={computedColorScheme === 'dark'}
+                      onChange={handleToggleColorScheme}
+                      aria-label="Toggle dark mode"
+                    />
+                  </Group>
+                </Box>
+                <Menu.Divider />
+                <Menu.Item color="red">Logout</Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
             <Burger
               opened={opened}
               onClick={toggle}

@@ -302,3 +302,18 @@ It's needed, because our charts have animation enabled, and when we show skeleto
 ----------------------------
 2026-02-12 20:10:40
 I am changing my mind, no need to show loading overlays. Basically logic should be, if there is data == null -> show skeletons, if not null then we just have no indication about that. Usually it's almost instant from backend.
+
+----------------------------
+2026-02-12 20:17:05
+Can you add "new transaction" button before account button in a header? It should be button with icon only, no need for text.
+
+----------------------------
+2026-02-12 20:20:13
+Awesome, can we add menu on click to my profile button and there add some options like settings, logout. And also, I want a theme switch. We want a DARK MODE :) Other options just mocked, only dark mode if needed basically.
+Here you will find links to proper docs
+https://mantine.dev/llms.txt use it!
+
+----------------------------
+2026-02-12 20:26:22
+Toggle looks fine, we need to fix dark theme colors.
+I am not sure whether it's hardcoded values or you did something wrong with theming, there so many white stuff on each page.
