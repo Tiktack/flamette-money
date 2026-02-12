@@ -64,6 +64,7 @@ export function AnalyticsView() {
   }, [aggregation, mode, resolvedDateRange.end, resolvedDateRange.start])
 
   const reportQueryResult = useCategorySeriesReport(reportQuery)
+  const isInitialLoading = reportQueryResult.data == null
 
   const report = useMemo(() => {
     const payload = reportQueryResult.data
@@ -124,7 +125,7 @@ export function AnalyticsView() {
           <Text size="sm" c="dimmed">
             Avg / day
           </Text>
-          {reportQueryResult.isLoading ? (
+          {isInitialLoading ? (
             <Skeleton height={28} mt={8} />
           ) : (
             <Title order={3}>{formatCurrencyLike(report.avgPerDay)}</Title>
@@ -134,7 +135,7 @@ export function AnalyticsView() {
           <Text size="sm" c="dimmed">
             Avg / week
           </Text>
-          {reportQueryResult.isLoading ? (
+          {isInitialLoading ? (
             <Skeleton height={28} mt={8} />
           ) : (
             <Title order={3}>{formatCurrencyLike(report.avgPerWeek)}</Title>
@@ -144,7 +145,7 @@ export function AnalyticsView() {
           <Text size="sm" c="dimmed">
             Total
           </Text>
-          {reportQueryResult.isLoading ? (
+          {isInitialLoading ? (
             <Skeleton height={28} mt={8} />
           ) : (
             <Title order={3}>{formatCurrencyLike(report.total)}</Title>
@@ -171,75 +172,78 @@ export function AnalyticsView() {
             />
           </Group>
 
-          {reportQueryResult.isLoading ? (
+          {isInitialLoading ? (
             <Skeleton height={320} mt="md" />
-          ) : report.series.length === 0 ? (
-            <Text c="dimmed" mt="md">
-              No data for selected range.
-            </Text>
           ) : (
-            <BarChart
-              h={320}
-              mt="md"
-              data={report.data}
-              dataKey="period"
-              barProps={{
-                isAnimationActive: true
-              }}
-              series={report.series}
-              type="stacked"
-              tickLine="y"
-            />
+            <Box mt="md">
+              {report.series.length === 0 ? (
+                <Text c="dimmed">No data for selected range.</Text>
+              ) : (
+                <BarChart
+                  h={320}
+                  data={report.data}
+                  dataKey="period"
+                  barProps={{
+                    isAnimationActive: true,
+                  }}
+                  series={report.series}
+                  type="stacked"
+                  tickLine="y"
+                />
+              )}
+            </Box>
           )}
         </Card>
 
         <Card shadow="sm" radius="md" padding="lg">
           <Group justify="space-between" align="center">
             <Text className={classes.cardTitle}>Categories</Text>
-            {reportQueryResult.isLoading ? null : (
+            {isInitialLoading ? null : (
               <Text size="sm" c="dimmed">
                 {report.categoryList.length}
               </Text>
             )}
           </Group>
 
-          {reportQueryResult.isLoading ? (
+          {isInitialLoading ? (
             <Skeleton height={320} mt="md" />
-          ) : report.categoryList.length === 0 ? (
-            <Text c="dimmed" mt="md">
-              No categories in range.
-            </Text>
           ) : (
-            <Stack gap="sm" mt="md" className={classes.categoryList}>
-              {report.categoryList.map((item) => (
-                <div key={item.id}>
-                  <Group justify="space-between" gap="xs">
-                    <Group gap="xs">
-                      <Box
-                        w={10}
-                        h={10}
-                        style={{
-                          borderRadius: 999,
-                          backgroundColor: item.color,
-                        }}
+            <Box mt="md">
+              {report.categoryList.length === 0 ? (
+                <Text c="dimmed">No categories in range.</Text>
+              ) : (
+                <Stack gap="sm" className={classes.categoryList}>
+                  {report.categoryList.map((item) => (
+                    <div key={item.id}>
+                      <Group justify="space-between" gap="xs">
+                        <Group gap="xs">
+                          <Box
+                            w={10}
+                            h={10}
+                            style={{
+                              borderRadius: 999,
+                              backgroundColor: item.color,
+                            }}
+                          />
+                          <Text size="sm" fw={500} lineClamp={1}>
+                            {item.name}
+                          </Text>
+                        </Group>
+                        <Text size="sm" c="dimmed">
+                          {formatCurrencyLike(item.amount)}
+                        </Text>
+                      </Group>
+                      <Progress
+                        value={item.percent}
+                        color={item.color}
+                        radius="xl"
+                        mt={6}
                       />
-                      <Text size="sm" fw={500} lineClamp={1}>
-                        {item.name}
-                      </Text>
-                    </Group>
-                    <Text size="sm" c="dimmed">
-                      {formatCurrencyLike(item.amount)}
-                    </Text>
-                  </Group>
-                  <Progress
-                    value={item.percent}
-                    color={item.color}
-                    radius="xl"
-                    mt={6}
-                  />
-                </div>
-              ))}
-            </Stack>
+                    </div>
+                  ))}
+                </Stack>
+              )}
+            </Box>
           )}
         </Card>
       </div>

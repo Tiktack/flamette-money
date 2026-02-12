@@ -291,3 +291,14 @@ export function HeaderSimple() {
 		color: var(--mantine-color-white);
 	}
 }
+
+----------------------------
+2026-02-12 20:06:01
+Can for charts do not use skeletons when there is data already available.
+Basically, when we initially load the page - we see skeletons,
+When we switch filters we do not use skletons, we just use https://mantine.dev/llms/core-loading-overlay.md
+It's needed, because our charts have animation enabled, and when we show skeletons, we just see initial animation, when we just change the data - we see how it smoothly transition.
+
+----------------------------
+2026-02-12 20:10:40
+I am changing my mind, no need to show loading overlays. Basically logic should be, if there is data == null -> show skeletons, if not null then we just have no indication about that. Usually it's almost instant from backend.

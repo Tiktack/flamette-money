@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteApiAccountsById,
   deleteApiCategoriesById,
@@ -137,6 +137,7 @@ export function useCategorySeriesReport(query?: GetApiReportsCategorySeriesData[
       getApiReportsCategorySeries(
         query ? { query, throwOnError: true } : { throwOnError: true },
       ),
+    placeholderData: keepPreviousData,
     select: (result) => result.data,
   })
 }
