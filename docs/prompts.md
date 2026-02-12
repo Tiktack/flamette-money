@@ -193,3 +193,101 @@ Also, categories right now show percentage in a card, I don't need it. I can see
 2026-02-12 00:49:44
 awesome, can we now check whole app and make sure we have categories showing correctly. What I mean is that we show their colors/icons. For example, in a transactions page in a talbe I want to see category icons and colors, maybe like chip/tag or something else. When adding transaction, I want to see a dropdown for category selection, but for subcategory selection, I want something like Deselect radio chip in this examples https://mantine.dev/llms/core-chip.md
 cip will have an icon and name.
+
+----------------------------
+2026-02-12 19:51:57
+Sry, now you are in agent mode, please fetch the headers implementation from links I gave you and implement what I asked.
+
+----------------------------
+2026-02-12 19:57:37
+It looks like this Strange gap between buttons, no inner padding for buttons that are active. Fix it.
+
+----------------------------
+2026-02-12 19:59:57
+No active indication at all. Omg, just check how in mantine example it's done and implement the same!!!
+
+import { useState } from 'react';
+import { Burger, Container, Group } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { MantineLogo } from '@mantinex/mantine-logo';
+import classes from './HeaderSimple.module.css';
+
+const links = [
+	{ link: '/about', label: 'Features' },
+	{ link: '/pricing', label: 'Pricing' },
+	{ link: '/learn', label: 'Learn' },
+	{ link: '/community', label: 'Community' },
+];
+
+export function HeaderSimple() {
+	const [opened, { toggle }] = useDisclosure(false);
+	const [active, setActive] = useState(links[0].link);
+
+	const items = links.map((link) => (
+		<a
+			key={link.label}
+			href={link.link}
+			className={classes.link}
+			data-active={active === link.link || undefined}
+			onClick={(event) => {
+				event.preventDefault();
+				setActive(link.link);
+			}}
+		>
+			{link.label}
+		</a>
+	));
+
+	return (
+		<header className={classes.header}>
+			<Container size="md" className={classes.inner}>
+				<MantineLogo size={28} />
+				<Group gap={5} visibleFrom="xs">
+					{items}
+				</Group>
+
+				<Burger
+					opened={opened}
+					onClick={toggle}
+					hiddenFrom="xs"
+					size="sm"
+					aria-label="Toggle navigation"
+				/>
+			</Container>
+		</header>
+	);
+}
+
+.header {
+	height: 56px;
+	margin-bottom: 120px;
+	background-color: var(--mantine-color-body);
+	border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.inner {
+	height: 56px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.link {
+	display: block;
+	line-height: 1;
+	padding: 8px 12px;
+	border-radius: var(--mantine-radius-sm);
+	text-decoration: none;
+	color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+	font-size: var(--mantine-font-size-sm);
+	font-weight: 500;
+
+	@mixin hover {
+		background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+	}
+
+	[data-mantine-color-scheme] &[data-active] {
+		background-color: var(--mantine-color-blue-filled);
+		color: var(--mantine-color-white);
+	}
+}
