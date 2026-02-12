@@ -113,6 +113,8 @@ function CategoriesPage() {
   }, [resolvedDateRange.end, resolvedDateRange.start, typeFilter])
 
   const reportQueryResult = useCategorySeriesReport(reportQuery)
+  const hasReportData = Boolean(reportQueryResult.data)
+  const isInitialChartLoading = categoriesQuery.isLoading || !hasReportData
 
   const isCompact = useMediaQuery('(max-width: 900px)')
   const donutBounds = useElementSize()
@@ -358,7 +360,7 @@ function CategoriesPage() {
             <SharedDateRangeChips />
           </Card>
 
-        {categoriesQuery.isLoading || reportQueryResult.isLoading ? (
+        {isInitialChartLoading ? (
           <Skeleton height={320} />
         ) : visibleParentCategories.length === 0 ? (
           <Stack align="center" className={classes.emptyState}>
@@ -376,7 +378,7 @@ function CategoriesPage() {
                   size={donutSize}
                   data={donutData}
                   pieProps={{
-                    isAnimationActive:true,
+                    isAnimationActive: true,
                     animationDuration: 800,
                     animationBegin: 0,
                   }}
