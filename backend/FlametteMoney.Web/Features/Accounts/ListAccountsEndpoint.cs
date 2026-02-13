@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -28,11 +29,15 @@ public sealed class ListAccountsEndpoint : ICarterModule
     }
 
     private static async Task<Ok<List<AccountListItemResponse>>> Handle(
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var accounts = await dbContext.Accounts
             .AsNoTracking()
+            .ForUser(userId)
             .OrderBy(account => account.Name)
             .Select(account => new AccountListItemResponse(
                 account.Id,

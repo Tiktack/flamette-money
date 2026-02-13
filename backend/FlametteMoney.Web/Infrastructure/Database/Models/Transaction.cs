@@ -1,8 +1,9 @@
 namespace FlametteMoney.Web.Infrastructure.Database.Models;
 
-public sealed class Transaction
+public sealed class Transaction : IUserOwnedEntity
 {
     public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public DateTime Date { get; set; }
     public TransactionType Type { get; set; }
     public decimal Amount { get; set; }
@@ -18,6 +19,7 @@ public sealed class Transaction
     public string? MerchantName { get; set; }
     public string? Location { get; set; }
 
+    public User User { get; set; } = null!;
     public Account Account { get; set; } = null!;
     public Account? TargetAccount { get; set; }
     public Category? Category { get; set; }

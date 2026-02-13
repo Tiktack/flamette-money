@@ -133,6 +133,14 @@ export type CreateTripResponse = {
     imageUrl: null | string;
 };
 
+export type CurrentUserResponse = {
+    id: string;
+    name: string;
+    email: string;
+    googleSubject: string;
+    subscriptionType: SubscriptionType;
+};
+
 export type GetAccountResponse = {
     id: string;
     name: string;
@@ -238,6 +246,8 @@ export type SeedDemoResponse = {
     startDate: string;
     endDate: string;
 };
+
+export type SubscriptionType = 'Free' | 'Premium';
 
 export type TransactionItemResponse = {
     id: string;
@@ -763,6 +773,65 @@ export type PutApiCategoriesByIdResponses = {
 };
 
 export type PutApiCategoriesByIdResponse = PutApiCategoriesByIdResponses[keyof PutApiCategoriesByIdResponses];
+
+export type GetApiAuthLoginGoogleData = {
+    body?: never;
+    path?: never;
+    query?: {
+        returnUrl?: string;
+    };
+    url: '/api/auth/login/google';
+};
+
+export type GetApiAuthLoginGoogleResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiAuthLogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/logout';
+};
+
+export type PostApiAuthLogoutResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PostApiAuthLogoutResponse = PostApiAuthLogoutResponses[keyof PostApiAuthLogoutResponses];
+
+export type GetApiAuthMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/me';
+};
+
+export type GetApiAuthMeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type GetApiAuthMeResponses = {
+    /**
+     * OK
+     */
+    200: CurrentUserResponse;
+};
+
+export type GetApiAuthMeResponse = GetApiAuthMeResponses[keyof GetApiAuthMeResponses];
 
 export type GetApiAccountsData = {
     body?: never;

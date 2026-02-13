@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -21,10 +22,15 @@ public sealed class DeleteCategoryEndpoint : ICarterModule
 
     private static async Task<Results<NoContent, NotFound, Conflict>> Handle(
         [FromRoute] Guid id,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        var category = await dbContext.Categories.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+        var userId = currentUserContext.GetScopedUserId();
+
+        var category = await dbContext.Categories
+            .ForUser(userId)
+            .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (category is null)
         {
             return TypedResults.NotFound();

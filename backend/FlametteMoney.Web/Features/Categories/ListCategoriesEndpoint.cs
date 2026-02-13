@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -28,11 +29,15 @@ public sealed class ListCategoriesEndpoint : ICarterModule
     }
 
     private static async Task<Ok<List<CategoryHierarchyResponse>>> Handle(
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var categories = await dbContext.Categories
             .AsNoTracking()
+            .ForUser(userId)
             .OrderBy(category => category.Name)
             .ToListAsync(cancellationToken);
 

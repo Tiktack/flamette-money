@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Seeding;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -30,9 +31,15 @@ public sealed class SeedDemoEndpoint : ICarterModule
 
     private static async Task<Ok<SeedDemoResponse>> Handle(
         [AsParameters] SeedDemoRequest request,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        if (currentUserContext.UserId is Guid userId)
+        {
+            await UserCategoryBootstrapper.EnsureForUserAsync(dbContext, userId, cancellationToken);
+        }
+
         var years = request.Years ?? 3;
         var seedOptions = new SeedOptions(years, request.Seed);
         var generator = new SeedDataGenerator();

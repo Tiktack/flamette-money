@@ -1,7 +1,13 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
+using FlametteMoney.Web.Infrastructure.Database.Seeding;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
@@ -19,11 +25,83 @@ if (!isOpenApiGeneration)
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddCarter();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=flamette-money.db"));
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+    })
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.LoginPath = "/api/auth/login/google";
+        options.LogoutPath = "/api/auth/logout";
+    })
+    .AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? string.Empty;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? string.Empty;
+        options.SaveTokens = true;
+        options.CallbackPath = "/signin-google";
+
+        options.Events.OnCreatingTicket = async context =>
+        {
+            var principal = context.Principal;
+            var identity = context.Identity;
+            if (principal is null || identity is null)
+            {
+                return;
+            }
+
+            var subject = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = principal.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(email))
+            {
+                return;
+            }
+
+            var name = principal.FindFirstValue(ClaimTypes.Name) ?? email;
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+            var cancellationToken = context.HttpContext.RequestAborted;
+
+            var user = await dbContext.Users
+                .FirstOrDefaultAsync(item => item.GoogleSubject == subject, cancellationToken);
+
+            if (user is null)
+            {
+                user = new FlametteMoney.Web.Infrastructure.Database.Models.User
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Email = email,
+                    GoogleSubject = subject,
+                    SubscriptionType = FlametteMoney.Web.Infrastructure.Database.Models.SubscriptionType.Free
+                };
+
+                dbContext.Users.Add(user);
+            }
+            else
+            {
+                user.Name = name;
+                user.Email = email;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await UserCategoryBootstrapper.EnsureForUserAsync(dbContext, user.Id, cancellationToken);
+
+            if (!identity.HasClaim(claim => claim.Type == AppClaimTypes.UserId))
+            {
+                identity.AddClaim(new Claim(AppClaimTypes.UserId, user.Id.ToString()));
+            }
+        };
+    });
+builder.Services.AddAuthorization();
 builder.Services.AddCors(options =>
     options.AddPolicy("FrontendDev", policy =>
         policy.WithOrigins("http://localhost:5174")
@@ -47,8 +125,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("FrontendDev");
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapCarter();
+var api = app.MapGroup(string.Empty)
+    .RequireAuthorization();
+
+api.MapCarter();
 app.MapDefaultEndpoints();
 
 app.Run();
