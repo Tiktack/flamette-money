@@ -18,6 +18,7 @@ import {
   SimpleGrid,
   Skeleton,
   Stack,
+  Switch,
   Text,
   Title,
 } from '@mantine/core'
@@ -56,6 +57,7 @@ function toPercentDiff(current: number, previous: number) {
 export function AnalyticsView() {
   const [mode, setMode] = useState<AnalyticsMode>('Expense')
   const [aggregation, setAggregation] = useState<AggregationPeriod>('Auto')
+  const [groupTripsAsCategory, setGroupTripsAsCategory] = useState(false)
   const dateFilters = useSharedDateRangeFilters()
   const resolvedDateRange = useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
 
@@ -65,9 +67,14 @@ export function AnalyticsView() {
       EndDate?: string
       Type: AnalyticsMode
       Interval: AggregationPeriod
+      GroupTripsAsCategory?: boolean
     } = {
       Type: mode,
       Interval: aggregation,
+    }
+
+    if (mode === 'Expense') {
+      query.GroupTripsAsCategory = groupTripsAsCategory
     }
 
     if (resolvedDateRange.start) {
@@ -79,7 +86,7 @@ export function AnalyticsView() {
     }
 
     return query
-  }, [aggregation, mode, resolvedDateRange.end, resolvedDateRange.start])
+  }, [aggregation, groupTripsAsCategory, mode, resolvedDateRange.end, resolvedDateRange.start])
 
   const reportQueryResult = useCategorySeriesReport(reportQuery)
   const isInitialLoading = reportQueryResult.data == null
@@ -153,14 +160,23 @@ export function AnalyticsView() {
     <Stack className={classes.page}>
       <Group justify="space-between" align="center">
         <Title order={2}>Reports</Title>
-        <SegmentedControl
-          value={mode}
-          onChange={(value) => setMode(value as AnalyticsMode)}
-          data={[
-            { label: 'Expenses', value: 'Expense' },
-            { label: 'Income', value: 'Income' },
-          ]}
-        />
+        <Group gap="md">
+          {mode === 'Expense' ? (
+            <Switch
+              label="Group trips as category"
+              checked={groupTripsAsCategory}
+              onChange={(event) => setGroupTripsAsCategory(event.currentTarget.checked)}
+            />
+          ) : null}
+          <SegmentedControl
+            value={mode}
+            onChange={(value) => setMode(value as AnalyticsMode)}
+            data={[
+              { label: 'Expenses', value: 'Expense' },
+              { label: 'Income', value: 'Income' },
+            ]}
+          />
+        </Group>
       </Group>
 
       <Card shadow="sm" radius="md" padding="md" className={classes.dateCard}>

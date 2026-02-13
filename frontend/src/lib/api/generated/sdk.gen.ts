@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses } from './types.gen';
+import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -17,6 +17,41 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: Record<string, unknown>;
 };
+
+/**
+ * List trips
+ *
+ * List trips with expense totals.
+ */
+export const getApiTrips = <ThrowOnError extends boolean = false>(options?: Options<GetApiTripsData, ThrowOnError>) => (options?.client ?? client).get<GetApiTripsResponses, unknown, ThrowOnError>({ url: '/api/trips', ...options });
+
+/**
+ * Create trip
+ *
+ * Create a trip with optional dates and image.
+ */
+export const postApiTrips = <ThrowOnError extends boolean = false>(options: Options<PostApiTripsData, ThrowOnError>) => (options.client ?? client).post<PostApiTripsResponses, PostApiTripsErrors, ThrowOnError>({
+    url: '/api/trips',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Update trip
+ *
+ * Update trip details.
+ */
+export const putApiTripsById = <ThrowOnError extends boolean = false>(options: Options<PutApiTripsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiTripsByIdResponses, PutApiTripsByIdErrors, ThrowOnError>({
+    url: '/api/trips/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * List transactions

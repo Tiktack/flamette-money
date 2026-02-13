@@ -3,6 +3,7 @@ using System;
 using FlametteMoney.Web.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlametteMoney.Web.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260213134403_AddTrips")]
+    partial class AddTrips
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -641,6 +644,50 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "heart",
                             Name = "Charity",
                             ParentId = new Guid("da2a5050-a6ca-d394-2c93-e7fd5171b9ea"),
+                            Type = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("eb3b6161-b7db-e4a5-3da4-f80e6282cafb"),
+                            Color = "#26C6DA",
+                            Icon = "plane",
+                            Name = "Travel",
+                            Type = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("eb3b6161-b7db-e4a5-3da4-f80e62820001"),
+                            Color = "#29B6F6",
+                            Icon = "plane",
+                            Name = "Flights",
+                            ParentId = new Guid("eb3b6161-b7db-e4a5-3da4-f80e6282cafb"),
+                            Type = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("eb3b6161-b7db-e4a5-3da4-f80e62820002"),
+                            Color = "#8D6E63",
+                            Icon = "bed",
+                            Name = "Hotels",
+                            ParentId = new Guid("eb3b6161-b7db-e4a5-3da4-f80e6282cafb"),
+                            Type = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("eb3b6161-b7db-e4a5-3da4-f80e62820003"),
+                            Color = "#42A5F5",
+                            Icon = "car",
+                            Name = "Car Rental",
+                            ParentId = new Guid("eb3b6161-b7db-e4a5-3da4-f80e6282cafb"),
+                            Type = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("eb3b6161-b7db-e4a5-3da4-f80e62820004"),
+                            Color = "#FFCA28",
+                            Icon = "map",
+                            Name = "Activities",
+                            ParentId = new Guid("eb3b6161-b7db-e4a5-3da4-f80e6282cafb"),
                             Type = 2
                         },
                         new

@@ -11,6 +11,7 @@ public sealed record SearchTransactionsQuery(
     DateTime? StartDate,
     DateTime? EndDate,
     Guid[]? AccountIds,
+    Guid[]? TripIds,
     Guid[]? CategoryIds,
     TransactionType[]? Types,
     string? SearchText,
@@ -63,6 +64,13 @@ public sealed class SearchTransactionsEndpoint : ICarterModule
                 transaction.CategoryId != null && categoryIds.Contains(transaction.CategoryId.Value));
         }
 
+        if (query.TripIds is { Length: > 0 })
+        {
+            var tripIds = query.TripIds;
+            transactions = transactions.Where(transaction =>
+                transaction.TripId != null && tripIds.Contains(transaction.TripId.Value));
+        }
+
         if (query.Types is { Length: > 0 })
         {
             var types = query.Types;
@@ -97,6 +105,7 @@ public sealed class SearchTransactionsEndpoint : ICarterModule
                 transaction.Type,
                 transaction.Amount,
                 transaction.AccountId,
+                transaction.TripId,
                 transaction.CategoryId,
                 transaction.SubCategoryId,
                 transaction.TargetAccountId,

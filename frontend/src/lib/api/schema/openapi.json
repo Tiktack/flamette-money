@@ -5,6 +5,124 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/trips": {
+      "post": {
+        "tags": [
+          "Trips"
+        ],
+        "summary": "Create trip",
+        "description": "Create a trip with optional dates and image.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTripResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Trips"
+        ],
+        "summary": "List trips",
+        "description": "List trips with expense totals.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TripListItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trips/{id}": {
+      "put": {
+        "tags": [
+          "Trips"
+        ],
+        "summary": "Update trip",
+        "description": "Update trip details.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateTripResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/transactions": {
       "post": {
         "tags": [
@@ -246,6 +364,17 @@
             }
           },
           {
+            "name": "TripIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          {
             "name": "CategoryIds",
             "in": "query",
             "schema": {
@@ -400,6 +529,22 @@
             "schema": {
               "default": "Auto",
               "$ref": "#/components/schemas/ReportInterval"
+            }
+          },
+          {
+            "name": "TripId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "GroupTripsAsCategory",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
             }
           }
         ],
@@ -1185,6 +1330,7 @@
           "type",
           "amount",
           "accountId",
+          "tripId",
           "categoryId",
           "subCategoryId",
           "targetAccountId",
@@ -1213,6 +1359,13 @@
           },
           "accountId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "categoryId": {
@@ -1279,6 +1432,7 @@
           "type",
           "amount",
           "accountId",
+          "tripId",
           "categoryId",
           "subCategoryId",
           "targetAccountId",
@@ -1312,6 +1466,13 @@
           },
           "accountId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "categoryId": {
@@ -1371,6 +1532,79 @@
           }
         }
       },
+      "CreateTripRequest": {
+        "required": [
+          "name",
+          "startDate",
+          "endDate",
+          "imageUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateTripResponse": {
+        "required": [
+          "id",
+          "name",
+          "startDate",
+          "endDate",
+          "imageUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "GetAccountResponse": {
         "required": [
           "id",
@@ -1424,6 +1658,7 @@
           "type",
           "amount",
           "accountId",
+          "tripId",
           "categoryId",
           "subCategoryId",
           "targetAccountId",
@@ -1457,6 +1692,13 @@
           },
           "accountId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "categoryId": {
@@ -2005,6 +2247,7 @@
           "type",
           "amount",
           "accountId",
+          "tripId",
           "categoryId",
           "subCategoryId",
           "targetAccountId",
@@ -2038,6 +2281,13 @@
           },
           "accountId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "categoryId": {
@@ -2106,6 +2356,63 @@
           "Transfer",
           "Refund"
         ]
+      },
+      "TripListItemResponse": {
+        "required": [
+          "id",
+          "name",
+          "startDate",
+          "endDate",
+          "imageUrl",
+          "transactionCount",
+          "totalExpenseAmount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "transactionCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalExpenseAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
       },
       "UpdateAccountRequest": {
         "required": [
@@ -2241,6 +2548,7 @@
           "type",
           "amount",
           "accountId",
+          "tripId",
           "categoryId",
           "subCategoryId",
           "targetAccountId",
@@ -2269,6 +2577,13 @@
           },
           "accountId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "categoryId": {
@@ -2335,6 +2650,7 @@
           "type",
           "amount",
           "accountId",
+          "tripId",
           "categoryId",
           "subCategoryId",
           "targetAccountId",
@@ -2368,6 +2684,13 @@
           },
           "accountId": {
             "type": "string",
+            "format": "uuid"
+          },
+          "tripId": {
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uuid"
           },
           "categoryId": {
@@ -2426,10 +2749,86 @@
             }
           }
         }
+      },
+      "UpdateTripRequest": {
+        "required": [
+          "name",
+          "startDate",
+          "endDate",
+          "imageUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UpdateTripResponse": {
+        "required": [
+          "id",
+          "name",
+          "startDate",
+          "endDate",
+          "imageUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "imageUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
       }
     }
   },
   "tags": [
+    {
+      "name": "Trips"
+    },
     {
       "name": "Transactions"
     },

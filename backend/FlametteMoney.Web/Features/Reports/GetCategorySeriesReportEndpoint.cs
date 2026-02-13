@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FlametteMoney.Web.Features.Reports;
 
 public sealed record ReportCategoryLookupItem(Guid Id, string Name, string Color, Guid? ParentId);
+public sealed record ReportTripLookupItem(Guid Id, string Name);
 
 public enum ReportInterval
 {
@@ -22,7 +23,9 @@ public sealed record GetCategorySeriesReportQuery(
     DateTime? StartDate,
     DateTime? EndDate,
     CategoryType Type = CategoryType.Expense,
-    ReportInterval Interval = ReportInterval.Auto);
+    ReportInterval Interval = ReportInterval.Auto,
+    Guid? TripId = null,
+    bool GroupTripsAsCategory = false);
 
 public sealed record ReportBucketResponse(string Key, string Label);
 
@@ -92,6 +95,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
                 transaction.Type,
                 transaction.Amount,
                 transaction.IsRefund,
+                transaction.TripId,
                 transaction.CategoryId,
                 transaction.SubCategoryId,
             });
@@ -104,6 +108,11 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
         if (query.EndDate is not null)
         {
             transactionsQuery = transactionsQuery.Where(transaction => transaction.Date <= query.EndDate.Value);
+        }
+
+        if (query.TripId is not null)
+        {
+            transactionsQuery = transactionsQuery.Where(transaction => transaction.TripId == query.TripId.Value);
         }
 
         if (query.Type == CategoryType.Income)
@@ -127,11 +136,20 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
                 category.ParentId))
             .ToListAsync(cancellationToken);
 
+        var shouldGroupTripsAsCategory = query.Type == CategoryType.Expense && query.GroupTripsAsCategory;
+        var tripLookup = shouldGroupTripsAsCategory
+            ? await dbContext.Trips
+                .AsNoTracking()
+                .Select(trip => new ReportTripLookupItem(trip.Id, trip.Name))
+                .ToListAsync(cancellationToken)
+            : [];
+
         var transactions = await transactionsQuery
             .OrderBy(transaction => transaction.Date)
             .ToListAsync(cancellationToken);
 
         var categoryById = categoryLookup.ToDictionary(item => item.Id, item => item);
+        var tripById = tripLookup.ToDictionary(item => item.Id, item => item);
 
         var startDate = query.StartDate;
         var endDate = query.EndDate;
@@ -170,7 +188,9 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
                 continue;
             }
 
-            var categoryId = ResolveTopLevelCategoryId(transaction.CategoryId, transaction.SubCategoryId, categoryById);
+            var categoryId = shouldGroupTripsAsCategory && transaction.TripId is Guid tripId
+                ? $"trip:{tripId:D}"
+                : ResolveTopLevelCategoryId(transaction.CategoryId, transaction.SubCategoryId, categoryById);
             var bucketKey = ResolveBucketKey(startDate.Value, transaction.Date, resolvedInterval);
 
             if (!bucketTotalsByCategory.TryGetValue(bucketKey, out var bucketMap))
@@ -206,6 +226,26 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
             {
                 var label = "Uncategorized";
                 var color = "gray.6";
+
+                if (categoryId.StartsWith("trip:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rawTripId = categoryId[5..];
+                    if (Guid.TryParse(rawTripId, out var parsedTripId) && tripById.TryGetValue(parsedTripId, out var trip))
+                    {
+                        label = trip.Name;
+                        color = "grape.6";
+                    }
+
+                    var tripTotal = totalsByCategory[categoryId];
+                    var tripPercentage = maxAbsAmount > 0 ? Math.Round((Math.Abs(tripTotal) / maxAbsAmount) * 100m, 2) : 0;
+
+                    return new ReportSeriesEntryResponse(
+                        categoryId,
+                        label,
+                        color,
+                        Math.Round(tripTotal, 2),
+                        tripPercentage);
+                }
 
                 if (categoryId != "uncategorized" && Guid.TryParse(categoryId, out var parsedId) && categoryById.TryGetValue(parsedId, out var category))
                 {
@@ -270,6 +310,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
             .Where(transaction =>
                 transaction.Date >= previousFullStart &&
                 transaction.Date <= previousEndOfDay)
+            .Where(transaction => query.TripId == null || transaction.TripId == query.TripId.Value)
             .Select(transaction => new
             {
                 transaction.Date,

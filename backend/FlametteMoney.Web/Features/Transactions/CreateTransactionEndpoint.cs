@@ -23,6 +23,7 @@ public record CreateTransactionRequest(
     TransactionType Type,
     decimal Amount,
     Guid AccountId,
+    Guid? TripId,
     Guid? CategoryId,
     Guid? SubCategoryId,
     Guid? TargetAccountId,
@@ -38,6 +39,7 @@ public record CreateTransactionResponse(
     TransactionType Type,
     decimal Amount,
     Guid AccountId,
+    Guid? TripId,
     Guid? CategoryId,
     Guid? SubCategoryId,
     Guid? TargetAccountId,
@@ -103,6 +105,7 @@ public sealed class CreateTransactionEndpoint : ICarterModule
         }
 
         Account? targetAccount = null;
+        Guid? tripId = request.TripId;
         Guid? categoryId = request.CategoryId;
         Guid? subCategoryId = request.SubCategoryId;
         Guid? originalTransactionId = null;
@@ -133,6 +136,14 @@ public sealed class CreateTransactionEndpoint : ICarterModule
                 }));
             }
 
+            if (request.TripId is not null)
+            {
+                return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    [nameof(request.TripId)] = ["Trip is only applicable for expense transactions."]
+                }));
+            }
+
             if (request.OriginalTransactionId is not null)
             {
                 return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
@@ -154,6 +165,7 @@ public sealed class CreateTransactionEndpoint : ICarterModule
 
             categoryId = null;
             subCategoryId = null;
+            tripId = null;
         }
         else if (request.Type == TransactionType.Refund)
         {
@@ -170,6 +182,14 @@ public sealed class CreateTransactionEndpoint : ICarterModule
                 return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
                 {
                     [nameof(request.OriginalTransactionId)] = ["Original transaction is required for refunds."]
+                }));
+            }
+
+            if (request.TripId is not null)
+            {
+                return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    [nameof(request.TripId)] = ["Trip is inherited from the original expense for refunds."]
                 }));
             }
 
@@ -219,6 +239,7 @@ public sealed class CreateTransactionEndpoint : ICarterModule
 
             categoryId = originalTransaction.CategoryId;
             subCategoryId = originalTransaction.SubCategoryId;
+            tripId = originalTransaction.TripId;
             originalTransactionId = originalTransaction.Id;
 
             if (categoryId is null)
@@ -265,6 +286,34 @@ public sealed class CreateTransactionEndpoint : ICarterModule
                 {
                     [nameof(request.OriginalTransactionId)] = ["Original transaction is only valid for refunds."]
                 }));
+            }
+
+            if (request.Type != TransactionType.Expense && request.TripId is not null)
+            {
+                return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    [nameof(request.TripId)] = ["Trip is only applicable for expense transactions."]
+                }));
+            }
+
+            if (request.Type == TransactionType.Expense && request.TripId is not null)
+            {
+                var tripExists = await dbContext.Trips
+                    .AsNoTracking()
+                    .AnyAsync(item => item.Id == request.TripId.Value, cancellationToken);
+
+                if (!tripExists)
+                {
+                    return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                    {
+                        [nameof(request.TripId)] = ["Trip was not found."]
+                    }));
+                }
+            }
+
+            if (request.Type != TransactionType.Expense)
+            {
+                tripId = null;
             }
 
             if (request.CategoryId is null)
@@ -325,6 +374,7 @@ public sealed class CreateTransactionEndpoint : ICarterModule
             Type = request.Type,
             Amount = request.Amount,
             AccountId = request.AccountId,
+            TripId = tripId,
             CategoryId = categoryId,
             SubCategoryId = subCategoryId,
             TargetAccountId = targetAccount?.Id,
@@ -371,6 +421,7 @@ public sealed class CreateTransactionEndpoint : ICarterModule
             transaction.Type,
             transaction.Amount,
             transaction.AccountId,
+            transaction.TripId,
             transaction.CategoryId,
             transaction.SubCategoryId,
             transaction.TargetAccountId,

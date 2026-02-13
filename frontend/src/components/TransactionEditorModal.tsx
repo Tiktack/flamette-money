@@ -26,6 +26,7 @@ import {
   useCreateTransaction,
   useScanReceipt,
   useTransaction,
+  useTrips,
   useUpdateTransaction,
 } from '../lib/api/hooks'
 import type {
@@ -64,6 +65,7 @@ type TransactionFormState = {
   type: TransactionType
   amount: number | ''
   accountId: string
+  tripId: string | null
   categoryId: string | null
   subCategoryId: string | null
   targetAccountId: string | null
@@ -103,6 +105,7 @@ const buildDefaultState = (type: TransactionType): TransactionFormState => ({
   type,
   amount: '',
   accountId: '',
+  tripId: null,
   categoryId: null,
   subCategoryId: null,
   targetAccountId: null,
@@ -118,6 +121,7 @@ const fillFromTransaction = (transaction: TransactionDetail): TransactionFormSta
   type: transaction.type,
   amount: Number(transaction.amount),
   accountId: transaction.accountId,
+  tripId: transaction.tripId,
   categoryId: transaction.categoryId,
   subCategoryId: transaction.subCategoryId,
   targetAccountId: transaction.targetAccountId,
@@ -177,6 +181,7 @@ export function TransactionEditorModal({
   const createTransaction = useCreateTransaction()
   const updateTransaction = useUpdateTransaction()
   const scanReceipt = useScanReceipt()
+  const tripsQuery = useTrips()
   const transactionQuery = useTransaction(mode === 'edit' ? transactionId : undefined)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [form, setForm] = useState<TransactionFormState>(() =>
@@ -244,6 +249,15 @@ export function TransactionEditorModal({
     const allowedType = form.type === 'Income' ? 'Income' : 'Expense'
     return categoryOptions.filter((group) => group.group === allowedType)
   }, [categoryOptions, form.type])
+
+  const tripOptions = useMemo(
+    () =>
+      (tripsQuery.data ?? []).map((trip) => ({
+        value: trip.id,
+        label: trip.name,
+      })),
+    [tripsQuery.data],
+  )
 
 
   const selectedCategory = useMemo(
@@ -369,6 +383,7 @@ export function TransactionEditorModal({
       type: form.type,
       amount: Number(form.amount),
       accountId: form.accountId,
+      tripId: form.type === 'Expense' ? form.tripId : null,
       categoryId: showCategoryFields ? form.categoryId : null,
       subCategoryId: showCategoryFields ? form.subCategoryId : null,
       targetAccountId: requiresTarget ? form.targetAccountId : null,
@@ -472,6 +487,7 @@ export function TransactionEditorModal({
               return {
                 ...state,
                 type: nextType,
+                tripId: nextType === 'Expense' ? state.tripId : null,
                 categoryId: nextType === 'Transfer' || !keepsCategory ? null : state.categoryId,
                 subCategoryId:
                   nextType === 'Transfer' || !keepsCategory ? null : state.subCategoryId,
@@ -536,6 +552,21 @@ export function TransactionEditorModal({
       {showCategoryFields ? (
         <>
           <Group gap="md" wrap="wrap">
+            <Select
+              label="Trip"
+              data={tripOptions}
+              value={form.tripId}
+              onChange={(value) =>
+                setForm((state) => ({
+                  ...state,
+                  tripId: value ?? null,
+                }))
+              }
+              searchable
+              clearable
+              placeholder="Optional"
+              disabled={isEditingLoading || form.type !== 'Expense' || tripsQuery.isLoading}
+            />
             <Select
               label="Category"
               data={categoryOptionsByType}

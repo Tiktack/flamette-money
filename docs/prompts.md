@@ -423,3 +423,15 @@ Also, make value bold or whatever it is in a code that I provded from mantine do
 2026-02-12 21:35:32
 In a categories page move out date filters card. Right now it's inside big one, but in other pages it's top level card.
 Also, add category button should be visible only in editing mode. Not regular one.
+----------------------------
+2026-02-13 14:40:19
+Start implementation
+
+----------------------------
+2026-02-13 15:04:22
+Cool, can you now then modify seed data generator to generate trips and remove travel category and put some transactions during trip dates. Also, notes should be generated rarely, not every transaction has a note, it's not how suman do.
+
+----------------------------
+2026-02-13 15:10:11
+I am getting Unhandled exception. System.InvalidOperationException: An error was generated for warning 'Microsoft.EntityFrameworkCore.Migrations.PendingModelChangesWarning': The model for context 'AppDbContext' has pending changes. Add a new migration before updating the database.
+

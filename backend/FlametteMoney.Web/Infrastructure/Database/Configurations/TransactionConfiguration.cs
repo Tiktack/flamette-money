@@ -35,6 +35,11 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
             .HasForeignKey(transaction => transaction.SubCategoryId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(transaction => transaction.Trip)
+            .WithMany(trip => trip.Transactions)
+            .HasForeignKey(transaction => transaction.TripId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne<Transaction>()
             .WithMany()
             .HasForeignKey(transaction => transaction.RelatedTransactionId)
@@ -44,5 +49,7 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
             .WithMany()
             .HasForeignKey(transaction => transaction.OriginalTransactionId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(transaction => transaction.TripId);
     }
 }
