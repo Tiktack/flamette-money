@@ -3,11 +3,15 @@ import {
   ActionIcon,
   AppShell,
   Avatar,
+  Button,
   Box,
   Burger,
+  Center,
   Container,
   Group,
   Menu,
+  Paper,
+  Stack,
   Switch,
   Text,
   Title,
@@ -18,6 +22,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import { useState } from 'react'
 import { TransactionEditorModal, type TransactionModalMode } from '../components/TransactionEditorModal'
+import { useCurrentUser, useLogout } from '../lib/api/hooks'
 import type { TransactionType } from '../lib/api/types'
 import classes from './rootLayout.module.css'
 
@@ -28,13 +33,6 @@ const navItems = [
   { label: 'Trips', to: '/trips' },
   { label: 'Transactions', to: '/transactions' },
 ]
-
-const user = {
-  name: 'Alex Johnson',
-  email: 'alex@flamette.money',
-  image:
-    'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-5.png',
-}
 
 type RootSearch = {
   transactionMode?: TransactionModalMode
@@ -64,10 +62,16 @@ function RootLayout() {
   const { location } = useRouterState()
   const [opened, { toggle }] = useDisclosure(false)
   const [userMenuOpened, setUserMenuOpened] = useState(false)
+  const currentUserQuery = useCurrentUser()
+  const logoutMutation = useLogout()
   const { setColorScheme } = useMantineColorScheme()
   const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true })
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const user = currentUserQuery.data
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+  const loginHref = `${apiBaseUrl}/api/auth/login/google?returnUrl=${encodeURIComponent(window.location.href)}`
 
   const modalOpened = Boolean(search.transactionMode)
   const handleClose = () => {
@@ -84,6 +88,32 @@ function RootLayout() {
 
   const handleToggleColorScheme = () => {
     setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark')
+  }
+
+  if (currentUserQuery.isLoading) {
+    return (
+      <Center h="100dvh">
+        <Text c="dimmed">Loading session…</Text>
+      </Center>
+    )
+  }
+
+  if (!user) {
+    return (
+      <Center h="100dvh" p="lg">
+        <Paper withBorder radius="md" p="xl" maw={420} w="100%">
+          <Stack gap="md">
+            <Title order={3}>Sign in to Flamette Money</Title>
+            <Text c="dimmed" size="sm">
+              Continue with Google to access your personal accounts, categories, trips and transactions.
+            </Text>
+            <Button component="a" href={loginHref} fullWidth>
+              Continue with Google
+            </Button>
+          </Stack>
+        </Paper>
+      </Center>
+    )
   }
 
   return (
@@ -147,7 +177,9 @@ function RootLayout() {
               <Menu.Target>
                 <UnstyledButton className={`${classes.user} ${userMenuOpened ? classes.userActive : ''}`}>
                   <Group gap={7} wrap="nowrap">
-                    <Avatar src={user.image} alt={user.name} radius="xl" size={28} />
+                    <Avatar alt={user.name} radius="xl" size={28}>
+                      {user.name.slice(0, 1).toUpperCase()}
+                    </Avatar>
                     <div className={classes.userInfo}>
                       <Text fw={500} size="sm" lh={1.1}>
                         {user.name}
@@ -166,7 +198,7 @@ function RootLayout() {
               <Menu.Dropdown>
                 <Menu.Label>Account</Menu.Label>
                 <Menu.Item>Settings</Menu.Item>
-                <Menu.Item>Profile</Menu.Item>
+                <Menu.Item onClick={() => navigate({ to: '/profile' })}>Profile</Menu.Item>
                 <Menu.Divider />
                 <Box px="sm" py={6}>
                   <Group justify="space-between" wrap="nowrap" gap="sm">
@@ -180,7 +212,15 @@ function RootLayout() {
                   </Group>
                 </Box>
                 <Menu.Divider />
-                <Menu.Item color="red">Logout</Menu.Item>
+                <Menu.Item
+                  color="red"
+                  onClick={async () => {
+                    await logoutMutation.mutateAsync()
+                    window.location.href = '/'
+                  }}
+                >
+                  Logout
+                </Menu.Item>
               </Menu.Dropdown>
             </Menu>
             <Burger

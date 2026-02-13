@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -38,14 +39,17 @@ public sealed class ListTransactionsEndpoint : ICarterModule
     private static async Task<Ok<List<TransactionListItemResponse>>> Handle(
         [FromQuery] int page,
         [FromQuery] int pageSize,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
         var currentPage = page <= 0 ? 1 : page;
         var currentSize = pageSize is <= 0 or > 200 ? 25 : pageSize;
+        var userId = currentUserContext.GetScopedUserId();
 
         var transactions = await dbContext.Transactions
             .AsNoTracking()
+            .ForUser(userId)
             .OrderByDescending(transaction => transaction.Date)
             .Skip((currentPage - 1) * currentSize)
             .Take(currentSize)

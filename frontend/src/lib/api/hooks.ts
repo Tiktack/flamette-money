@@ -3,6 +3,7 @@ import {
   deleteApiAccountsById,
   deleteApiCategoriesById,
   getApiAccounts,
+  getApiAuthMe,
   getApiCategories,
   getApiReportsCategorySeries,
   getApiTransactions,
@@ -11,8 +12,10 @@ import {
   getApiTrips,
   deleteApiTransactionsById,
   postApiAccounts,
+  postApiAuthLogout,
   postApiCategories,
   postApiReceiptsScan,
+  postApiSeedDemo,
   postApiTransactions,
   postApiTrips,
   putApiAccountsById,
@@ -21,6 +24,7 @@ import {
   putApiTripsById,
 } from './generated/sdk.gen'
 import type { GetApiReportsCategorySeriesData, GetApiTransactionsSearchData } from './generated/types.gen'
+import type { CurrentUserResponse } from './generated/types.gen'
 import type {
   AccountCreateRequest,
   AccountUpdateRequest,
@@ -37,6 +41,34 @@ export function useAccounts() {
     queryKey: ['accounts'],
     queryFn: () => getApiAccounts({ throwOnError: true }),
     select: (result) => result.data ?? [],
+  })
+}
+
+export function useCurrentUser() {
+  return useQuery<CurrentUserResponse | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: async () => {
+      const result = await getApiAuthMe({ throwOnError: false })
+      return result.data ?? null
+    },
+    staleTime: 60_000,
+  })
+}
+
+export function useLogout() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => postApiAuthLogout({ throwOnError: true }).then(() => undefined),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
+      await queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      await queryClient.invalidateQueries({ queryKey: ['categories'] })
+      await queryClient.invalidateQueries({ queryKey: ['trips'] })
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      await queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      await queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+    },
   })
 }
 
@@ -248,6 +280,23 @@ export function useScanReceipt() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+}
+
+export function useSeedDemo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (years: number) =>
+      postApiSeedDemo({ query: { Years: years }, throwOnError: true }).then((result) => result.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['trips'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
     },
   })
 }

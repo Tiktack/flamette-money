@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -30,11 +31,15 @@ public sealed class GetAccountEndpoint : ICarterModule
 
     private static async Task<Results<Ok<GetAccountResponse>, NotFound>> Handle(
         [FromRoute] Guid id,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var account = await dbContext.Accounts
             .AsNoTracking()
+            .ForUser(userId)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 
         if (account is null)
