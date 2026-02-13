@@ -418,3 +418,8 @@ Just small improvements, when we looking to expenses, when spendings lower than 
 Usually we associate green - good, red - bad.
 Also, when range has no data, we just should have some funny placeholder in analytics page. No need to show these cards with 0.
 Also, make value bold or whatever it is in a code that I provded from mantine docs.
+
+----------------------------
+2026-02-12 21:35:32
+In a categories page move out date filters card. Right now it's inside big one, but in other pages it's top level card.
+Also, add category button should be visible only in editing mode. Not regular one.

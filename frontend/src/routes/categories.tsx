@@ -341,7 +341,7 @@ function CategoriesPage() {
             data={['Expense', 'Income']}
             className={classes.segmented}
           />
-          <Button onClick={() => openCreate()}>Add category</Button>
+          {editMode ? <Button onClick={() => openCreate()}>Add category</Button> : null}
           <Button
             variant={editMode ? 'light' : 'subtle'}
             onClick={() => {
@@ -354,12 +354,12 @@ function CategoriesPage() {
         </Group>
       </Group>
 
+      <Card shadow="sm" radius="md" padding="md" className={classes.dateBar}>
+        <SharedDateRangeChips />
+      </Card>
+
       <Card shadow="sm" radius="lg" padding="lg" className={classes.donutCard}>
         <Stack gap="md">
-          <Card shadow="sm" radius="md" padding="md" className={classes.dateBar}>
-            <SharedDateRangeChips />
-          </Card>
-
         {isInitialChartLoading ? (
           <Skeleton height={320} />
         ) : visibleParentCategories.length === 0 ? (
