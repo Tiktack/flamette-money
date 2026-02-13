@@ -25,6 +25,7 @@ const navItems = [
   { label: 'Analytics', to: '/' },
   { label: 'Accounts', to: '/accounts' },
   { label: 'Categories', to: '/categories' },
+  { label: 'Trips', to: '/trips' },
   { label: 'Transactions', to: '/transactions' },
 ]
 

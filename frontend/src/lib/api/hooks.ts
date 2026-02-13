@@ -8,14 +8,17 @@ import {
   getApiTransactions,
   getApiTransactionsById,
   getApiTransactionsSearch,
+  getApiTrips,
   deleteApiTransactionsById,
   postApiAccounts,
   postApiCategories,
   postApiReceiptsScan,
   postApiTransactions,
+  postApiTrips,
   putApiAccountsById,
   putApiCategoriesById,
   putApiTransactionsById,
+  putApiTripsById,
 } from './generated/sdk.gen'
 import type { GetApiReportsCategorySeriesData, GetApiTransactionsSearchData } from './generated/types.gen'
 import type {
@@ -23,6 +26,8 @@ import type {
   AccountUpdateRequest,
   CategoryCreateRequest,
   CategoryUpdateRequest,
+  TripCreateRequest,
+  TripUpdateRequest,
   TransactionCreateRequest,
   TransactionUpdateRequest,
 } from './types'
@@ -142,6 +147,42 @@ export function useCategorySeriesReport(query?: GetApiReportsCategorySeriesData[
   })
 }
 
+export function useTrips() {
+  return useQuery({
+    queryKey: ['trips'],
+    queryFn: () => getApiTrips({ throwOnError: true }),
+    select: (result) => result.data ?? [],
+  })
+}
+
+export function useCreateTrip() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: TripCreateRequest) =>
+      postApiTrips({ body: request, throwOnError: true }).then((result) => result.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+    },
+  })
+}
+
+export function useUpdateTrip() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: TripUpdateRequest }) =>
+      putApiTripsById({ path: { id }, body: request, throwOnError: true }).then((result) => result.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
+}
+
 export function useTransaction(id?: string) {
   return useQuery({
     queryKey: ['transactions', id],
@@ -160,6 +201,7 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
     },
   })
 }
@@ -175,6 +217,7 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
     },
   })
 }
@@ -188,6 +231,7 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
     },
   })
 }

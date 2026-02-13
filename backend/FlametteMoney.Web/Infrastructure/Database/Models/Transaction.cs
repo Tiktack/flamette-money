@@ -12,6 +12,7 @@ public sealed class Transaction
     public Guid? TargetAccountId { get; set; }
     public Guid? RelatedTransactionId { get; set; }
     public Guid? OriginalTransactionId { get; set; }
+    public Guid? TripId { get; set; }
     public bool IsRefund { get; set; }
     public string? Note { get; set; }
     public string? MerchantName { get; set; }
@@ -21,6 +22,7 @@ public sealed class Transaction
     public Account? TargetAccount { get; set; }
     public Category? Category { get; set; }
     public Category? SubCategory { get; set; }
+    public Trip? Trip { get; set; }
     public ICollection<TransactionItem> Items { get; set; } = new List<TransactionItem>();
 }
 

@@ -89,6 +89,7 @@ export type CreateTransactionRequest = {
     type: TransactionType;
     amount: number | string;
     accountId: string;
+    tripId: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
     targetAccountId: null | string;
@@ -105,6 +106,7 @@ export type CreateTransactionResponse = {
     type: TransactionType;
     amount: number | string;
     accountId: string;
+    tripId: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
     targetAccountId: null | string;
@@ -114,6 +116,21 @@ export type CreateTransactionResponse = {
     merchantName: null | string;
     location: null | string;
     items: Array<TransactionItemResponse>;
+};
+
+export type CreateTripRequest = {
+    name: string;
+    startDate: null | string;
+    endDate: null | string;
+    imageUrl: null | string;
+};
+
+export type CreateTripResponse = {
+    id: string;
+    name: string;
+    startDate: null | string;
+    endDate: null | string;
+    imageUrl: null | string;
 };
 
 export type GetAccountResponse = {
@@ -132,6 +149,7 @@ export type GetTransactionResponse = {
     type: TransactionType;
     amount: number | string;
     accountId: string;
+    tripId: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
     targetAccountId: null | string;
@@ -239,6 +257,7 @@ export type TransactionListItemResponse = {
     type: TransactionType;
     amount: number | string;
     accountId: string;
+    tripId: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
     targetAccountId: null | string;
@@ -251,6 +270,16 @@ export type TransactionListItemResponse = {
 };
 
 export type TransactionType = 'Income' | 'Expense' | 'Transfer' | 'Refund';
+
+export type TripListItemResponse = {
+    id: string;
+    name: string;
+    startDate: null | string;
+    endDate: null | string;
+    imageUrl: null | string;
+    transactionCount: number | string;
+    totalExpenseAmount: number | string;
+};
 
 export type UpdateAccountRequest = {
     name: string;
@@ -289,6 +318,7 @@ export type UpdateTransactionRequest = {
     type: TransactionType;
     amount: number | string;
     accountId: string;
+    tripId: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
     targetAccountId: null | string;
@@ -305,6 +335,7 @@ export type UpdateTransactionResponse = {
     type: TransactionType;
     amount: number | string;
     accountId: string;
+    tripId: null | string;
     categoryId: null | string;
     subCategoryId: null | string;
     targetAccountId: null | string;
@@ -315,6 +346,93 @@ export type UpdateTransactionResponse = {
     location: null | string;
     items: Array<TransactionItemResponse>;
 };
+
+export type UpdateTripRequest = {
+    name: string;
+    startDate: null | string;
+    endDate: null | string;
+    imageUrl: null | string;
+};
+
+export type UpdateTripResponse = {
+    id: string;
+    name: string;
+    startDate: null | string;
+    endDate: null | string;
+    imageUrl: null | string;
+};
+
+export type GetApiTripsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/trips';
+};
+
+export type GetApiTripsResponses = {
+    /**
+     * OK
+     */
+    200: Array<TripListItemResponse>;
+};
+
+export type GetApiTripsResponse = GetApiTripsResponses[keyof GetApiTripsResponses];
+
+export type PostApiTripsData = {
+    body: CreateTripRequest;
+    path?: never;
+    query?: never;
+    url: '/api/trips';
+};
+
+export type PostApiTripsErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+};
+
+export type PostApiTripsError = PostApiTripsErrors[keyof PostApiTripsErrors];
+
+export type PostApiTripsResponses = {
+    /**
+     * Created
+     */
+    201: CreateTripResponse;
+};
+
+export type PostApiTripsResponse = PostApiTripsResponses[keyof PostApiTripsResponses];
+
+export type PutApiTripsByIdData = {
+    body: UpdateTripRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/trips/{id}';
+};
+
+export type PutApiTripsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type PutApiTripsByIdError = PutApiTripsByIdErrors[keyof PutApiTripsByIdErrors];
+
+export type PutApiTripsByIdResponses = {
+    /**
+     * OK
+     */
+    200: UpdateTripResponse;
+};
+
+export type PutApiTripsByIdResponse = PutApiTripsByIdResponses[keyof PutApiTripsByIdResponses];
 
 export type GetApiTransactionsData = {
     body?: never;
@@ -448,6 +566,7 @@ export type GetApiTransactionsSearchData = {
         StartDate?: string;
         EndDate?: string;
         AccountIds?: Array<string>;
+        TripIds?: Array<string>;
         CategoryIds?: Array<string>;
         Types?: Array<TransactionType>;
         SearchText?: string;
@@ -493,6 +612,8 @@ export type GetApiReportsCategorySeriesData = {
         EndDate?: string;
         Type?: CategoryType;
         Interval?: ReportInterval;
+        TripId?: string;
+        GroupTripsAsCategory?: boolean;
     };
     url: '/api/reports/category-series';
 };

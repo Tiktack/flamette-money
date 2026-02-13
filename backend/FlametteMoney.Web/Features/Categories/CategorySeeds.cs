@@ -17,7 +17,6 @@ public static class CategorySeeds
     private static readonly Guid SubscriptionsId= Guid.Parse("b8083e3e-84a8-b172-0a71-c5db3f5d37c8");
     private static readonly Guid PersonalCareId = Guid.Parse("c9194f4f-95b9-c283-1b82-d6ec4060a8d9");
     private static readonly Guid GiftsId        = Guid.Parse("da2a5050-a6ca-d394-2c93-e7fd5171b9ea");
-    private static readonly Guid TravelId       = Guid.Parse("eb3b6161-b7db-e4a5-3da4-f80e6282cafb");
     private static readonly Guid SalaryId       = Guid.Parse("9a7b6e52-3e36-4d92-8d1f-4b8a8f80e2ff");
     private static readonly Guid FreelanceId    = Guid.Parse("fc4c7272-c8ec-f5b6-4eb5-09100393db0c");
     private static readonly Guid InvestmentsId  = Guid.Parse("0d5d8383-d9fd-06c7-5fc6-1a2114a4ec1d");
@@ -134,15 +133,6 @@ public static class CategorySeeds
         new() { Id = GiftsId, Name = "Gifts & Donations", Color = "#EC407A", Icon = "gift", Type = CategoryType.Expense },
         new() { Id = Guid.Parse("da2a5050-a6ca-d394-2c93-e7fd51710001"), Name = "Gifts",      Color = "#F48FB1", Icon = "present",   ParentId = GiftsId, Type = CategoryType.Expense },
         new() { Id = Guid.Parse("da2a5050-a6ca-d394-2c93-e7fd51710002"), Name = "Charity",    Color = "#66BB6A", Icon = "heart",     ParentId = GiftsId, Type = CategoryType.Expense },
-
-        // ════════════════════════════════════════════════════════════════
-        //  EXPENSE – Travel
-        // ════════════════════════════════════════════════════════════════
-        new() { Id = TravelId, Name = "Travel", Color = "#26C6DA", Icon = "plane", Type = CategoryType.Expense },
-        new() { Id = Guid.Parse("eb3b6161-b7db-e4a5-3da4-f80e62820001"), Name = "Flights",       Color = "#29B6F6", Icon = "plane",  ParentId = TravelId, Type = CategoryType.Expense },
-        new() { Id = Guid.Parse("eb3b6161-b7db-e4a5-3da4-f80e62820002"), Name = "Hotels",        Color = "#8D6E63", Icon = "bed",    ParentId = TravelId, Type = CategoryType.Expense },
-        new() { Id = Guid.Parse("eb3b6161-b7db-e4a5-3da4-f80e62820003"), Name = "Car Rental",    Color = "#42A5F5", Icon = "car",    ParentId = TravelId, Type = CategoryType.Expense },
-        new() { Id = Guid.Parse("eb3b6161-b7db-e4a5-3da4-f80e62820004"), Name = "Activities",    Color = "#FFCA28", Icon = "map",    ParentId = TravelId, Type = CategoryType.Expense },
 
         // ════════════════════════════════════════════════════════════════
         //  INCOME

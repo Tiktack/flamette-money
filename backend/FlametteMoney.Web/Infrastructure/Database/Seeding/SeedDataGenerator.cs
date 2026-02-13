@@ -39,6 +39,20 @@ public sealed class SeedDataGenerator
             .Where(category => category.Type == CategoryType.Expense)
             .ToList();
 
+        var travelParentIds = expenseCategories
+            .Where(category => category.ParentId is null && category.Name.Equals("Travel", StringComparison.OrdinalIgnoreCase))
+            .Select(category => category.Id)
+            .ToHashSet();
+
+        if (travelParentIds.Count > 0)
+        {
+            expenseCategories = expenseCategories
+                .Where(category =>
+                    !travelParentIds.Contains(category.Id) &&
+                    (category.ParentId is null || !travelParentIds.Contains(category.ParentId.Value)))
+                .ToList();
+        }
+
         var expenseParents = expenseCategories
             .Where(category => category.ParentId is null)
             .ToList();
@@ -89,6 +103,44 @@ public sealed class SeedDataGenerator
             return new SeedResult(accountsAdded, 0, 0, 0, startDate, endDate);
         }
 
+        var existingTrips = await dbContext.Trips
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var generatedTrips = BuildTripDefinitions(startDate, endDate, random);
+        var allTripWindows = existingTrips
+            .Where(trip => trip.StartDate is not null)
+            .Select(trip => new TripWindow(
+                trip.Id,
+                trip.StartDate!.Value.Date,
+                (trip.EndDate ?? trip.StartDate)!.Value.Date))
+            .ToList();
+
+        foreach (var generatedTrip in generatedTrips)
+        {
+            var alreadyExists = existingTrips.Any(existing =>
+                existing.Name.Equals(generatedTrip.Name, StringComparison.OrdinalIgnoreCase) &&
+                existing.StartDate?.Date == generatedTrip.StartDate.Date &&
+                existing.EndDate?.Date == generatedTrip.EndDate.Date);
+
+            if (alreadyExists)
+            {
+                continue;
+            }
+
+            var trip = new Trip
+            {
+                Id = Guid.NewGuid(),
+                Name = generatedTrip.Name,
+                StartDate = generatedTrip.StartDate,
+                EndDate = generatedTrip.EndDate,
+                ImageUrl = generatedTrip.ImageUrl,
+            };
+
+            dbContext.Trips.Add(trip);
+            allTripWindows.Add(new TripWindow(trip.Id, generatedTrip.StartDate.Date, generatedTrip.EndDate.Date));
+        }
+
         var merchants = GetMerchants();
         var locations = GetLocations();
         var incomeNotes = GetIncomeNotes();
@@ -101,7 +153,8 @@ public sealed class SeedDataGenerator
 
         for (var date = startDate; date <= endDate; date = date.AddDays(1))
         {
-            var count = GetDailyTransactionCount(random);
+            var isTripDay = allTripWindows.Any(trip => date >= trip.StartDate && date <= trip.EndDate);
+            var count = GetDailyTransactionCount(random, isTripDay);
             if (count == 0)
             {
                 continue;
@@ -126,7 +179,7 @@ public sealed class SeedDataGenerator
                         Amount = amount,
                         AccountId = source.Id,
                         TargetAccountId = target.Id,
-                        Note = "Seeded transfer",
+                        Note = ShouldAssignNote(random, 0.06) ? "Transfer between accounts" : null,
                         MerchantName = null,
                         Location = null
                     };
@@ -156,9 +209,10 @@ public sealed class SeedDataGenerator
                             AccountId = original.AccountId,
                             CategoryId = original.CategoryId,
                             SubCategoryId = original.SubCategoryId,
+                            TripId = original.TripId,
                             OriginalTransactionId = original.Id,
                             IsRefund = true,
-                            Note = "Seeded refund",
+                            Note = ShouldAssignNote(random, 0.10) ? "Partial refund" : null,
                             MerchantName = original.MerchantName,
                             Location = original.Location
                         };
@@ -185,7 +239,7 @@ public sealed class SeedDataGenerator
                         Amount = amount,
                         AccountId = account.Id,
                         CategoryId = category?.Id,
-                        Note = PickValue(random, incomeNotes),
+                        Note = ShouldAssignNote(random, 0.20) ? PickValue(random, incomeNotes) : null,
                         MerchantName = "Employer",
                         Location = PickValue(random, locations)
                     };
@@ -205,6 +259,11 @@ public sealed class SeedDataGenerator
                     ? (random.NextDouble() < 0.6 ? PickCategory(random, children) : null)
                     : null;
 
+                var activeTrip = PickActiveTripForDate(random, allTripWindows, timestamp.Date);
+                Guid? tripId = activeTrip is not null && ShouldAssignNote(random, 0.75)
+                    ? activeTrip.Id
+                    : null;
+
                 var expense = new Transaction
                 {
                     Id = Guid.NewGuid(),
@@ -212,9 +271,10 @@ public sealed class SeedDataGenerator
                     Type = TransactionType.Expense,
                     Amount = expenseAmount,
                     AccountId = expenseAccount.Id,
+                    TripId = tripId,
                     CategoryId = expenseParent?.Id,
                     SubCategoryId = expenseChild?.Id,
-                    Note = PickValue(random, expenseNotes),
+                    Note = ShouldAssignNote(random, 0.12) ? PickValue(random, expenseNotes) : null,
                     MerchantName = PickValue(random, merchants),
                     Location = PickValue(random, locations)
                 };
@@ -303,8 +363,29 @@ public sealed class SeedDataGenerator
         ];
     }
 
-    private static int GetDailyTransactionCount(Random random)
+    private static int GetDailyTransactionCount(Random random, bool isTripDay)
     {
+        if (isTripDay)
+        {
+            var tripRoll = random.Next(0, 100);
+            if (tripRoll < 8)
+            {
+                return 0;
+            }
+
+            if (tripRoll < 50)
+            {
+                return random.Next(2, 5);
+            }
+
+            if (tripRoll < 82)
+            {
+                return random.Next(3, 7);
+            }
+
+            return random.Next(5, 10);
+        }
+
         var roll = random.Next(0, 100);
         if (roll < 20)
         {
@@ -387,6 +468,78 @@ public sealed class SeedDataGenerator
         return values.Count == 0 ? null : values[random.Next(values.Count)];
     }
 
+    private static bool ShouldAssignNote(Random random, double probability)
+    {
+        return random.NextDouble() < probability;
+    }
+
+    private static TripWindow? PickActiveTripForDate(Random random, IReadOnlyList<TripWindow> trips, DateTime date)
+    {
+        var activeTrips = trips
+            .Where(trip => date >= trip.StartDate && date <= trip.EndDate)
+            .ToList();
+
+        if (activeTrips.Count == 0)
+        {
+            return null;
+        }
+
+        return activeTrips[random.Next(activeTrips.Count)];
+    }
+
+    private static IReadOnlyList<TripSeedDefinition> BuildTripDefinitions(DateTime startDate, DateTime endDate, Random random)
+    {
+        var names = new[]
+        {
+            "Summer getaway",
+            "City break",
+            "Beach vacation",
+            "Mountain retreat",
+            "Family visit",
+            "Conference trip",
+            "Road trip",
+        };
+
+        var result = new List<TripSeedDefinition>();
+        for (var year = startDate.Year; year <= endDate.Year; year++)
+        {
+            var tripCount = random.Next(1, 3);
+            for (var index = 0; index < tripCount; index++)
+            {
+                var startMonth = random.Next(2, 12);
+                var startDay = random.Next(1, 25);
+                var duration = random.Next(4, 12);
+
+                var tripStart = new DateTime(year, startMonth, startDay, 0, 0, 0, DateTimeKind.Utc);
+                var tripEnd = tripStart.AddDays(duration);
+
+                if (tripEnd < startDate || tripStart > endDate)
+                {
+                    continue;
+                }
+
+                if (tripStart < startDate)
+                {
+                    tripStart = startDate;
+                }
+
+                if (tripEnd > endDate)
+                {
+                    tripEnd = endDate;
+                }
+
+                var baseName = names[random.Next(names.Length)];
+                result.Add(new TripSeedDefinition(
+                    $"{baseName} {tripStart:yyyy}",
+                    tripStart,
+                    tripEnd,
+                    null));
+            }
+        }
+
+        return result;
+    }
+
     private static decimal NextMoney(Random random, int min, int max)
     {
         var major = random.Next(min, max + 1);
@@ -423,4 +576,12 @@ public sealed class SeedDataGenerator
         string Color,
         AccountType Type,
         decimal InitialBalance);
+
+    private sealed record TripWindow(Guid Id, DateTime StartDate, DateTime EndDate);
+
+    private sealed record TripSeedDefinition(
+        string Name,
+        DateTime StartDate,
+        DateTime EndDate,
+        string? ImageUrl);
 }
