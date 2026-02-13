@@ -15,6 +15,7 @@ import {
   postApiAuthLogout,
   postApiCategories,
   postApiReceiptsScan,
+  postApiSeedDemo,
   postApiTransactions,
   postApiTrips,
   putApiAccountsById,
@@ -279,6 +280,23 @@ export function useScanReceipt() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+}
+
+export function useSeedDemo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (years: number) =>
+      postApiSeedDemo({ query: { Years: years }, throwOnError: true }).then((result) => result.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['trips'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
     },
   })
 }

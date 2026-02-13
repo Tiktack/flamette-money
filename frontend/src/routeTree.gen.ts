@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TripsRouteImport } from './routes/trips'
 import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AccountsRouteImport } from './routes/accounts'
@@ -24,6 +25,11 @@ const TripsRoute = TripsRouteImport.update({
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
   path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesRoute = CategoriesRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/categories': typeof CategoriesRoute
+  '/profile': typeof ProfileRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/categories': typeof CategoriesRoute
+  '/profile': typeof ProfileRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/accounts': typeof AccountsRoute
   '/analytics': typeof AnalyticsRoute
   '/categories': typeof CategoriesRoute
+  '/profile': typeof ProfileRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/categories'
+    | '/profile'
     | '/transactions'
     | '/trips'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/categories'
+    | '/profile'
     | '/transactions'
     | '/trips'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/categories'
+    | '/profile'
     | '/transactions'
     | '/trips'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   AccountsRoute: typeof AccountsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   CategoriesRoute: typeof CategoriesRoute
+  ProfileRoute: typeof ProfileRoute
   TransactionsRoute: typeof TransactionsRoute
   TripsRoute: typeof TripsRoute
 }
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/transactions'
       fullPath: '/transactions'
       preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories': {
@@ -160,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsRoute: AccountsRoute,
   AnalyticsRoute: AnalyticsRoute,
   CategoriesRoute: CategoriesRoute,
+  ProfileRoute: ProfileRoute,
   TransactionsRoute: TransactionsRoute,
   TripsRoute: TripsRoute,
 }
