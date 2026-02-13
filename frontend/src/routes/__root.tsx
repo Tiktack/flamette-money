@@ -23,6 +23,8 @@ import { useDisclosure } from '@mantine/hooks'
 import { useState } from 'react'
 import { TransactionEditorModal, type TransactionModalMode } from '../components/TransactionEditorModal'
 import { useCurrentUser, useLogout } from '../lib/api/hooks'
+import { queryClient } from '../lib/api/queryClient'
+import { currentUserQueryOptions } from '../lib/api/queryOptions'
 import type { TransactionType } from '../lib/api/types'
 import classes from './rootLayout.module.css'
 
@@ -48,6 +50,7 @@ const isTransactionType = (value: unknown): value is TransactionType =>
   value === 'Income' || value === 'Expense' || value === 'Transfer' || value === 'Refund'
 
 export const Route = createRootRoute({
+  loader: () => queryClient.prefetchQuery(currentUserQueryOptions()),
   component: RootLayout,
   validateSearch: (search: Record<string, unknown>): RootSearch => ({
     transactionMode: isTransactionMode(search.transactionMode) ? search.transactionMode : undefined,
@@ -90,7 +93,7 @@ function RootLayout() {
     setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark')
   }
 
-  if (currentUserQuery.isLoading) {
+  if (currentUserQuery.isPending) {
     return (
       <Center h="100dvh">
         <Text c="dimmed">Loading session…</Text>

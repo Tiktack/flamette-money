@@ -19,10 +19,14 @@ import {
 } from '@mantine/core'
 import { useState } from 'react'
 import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from '../lib/api/hooks'
+import { getApiErrorMessage } from '../lib/api/errors'
+import { accountsQueryOptions } from '../lib/api/queryOptions'
+import { queryClient } from '../lib/api/queryClient'
 import type { AccountListItem, AccountType } from '../lib/api/types'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/accounts')({
+  loader: () => queryClient.prefetchQuery(accountsQueryOptions()),
   component: AccountsPage,
 })
 
@@ -78,9 +82,6 @@ const badgeStyleForColor = (color: string) => ({
   border: `1px solid ${color}4D`,
 })
 
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.'
-
 const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
     <path d="M4 20h4l10.5-10.5-4-4L4 16v4z" />
@@ -104,9 +105,6 @@ function AccountsPage() {
   const [createOpened, setCreateOpened] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountListItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccountListItem | null>(null)
-  const [createError, setCreateError] = useState<string | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [createForm, setCreateForm] = useState({
     name: '',
     currency: 'USD',
@@ -121,7 +119,7 @@ function AccountsPage() {
   })
 
   const openCreate = () => {
-    setCreateError(null)
+    createAccount.reset()
     setCreateForm({
       name: '',
       currency: 'USD',
@@ -133,7 +131,7 @@ function AccountsPage() {
   }
 
   const openEdit = (account: AccountListItem) => {
-    setEditError(null)
+    updateAccount.reset()
     setEditAccount(account)
     setEditForm({
       name: account.name,
@@ -143,59 +141,53 @@ function AccountsPage() {
   }
 
   const openDelete = (account: AccountListItem) => {
-    setDeleteError(null)
+    deleteAccount.reset()
     setDeleteTarget(account)
   }
 
-  const handleCreate = async () => {
-    setCreateError(null)
-    try {
-      await createAccount.mutateAsync({
+  const handleCreate = () => {
+    createAccount.mutate(
+      {
         name: createForm.name,
         currency: createForm.currency,
         color: createForm.color,
         type: createForm.type,
         initialBalance: createForm.initialBalance,
-      })
-      setCreateOpened(false)
-    } catch (error) {
-      setCreateError(getErrorMessage(error))
-    }
+      },
+      {
+        onSuccess: () => setCreateOpened(false),
+      },
+    )
   }
 
-  const handleEdit = async () => {
+  const handleEdit = () => {
     if (!editAccount) {
       return
     }
 
-    setEditError(null)
-    try {
-      await updateAccount.mutateAsync({
+    updateAccount.mutate(
+      {
         id: editAccount.id,
         request: {
           name: editForm.name,
           color: editForm.color,
           type: editForm.type,
         },
-      })
-      setEditAccount(null)
-    } catch (error) {
-      setEditError(getErrorMessage(error))
-    }
+      },
+      {
+        onSuccess: () => setEditAccount(null),
+      },
+    )
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteTarget) {
       return
     }
 
-    setDeleteError(null)
-    try {
-      await deleteAccount.mutateAsync(deleteTarget.id)
-      setDeleteTarget(null)
-    } catch (error) {
-      setDeleteError(getErrorMessage(error))
-    }
+    deleteAccount.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+    })
   }
 
   return (
@@ -213,8 +205,12 @@ function AccountsPage() {
       </Group>
 
       <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
-        {accountsQuery.isLoading ? (
+        {accountsQuery.isPending ? (
           <Skeleton height={200} />
+        ) : accountsQuery.isError ? (
+          <Text size="sm" c="red">
+            {getApiErrorMessage(accountsQuery.error, 'Unable to load accounts.')}
+          </Text>
         ) : (
           <div className={classes.tableWrap}>
             <Table
@@ -372,9 +368,9 @@ function AccountsPage() {
               }))
             }
           />
-          {createError ? (
+          {createAccount.isError ? (
             <Text size="sm" c="red">
-              {createError}
+              {getApiErrorMessage(createAccount.error, 'Unable to create account.')}
             </Text>
           ) : null}
           <Group justify="flex-end">
@@ -428,9 +424,9 @@ function AccountsPage() {
               Currency: {editAccount.currency}
             </Text>
           ) : null}
-          {editError ? (
+          {updateAccount.isError ? (
             <Text size="sm" c="red">
-              {editError}
+              {getApiErrorMessage(updateAccount.error, 'Unable to update account.')}
             </Text>
           ) : null}
           <Group justify="flex-end">
@@ -449,9 +445,9 @@ function AccountsPage() {
           <Text size="sm">
             Remove {deleteTarget?.name}? This action cannot be undone.
           </Text>
-          {deleteError ? (
+          {deleteAccount.isError ? (
             <Text size="sm" c="red">
-              {deleteError}
+              {getApiErrorMessage(deleteAccount.error, 'Unable to remove account.')}
             </Text>
           ) : null}
           <Group justify="flex-end">

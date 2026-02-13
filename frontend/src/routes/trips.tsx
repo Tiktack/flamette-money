@@ -14,10 +14,14 @@ import {
 import { DatePickerInput } from '@mantine/dates'
 import { useMemo, useState } from 'react'
 import { useCreateTrip, useTrips, useUpdateTrip } from '../lib/api/hooks'
+import { getApiErrorMessage } from '../lib/api/errors'
+import { queryClient } from '../lib/api/queryClient'
+import { tripsQueryOptions } from '../lib/api/queryOptions'
 import type { TripListItem } from '../lib/api/types'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/trips')({
+  loader: () => queryClient.prefetchQuery(tripsQueryOptions()),
   component: TripsPage,
 })
 
@@ -50,17 +54,12 @@ const mapTripToForm = (trip: TripListItem): TripFormState => ({
   imageUrl: trip.imageUrl ?? '',
 })
 
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.'
-
 function TripsPage() {
   const tripsQuery = useTrips()
   const createTrip = useCreateTrip()
   const updateTrip = useUpdateTrip()
   const [createOpened, setCreateOpened] = useState(false)
   const [editTrip, setEditTrip] = useState<TripListItem | null>(null)
-  const [createError, setCreateError] = useState<string | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
   const [createForm, setCreateForm] = useState<TripFormState>(() => buildDefaultForm())
   const [editForm, setEditForm] = useState<TripFormState>(() => buildDefaultForm())
 
@@ -82,13 +81,13 @@ function TripsPage() {
   }, [trips])
 
   const openCreate = () => {
-    setCreateError(null)
+    createTrip.reset()
     setCreateForm(buildDefaultForm())
     setCreateOpened(true)
   }
 
   const openEdit = (trip: TripListItem) => {
-    setEditError(null)
+    updateTrip.reset()
     setEditTrip(trip)
     setEditForm(mapTripToForm(trip))
   }
@@ -104,41 +103,32 @@ function TripsPage() {
     imageUrl: form.imageUrl.trim() ? form.imageUrl.trim() : null,
   })
 
-  const submitCreate = async () => {
-    setCreateError(null)
-
+  const submitCreate = () => {
     if (!createForm.name.trim()) {
-      setCreateError('Name is required.')
       return
     }
 
-    try {
-      await createTrip.mutateAsync(toRequest(createForm))
-      setCreateOpened(false)
-      setCreateForm(buildDefaultForm())
-    } catch (error) {
-      setCreateError(getErrorMessage(error))
-    }
+    createTrip.mutate(toRequest(createForm), {
+      onSuccess: () => {
+        setCreateOpened(false)
+        setCreateForm(buildDefaultForm())
+      },
+    })
   }
 
-  const submitEdit = async () => {
+  const submitEdit = () => {
     if (!editTrip) {
       return
     }
 
-    setEditError(null)
-
     if (!editForm.name.trim()) {
-      setEditError('Name is required.')
       return
     }
 
-    try {
-      await updateTrip.mutateAsync({ id: editTrip.id, request: toRequest(editForm) })
-      closeEdit()
-    } catch (error) {
-      setEditError(getErrorMessage(error))
-    }
+    updateTrip.mutate(
+      { id: editTrip.id, request: toRequest(editForm) },
+      { onSuccess: () => closeEdit() },
+    )
   }
 
   return (
@@ -148,9 +138,13 @@ function TripsPage() {
         <Button onClick={openCreate}>Add trip</Button>
       </Group>
 
-      {tripsQuery.isLoading ? (
+      {tripsQuery.isPending ? (
         <Card className={classes.card} radius="md" padding="lg">
           <Text c="dimmed">Loading trips...</Text>
+        </Card>
+      ) : tripsQuery.isError ? (
+        <Card className={classes.card} radius="md" padding="lg">
+          <Text c="red">{getApiErrorMessage(tripsQuery.error, 'Unable to load trips.')}</Text>
         </Card>
       ) : orderedTrips.length === 0 ? (
         <Card className={classes.card} radius="md" padding="lg">
@@ -235,16 +229,16 @@ function TripsPage() {
             }}
             placeholder="https://..."
           />
-          {createError ? (
+          {createTrip.isError ? (
             <Text size="sm" c="red">
-              {createError}
+              {getApiErrorMessage(createTrip.error, 'Unable to create trip.')}
             </Text>
           ) : null}
           <Group justify="flex-end">
             <Button variant="default" onClick={() => setCreateOpened(false)}>
               Cancel
             </Button>
-            <Button onClick={submitCreate} loading={createTrip.isPending}>
+            <Button onClick={submitCreate} loading={createTrip.isPending} disabled={!createForm.name.trim()}>
               Create
             </Button>
           </Group>
@@ -295,16 +289,16 @@ function TripsPage() {
             }}
             placeholder="https://..."
           />
-          {editError ? (
+          {updateTrip.isError ? (
             <Text size="sm" c="red">
-              {editError}
+              {getApiErrorMessage(updateTrip.error, 'Unable to update trip.')}
             </Text>
           ) : null}
           <Group justify="flex-end">
             <Button variant="default" onClick={closeEdit}>
               Cancel
             </Button>
-            <Button onClick={submitEdit} loading={updateTrip.isPending}>
+            <Button onClick={submitEdit} loading={updateTrip.isPending} disabled={!editForm.name.trim()}>
               Save
             </Button>
           </Group>

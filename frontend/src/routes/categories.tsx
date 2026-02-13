@@ -26,6 +26,9 @@ import {
   useDeleteCategory,
   useUpdateCategory,
 } from '../lib/api/hooks'
+import { getApiErrorMessage } from '../lib/api/errors'
+import { categoriesQueryOptions } from '../lib/api/queryOptions'
+import { queryClient } from '../lib/api/queryClient'
 import { SharedDateRangeChips } from '../components/SharedDateRangeChips'
 import {
   CategoryIcon,
@@ -42,11 +45,9 @@ import { Route as RootRoute } from './__root'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/categories')({
+  loader: () => queryClient.prefetchQuery(categoriesQueryOptions()),
   component: CategoriesPage,
 })
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.'
 
 function CategoriesPage() {
   const categoriesQuery = useCategories()
@@ -60,9 +61,6 @@ function CategoriesPage() {
   const dateFilters = useSharedDateRangeFilters()
   const navigate = RootRoute.useNavigate()
   const [deleteTarget, setDeleteTarget] = useState<CategoryHierarchy | null>(null)
-  const [createError, setCreateError] = useState<string | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [createForm, setCreateForm] = useState({
     name: '',
     color: defaultCategoryColor,
@@ -113,8 +111,8 @@ function CategoriesPage() {
   }, [resolvedDateRange.end, resolvedDateRange.start, typeFilter])
 
   const reportQueryResult = useCategorySeriesReport(reportQuery)
-  const hasReportData = Boolean(reportQueryResult.data)
-  const isInitialChartLoading = categoriesQuery.isLoading || !hasReportData
+  const isInitialChartLoading = categoriesQuery.isPending || reportQueryResult.isPending
+  const hasChartError = categoriesQuery.isError || reportQueryResult.isError
 
   const isCompact = useMediaQuery('(max-width: 900px)')
   const donutBounds = useElementSize()
@@ -228,7 +226,7 @@ function CategoriesPage() {
   ])
 
   const openCreate = (parent?: CategoryHierarchy) => {
-    setCreateError(null)
+    createCategory.reset()
     const parentType = parent?.type ?? typeFilter
     setCreateForm({
       name: '',
@@ -241,7 +239,7 @@ function CategoriesPage() {
   }
 
   const openEdit = (category: CategoryHierarchy) => {
-    setEditError(null)
+    updateCategory.reset()
     setEditCategory(category)
     setEditForm({
       name: category.name,
@@ -272,30 +270,28 @@ function CategoriesPage() {
     })
   }
 
-  const handleCreate = async () => {
-    setCreateError(null)
-    try {
-          await createCategory.mutateAsync({
-            name: createForm.name,
-            color: normalizeCategoryColor(createForm.color),
-            icon: createForm.icon,
-            type: createForm.type,
-            parentId: createForm.parentId,
-          })
-      setCreateOpened(false)
-    } catch (error) {
-      setCreateError(getErrorMessage(error))
-    }
+  const handleCreate = () => {
+    createCategory.mutate(
+      {
+        name: createForm.name,
+        color: normalizeCategoryColor(createForm.color),
+        icon: createForm.icon,
+        type: createForm.type,
+        parentId: createForm.parentId,
+      },
+      {
+        onSuccess: () => setCreateOpened(false),
+      },
+    )
   }
 
-  const handleEdit = async () => {
+  const handleEdit = () => {
     if (!editCategory) {
       return
     }
 
-    setEditError(null)
-    try {
-      await updateCategory.mutateAsync({
+    updateCategory.mutate(
+      {
         id: editCategory.id,
         request: {
           name: editForm.name,
@@ -303,26 +299,24 @@ function CategoriesPage() {
           icon: editForm.icon,
           parentId: editForm.parentId,
         },
-      })
-      setEditCategory(null)
-    } catch (error) {
-      setEditError(getErrorMessage(error))
-    }
+      },
+      {
+        onSuccess: () => setEditCategory(null),
+      },
+    )
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteTarget) {
       return
     }
 
-    setDeleteError(null)
-    try {
-      await deleteCategory.mutateAsync(deleteTarget.id)
-      setDeleteTarget(null)
-      setEditCategory(null)
-    } catch (error) {
-      setDeleteError(getErrorMessage(error))
-    }
+    deleteCategory.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null)
+        setEditCategory(null)
+      },
+    })
   }
 
   return (
@@ -362,6 +356,13 @@ function CategoriesPage() {
         <Stack gap="md">
         {isInitialChartLoading ? (
           <Skeleton height={320} />
+        ) : hasChartError ? (
+          <Text size="sm" c="red">
+            {getApiErrorMessage(
+              categoriesQuery.error ?? reportQueryResult.error,
+              'Unable to load categories report.',
+            )}
+          </Text>
         ) : visibleParentCategories.length === 0 ? (
           <Stack align="center" className={classes.emptyState}>
             <Text fw={600}>No {typeFilter.toLowerCase()} categories yet</Text>
@@ -490,9 +491,9 @@ function CategoriesPage() {
             searchable
             placeholder="No parent"
           />
-          {createError ? (
+          {createCategory.isError ? (
             <Text size="sm" c="red">
-              {createError}
+              {getApiErrorMessage(createCategory.error, 'Unable to create category.')}
             </Text>
           ) : null}
           <Group justify="flex-end">
@@ -610,16 +611,19 @@ function CategoriesPage() {
               )}
             </Stack>
           ) : null}
-          {editError ? (
+          {updateCategory.isError ? (
             <Text size="sm" c="red">
-              {editError}
+              {getApiErrorMessage(updateCategory.error, 'Unable to update category.')}
             </Text>
           ) : null}
           <Group justify="space-between">
             <Button
               variant="subtle"
               color="red"
-              onClick={() => setDeleteTarget(editCategory)}
+              onClick={() => {
+                deleteCategory.reset()
+                setDeleteTarget(editCategory)
+              }}
             >
               Delete category
             </Button>
@@ -640,9 +644,9 @@ function CategoriesPage() {
           <Text size="sm">
             Remove {deleteTarget?.name}? This action cannot be undone.
           </Text>
-          {deleteError ? (
+          {deleteCategory.isError ? (
             <Text size="sm" c="red">
-              {deleteError}
+              {getApiErrorMessage(deleteCategory.error, 'Unable to remove category.')}
             </Text>
           ) : null}
           <Group justify="flex-end">
