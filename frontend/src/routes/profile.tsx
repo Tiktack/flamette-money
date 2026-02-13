@@ -12,38 +12,33 @@ import {
 } from '@mantine/core'
 import { useState } from 'react'
 import { useCurrentUser, useSeedDemo } from '../lib/api/hooks'
+import { getApiErrorMessage } from '../lib/api/errors'
+import { currentUserQueryOptions } from '../lib/api/queryOptions'
+import { queryClient } from '../lib/api/queryClient'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/profile')({
+  loader: () => queryClient.prefetchQuery(currentUserQueryOptions()),
   component: ProfilePage,
 })
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.'
 
 function ProfilePage() {
   const currentUserQuery = useCurrentUser()
   const seedDemoMutation = useSeedDemo()
   const [seedModalOpen, setSeedModalOpen] = useState(false)
   const [years, setYears] = useState<number>(3)
-  const [error, setError] = useState<string | null>(null)
 
   const user = currentUserQuery.data
 
   const openSeedModal = () => {
-    setError(null)
+    seedDemoMutation.reset()
     setSeedModalOpen(true)
   }
 
-  const handleSeed = async () => {
-    setError(null)
-
-    try {
-      await seedDemoMutation.mutateAsync(years)
-      setSeedModalOpen(false)
-    } catch (seedError) {
-      setError(getErrorMessage(seedError))
-    }
+  const handleSeed = () => {
+    seedDemoMutation.mutate(years, {
+      onSuccess: () => setSeedModalOpen(false),
+    })
   }
 
   return (
@@ -91,9 +86,9 @@ function ProfilePage() {
             value={years}
             onChange={(value) => setYears(typeof value === 'number' && Number.isFinite(value) ? value : 1)}
           />
-          {error ? (
+          {seedDemoMutation.isError ? (
             <Alert color="red" variant="light">
-              {error}
+              {getApiErrorMessage(seedDemoMutation.error, 'Unable to seed demo data.')}
             </Alert>
           ) : null}
           <Group justify="flex-end" mt="sm">

@@ -24,6 +24,7 @@ import {
 } from '@mantine/core'
 import { BarChart } from '@mantine/charts'
 import { useMemo, useState } from 'react'
+import { getApiErrorMessage } from '../lib/api/errors'
 import { useCategorySeriesReport } from '../lib/api/hooks'
 import { SharedDateRangeChips } from './SharedDateRangeChips'
 import {
@@ -89,7 +90,7 @@ export function AnalyticsView() {
   }, [aggregation, groupTripsAsCategory, mode, resolvedDateRange.end, resolvedDateRange.start])
 
   const reportQueryResult = useCategorySeriesReport(reportQuery)
-  const isInitialLoading = reportQueryResult.data == null
+  const isInitialLoading = reportQueryResult.isPending
 
   const report = useMemo(() => {
     const payload = reportQueryResult.data
@@ -183,7 +184,16 @@ export function AnalyticsView() {
         <SharedDateRangeChips />
       </Card>
 
-      {isInitialLoading || hasData ? (
+      {reportQueryResult.isError && !hasData ? (
+        <Card shadow="sm" radius="md" padding="xl" className={classes.emptyCard}>
+          <Stack align="center" gap={6}>
+            <Title order={4}>Unable to load reports</Title>
+            <Text c="red" ta="center">
+              {getApiErrorMessage(reportQueryResult.error, 'Unable to load reports for selected range.')}
+            </Text>
+          </Stack>
+        </Card>
+      ) : isInitialLoading || hasData ? (
         <>
           <SimpleGrid cols={{ base: 1, sm: 3 }}>
             {statCards.map((stat) => {
