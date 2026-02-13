@@ -24,6 +24,9 @@ import {
   useDeleteTransaction,
   useTransactionsSearch,
 } from '../lib/api/hooks'
+import { getApiErrorMessage } from '../lib/api/errors'
+import { accountsQueryOptions, categoriesQueryOptions } from '../lib/api/queryOptions'
+import { queryClient } from '../lib/api/queryClient'
 import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
 import { SharedDateRangeChips } from '../components/SharedDateRangeChips'
 import {
@@ -36,6 +39,12 @@ import { Route as RootRoute } from './__root'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/transactions')({
+  loader: async () => {
+    await Promise.all([
+      queryClient.prefetchQuery(accountsQueryOptions()),
+      queryClient.prefetchQuery(categoriesQueryOptions()),
+    ])
+  },
   component: TransactionsPage,
 })
 
@@ -50,7 +59,6 @@ function TransactionsPage() {
   const navigate = RootRoute.useNavigate()
   const pageSize = 12
   const [deleteTarget, setDeleteTarget] = useState<TransactionListItem | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, CategoryHierarchy>()
@@ -274,18 +282,14 @@ function TransactionsPage() {
     return `${day}-${month}-${year}`
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteTarget) {
       return
     }
 
-    setDeleteError(null)
-    try {
-      await deleteTransaction.mutateAsync(deleteTarget.id)
-      setDeleteTarget(null)
-    } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : 'Unable to delete transaction.')
-    }
+    deleteTransaction.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+    })
   }
 
   const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -384,8 +388,12 @@ function TransactionsPage() {
       </Collapse>
 
       <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
-        {transactionsQuery.isLoading ? (
+        {transactionsQuery.isPending ? (
           <Skeleton height={220} />
+        ) : transactionsQuery.isError ? (
+          <Text size="sm" c="red">
+            {getApiErrorMessage(transactionsQuery.error, 'Unable to load transactions.')}
+          </Text>
         ) : (
           <div className={classes.tableWrap}>
             <Table verticalSpacing="sm" horizontalSpacing="md" className={classes.table}>
@@ -520,7 +528,10 @@ function TransactionsPage() {
                             variant="subtle"
                             color="red"
                             aria-label="Remove transaction"
-                            onClick={() => setDeleteTarget(transaction)}
+                              onClick={() => {
+                                deleteTransaction.reset()
+                                setDeleteTarget(transaction)
+                              }}
                           >
                             <TrashIcon width={16} height={16} />
                           </ActionIcon>
@@ -549,9 +560,9 @@ function TransactionsPage() {
       >
         <Stack gap="sm">
           <Text size="sm">Remove this transaction? This action cannot be undone.</Text>
-          {deleteError ? (
+          {deleteTransaction.isError ? (
             <Text size="sm" c="red">
-              {deleteError}
+              {getApiErrorMessage(deleteTransaction.error, 'Unable to delete transaction.')}
             </Text>
           ) : null}
           <Group justify="flex-end">

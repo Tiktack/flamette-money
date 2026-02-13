@@ -29,6 +29,7 @@ import {
   useTrips,
   useUpdateTransaction,
 } from '../lib/api/hooks'
+import { getApiErrorMessage } from '../lib/api/errors'
 import type {
   CategoryHierarchy,
   ReceiptScanResult,
@@ -85,9 +86,6 @@ const normalizeHexColor = (value?: string | null) => {
 
   return value.startsWith('#') ? value : `#${value}`
 }
-
-const getErrorMessage = (error: unknown) =>
-  error instanceof Error ? error.message : 'Something went wrong. Please try again.'
 
 const buildCategoryMap = (categories: CategoryHierarchy[]) => {
   const map = new Map<string, CategoryHierarchy>()
@@ -413,7 +411,7 @@ export function TransactionEditorModal({
       }
       onClose()
     } catch (error) {
-      setErrorMessage(getErrorMessage(error))
+      setErrorMessage(getApiErrorMessage(error, 'Unable to save transaction.'))
     }
   }
 
@@ -440,7 +438,7 @@ export function TransactionEditorModal({
       const result = await scanReceipt.mutateAsync({ file: scanFile, accountId: scanAccountId })
       setScanResult(result)
     } catch (error) {
-      setScanError(error instanceof Error ? error.message : 'Failed to scan receipt')
+      setScanError(getApiErrorMessage(error, 'Failed to scan receipt'))
     }
   }
 
