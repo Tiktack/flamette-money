@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -32,10 +33,14 @@ public sealed class SearchTransactionsEndpoint : ICarterModule
 
     private static async Task<Ok<List<TransactionListItemResponse>>> Handle(
         [AsParameters] SearchTransactionsQuery query,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        var transactions = dbContext.Transactions.AsNoTracking();
+        var userId = currentUserContext.GetScopedUserId();
+        var transactions = dbContext.Transactions
+            .AsNoTracking()
+            .ForUser(userId);
 
         if (query.StartDate is not null)
         {

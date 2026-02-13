@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -49,11 +50,15 @@ public sealed class GetTransactionEndpoint : ICarterModule
 
     private static async Task<Results<Ok<GetTransactionResponse>, NotFound>> Handle(
         [FromRoute] Guid id,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var transaction = await dbContext.Transactions
             .AsNoTracking()
+            .ForUser(userId)
             .Include(t => t.Items)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
 

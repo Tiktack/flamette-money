@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -76,9 +77,12 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
     private static async Task<Results<Ok<CategorySeriesReportResponse>, ValidationProblem>> Handle(
         [AsParameters] GetCategorySeriesReportQuery query,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         if (query.StartDate is not null && query.EndDate is not null && query.StartDate > query.EndDate)
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
@@ -89,6 +93,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
         var transactionsQuery = dbContext.Transactions
             .AsNoTracking()
+            .ForUser(userId)
             .Select(transaction => new
             {
                 transaction.Date,
@@ -129,6 +134,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
         var categoryLookup = await dbContext.Categories
             .AsNoTracking()
+            .ForUser(userId)
             .Select(category => new ReportCategoryLookupItem(
                 category.Id,
                 category.Name,
@@ -140,6 +146,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
         var tripLookup = shouldGroupTripsAsCategory
             ? await dbContext.Trips
                 .AsNoTracking()
+                .ForUser(userId)
                 .Select(trip => new ReportTripLookupItem(trip.Id, trip.Name))
                 .ToListAsync(cancellationToken)
             : [];
@@ -307,6 +314,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
         var previousTransactions = await dbContext.Transactions
             .AsNoTracking()
+            .ForUser(userId)
             .Where(transaction =>
                 transaction.Date >= previousFullStart &&
                 transaction.Date <= previousEndOfDay)

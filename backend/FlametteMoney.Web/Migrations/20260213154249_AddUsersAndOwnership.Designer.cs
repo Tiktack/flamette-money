@@ -3,6 +3,7 @@ using System;
 using FlametteMoney.Web.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FlametteMoney.Web.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260213154249_AddUsersAndOwnership")]
+    partial class AddUsersAndOwnership
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -88,16 +91,9 @@ namespace FlametteMoney.Web.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ParentId");
-
-                    b.HasIndex("UserId", "Name");
-
-                    b.HasIndex("UserId", "Type", "ParentId");
 
                     b.ToTable("Categories");
 
@@ -108,8 +104,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#FF7043",
                             Icon = "cart",
                             Name = "Groceries",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -118,8 +113,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "apple",
                             Name = "Fruits & Vegetables",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -128,8 +122,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "egg",
                             Name = "Dairy & Eggs",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -138,8 +131,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "meat",
                             Name = "Meat & Fish",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -148,8 +140,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "bread",
                             Name = "Bread & Bakery",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -158,8 +149,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "candy",
                             Name = "Sweets & Snacks",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -168,8 +158,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "drink",
                             Name = "Beverages",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -178,8 +167,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "wine",
                             Name = "Alcohol",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -188,8 +176,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "frozen",
                             Name = "Frozen Food",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -198,8 +185,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "can",
                             Name = "Canned & Dry Goods",
                             ParentId = new Guid("a1f1c7c7-1d3a-4a0b-930a-5e64c8b6f0b1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -207,8 +193,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#EC407A",
                             Icon = "restaurant",
                             Name = "Restaurants",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -217,8 +202,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "table",
                             Name = "Dine-in",
                             ParentId = new Guid("b2a2d8d8-2e4b-5b1c-a41b-6f75d9c7f1c2"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -227,8 +211,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "delivery",
                             Name = "Delivery",
                             ParentId = new Guid("b2a2d8d8-2e4b-5b1c-a41b-6f75d9c7f1c2"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -237,8 +220,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "bag",
                             Name = "Takeaway",
                             ParentId = new Guid("b2a2d8d8-2e4b-5b1c-a41b-6f75d9c7f1c2"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -247,8 +229,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "coffee",
                             Name = "Cafes",
                             ParentId = new Guid("b2a2d8d8-2e4b-5b1c-a41b-6f75d9c7f1c2"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -257,8 +238,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "tip",
                             Name = "Tips",
                             ParentId = new Guid("b2a2d8d8-2e4b-5b1c-a41b-6f75d9c7f1c2"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -266,8 +246,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#8D6E63",
                             Icon = "home",
                             Name = "Housing",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -276,8 +255,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "key",
                             Name = "Rent",
                             ParentId = new Guid("7e2b4d17-5b3e-4fd9-a565-0f72a1d39fb1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -286,8 +264,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "bolt",
                             Name = "Utilities",
                             ParentId = new Guid("7e2b4d17-5b3e-4fd9-a565-0f72a1d39fb1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -296,8 +273,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "wifi",
                             Name = "Internet",
                             ParentId = new Guid("7e2b4d17-5b3e-4fd9-a565-0f72a1d39fb1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -306,8 +282,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "wrench",
                             Name = "Maintenance",
                             ParentId = new Guid("7e2b4d17-5b3e-4fd9-a565-0f72a1d39fb1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -316,8 +291,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "shield",
                             Name = "Insurance",
                             ParentId = new Guid("7e2b4d17-5b3e-4fd9-a565-0f72a1d39fb1"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -325,8 +299,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#42A5F5",
                             Icon = "car",
                             Name = "Transport",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -335,8 +308,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "fuel",
                             Name = "Fuel",
                             ParentId = new Guid("2db7b5d4-6ef2-4b64-9f9e-7a5b6d0b1885"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -345,8 +317,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "bus",
                             Name = "Public Transit",
                             ParentId = new Guid("2db7b5d4-6ef2-4b64-9f9e-7a5b6d0b1885"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -355,8 +326,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "taxi",
                             Name = "Taxi & Ride",
                             ParentId = new Guid("2db7b5d4-6ef2-4b64-9f9e-7a5b6d0b1885"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -365,8 +335,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "park",
                             Name = "Parking",
                             ParentId = new Guid("2db7b5d4-6ef2-4b64-9f9e-7a5b6d0b1885"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -375,8 +344,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "wrench",
                             Name = "Car Service",
                             ParentId = new Guid("2db7b5d4-6ef2-4b64-9f9e-7a5b6d0b1885"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -384,8 +352,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#AB47BC",
                             Icon = "bag",
                             Name = "Shopping",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -394,8 +361,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "shirt",
                             Name = "Clothes",
                             ParentId = new Guid("c3b3e9e9-3f5c-6c2d-b52c-7086ead802d3"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -404,8 +370,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "device",
                             Name = "Electronics",
                             ParentId = new Guid("c3b3e9e9-3f5c-6c2d-b52c-7086ead802d3"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -414,8 +379,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "shoe",
                             Name = "Shoes",
                             ParentId = new Guid("c3b3e9e9-3f5c-6c2d-b52c-7086ead802d3"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -424,8 +388,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "gem",
                             Name = "Accessories",
                             ParentId = new Guid("c3b3e9e9-3f5c-6c2d-b52c-7086ead802d3"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -434,8 +397,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "book",
                             Name = "Books",
                             ParentId = new Guid("c3b3e9e9-3f5c-6c2d-b52c-7086ead802d3"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -443,8 +405,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#26A69A",
                             Icon = "house",
                             Name = "Household",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -453,8 +414,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "spray",
                             Name = "Cleaning Supplies",
                             ParentId = new Guid("d4c4fafa-4064-7d3e-c63d-8197fb1903e4"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -463,8 +423,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "chair",
                             Name = "Furniture",
                             ParentId = new Guid("d4c4fafa-4064-7d3e-c63d-8197fb1903e4"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -473,8 +432,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "plant",
                             Name = "Garden",
                             ParentId = new Guid("d4c4fafa-4064-7d3e-c63d-8197fb1903e4"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -483,8 +441,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "pan",
                             Name = "Kitchen Supplies",
                             ParentId = new Guid("d4c4fafa-4064-7d3e-c63d-8197fb1903e4"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -492,8 +449,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#EF5350",
                             Icon = "heart",
                             Name = "Health & Fitness",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -502,8 +458,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "pill",
                             Name = "Pharmacy",
                             ParentId = new Guid("e5d50b0b-5175-8e4f-d74e-92a80c2a04f5"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -512,8 +467,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "medkit",
                             Name = "Doctor",
                             ParentId = new Guid("e5d50b0b-5175-8e4f-d74e-92a80c2a04f5"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -522,8 +476,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "gym",
                             Name = "Gym",
                             ParentId = new Guid("e5d50b0b-5175-8e4f-d74e-92a80c2a04f5"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -532,8 +485,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "sport",
                             Name = "Sports",
                             ParentId = new Guid("e5d50b0b-5175-8e4f-d74e-92a80c2a04f5"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -541,8 +493,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#FFCA28",
                             Icon = "star",
                             Name = "Entertainment",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -551,8 +502,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "film",
                             Name = "Movies & Cinema",
                             ParentId = new Guid("f6e61c1c-6286-9f50-e85f-a3b91d3b15a6"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -561,8 +511,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "game",
                             Name = "Games",
                             ParentId = new Guid("f6e61c1c-6286-9f50-e85f-a3b91d3b15a6"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -571,8 +520,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "music",
                             Name = "Concerts & Events",
                             ParentId = new Guid("f6e61c1c-6286-9f50-e85f-a3b91d3b15a6"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -581,8 +529,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "hobby",
                             Name = "Hobbies",
                             ParentId = new Guid("f6e61c1c-6286-9f50-e85f-a3b91d3b15a6"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -590,8 +537,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#5C6BC0",
                             Icon = "school",
                             Name = "Education",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -600,8 +546,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "course",
                             Name = "Courses",
                             ParentId = new Guid("a7f72d2d-7397-a061-f960-b4ca2e4c26b7"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -610,8 +555,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "book",
                             Name = "Textbooks",
                             ParentId = new Guid("a7f72d2d-7397-a061-f960-b4ca2e4c26b7"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -620,8 +564,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "pen",
                             Name = "Stationery",
                             ParentId = new Guid("a7f72d2d-7397-a061-f960-b4ca2e4c26b7"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -629,8 +572,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#7E57C2",
                             Icon = "repeat",
                             Name = "Subscriptions",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -639,8 +581,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "play",
                             Name = "Streaming",
                             ParentId = new Guid("b8083e3e-84a8-b172-0a71-c5db3f5d37c8"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -649,8 +590,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "app",
                             Name = "Software",
                             ParentId = new Guid("b8083e3e-84a8-b172-0a71-c5db3f5d37c8"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -659,8 +599,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "card",
                             Name = "Memberships",
                             ParentId = new Guid("b8083e3e-84a8-b172-0a71-c5db3f5d37c8"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -668,8 +607,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#F48FB1",
                             Icon = "self",
                             Name = "Personal Care",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -678,8 +616,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "scissor",
                             Name = "Haircut",
                             ParentId = new Guid("c9194f4f-95b9-c283-1b82-d6ec4060a8d9"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -688,8 +625,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "beauty",
                             Name = "Cosmetics",
                             ParentId = new Guid("c9194f4f-95b9-c283-1b82-d6ec4060a8d9"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -697,8 +633,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#EC407A",
                             Icon = "gift",
                             Name = "Gifts & Donations",
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -707,8 +642,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "present",
                             Name = "Gifts",
                             ParentId = new Guid("da2a5050-a6ca-d394-2c93-e7fd5171b9ea"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -717,8 +651,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "heart",
                             Name = "Charity",
                             ParentId = new Guid("da2a5050-a6ca-d394-2c93-e7fd5171b9ea"),
-                            Type = 2,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 2
                         },
                         new
                         {
@@ -726,8 +659,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#66BB6A",
                             Icon = "salary",
                             Name = "Salary",
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -736,8 +668,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "money",
                             Name = "Base Pay",
                             ParentId = new Guid("9a7b6e52-3e36-4d92-8d1f-4b8a8f80e2ff"),
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -746,8 +677,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "star",
                             Name = "Bonus",
                             ParentId = new Guid("9a7b6e52-3e36-4d92-8d1f-4b8a8f80e2ff"),
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -755,8 +685,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#29B6F6",
                             Icon = "laptop",
                             Name = "Freelance",
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -765,8 +694,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "brief",
                             Name = "Consulting",
                             ParentId = new Guid("fc4c7272-c8ec-f5b6-4eb5-09100393db0c"),
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -775,8 +703,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "code",
                             Name = "Side Projects",
                             ParentId = new Guid("fc4c7272-c8ec-f5b6-4eb5-09100393db0c"),
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -784,8 +711,7 @@ namespace FlametteMoney.Web.Migrations
                             Color = "#FFA726",
                             Icon = "chart",
                             Name = "Investments",
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -794,8 +720,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "coin",
                             Name = "Dividends",
                             ParentId = new Guid("0d5d8383-d9fd-06c7-5fc6-1a2114a4ec1d"),
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         },
                         new
                         {
@@ -804,8 +729,7 @@ namespace FlametteMoney.Web.Migrations
                             Icon = "percent",
                             Name = "Interest",
                             ParentId = new Guid("0d5d8383-d9fd-06c7-5fc6-1a2114a4ec1d"),
-                            Type = 1,
-                            UserId = new Guid("00000000-0000-0000-0000-000000000000")
+                            Type = 1
                         });
                 });
 
@@ -1027,15 +951,7 @@ namespace FlametteMoney.Web.Migrations
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("FlametteMoney.Web.Infrastructure.Database.Models.User", "User")
-                        .WithMany("Categories")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Parent");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("FlametteMoney.Web.Infrastructure.Database.Models.Transaction", b =>
@@ -1156,8 +1072,6 @@ namespace FlametteMoney.Web.Migrations
             modelBuilder.Entity("FlametteMoney.Web.Infrastructure.Database.Models.User", b =>
                 {
                     b.Navigation("Accounts");
-
-                    b.Navigation("Categories");
 
                     b.Navigation("Transactions");
 

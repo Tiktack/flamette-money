@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using FlametteMoney.Web.Infrastructure.Validation;
@@ -58,16 +59,21 @@ public sealed class UpdateCategoryEndpoint : ICarterModule
         [FromRoute] Guid id,
         [FromBody] UpdateCategoryRequest request,
         [FromServices] IValidator<UpdateCategoryRequest> validator,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
             return TypedResults.BadRequest(new ValidationProblemDetails(validationResult.ToProblemDetails()));
         }
 
-        var category = await dbContext.Categories.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+        var category = await dbContext.Categories
+            .ForUser(userId)
+            .FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (category is null)
         {
             return TypedResults.NotFound();
@@ -85,6 +91,7 @@ public sealed class UpdateCategoryEndpoint : ICarterModule
         {
             var parent = await dbContext.Categories
                 .AsNoTracking()
+                .ForUser(userId)
                 .FirstOrDefaultAsync(parentItem => parentItem.Id == request.ParentId, cancellationToken);
 
             if (parent is null)

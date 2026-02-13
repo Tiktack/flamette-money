@@ -9,11 +9,17 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
     public void Configure(EntityTypeBuilder<Transaction> builder)
     {
         builder.HasKey(transaction => transaction.Id);
+        builder.Property(transaction => transaction.UserId).IsRequired();
         builder.Property(transaction => transaction.Amount).HasPrecision(18, 2);
         builder.Property(transaction => transaction.Type).IsRequired();
         builder.Property(transaction => transaction.Date).IsRequired();
         builder.Property(transaction => transaction.MerchantName).HasMaxLength(200);
         builder.Property(transaction => transaction.Location).HasMaxLength(400);
+
+        builder.HasOne(transaction => transaction.User)
+            .WithMany(user => user.Transactions)
+            .HasForeignKey(transaction => transaction.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(transaction => transaction.Account)
             .WithMany(account => account.Transactions)
@@ -50,6 +56,9 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
             .HasForeignKey(transaction => transaction.OriginalTransactionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(transaction => transaction.TripId);
+        builder.HasIndex(transaction => new { transaction.UserId, transaction.Date });
+        builder.HasIndex(transaction => new { transaction.UserId, transaction.AccountId, transaction.Date });
+        builder.HasIndex(transaction => new { transaction.UserId, transaction.CategoryId, transaction.Date });
+        builder.HasIndex(transaction => new { transaction.UserId, transaction.TripId, transaction.Date });
     }
 }

@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using FlametteMoney.Web.Infrastructure.Validation;
@@ -60,9 +61,12 @@ public sealed class CreateCategoryEndpoint : ICarterModule
     private static async Task<Results<Created<CreateCategoryResponse>, BadRequest<ValidationProblemDetails>>> Handle(
         [FromBody] CreateCategoryRequest request,
         [FromServices] IValidator<CreateCategoryRequest> validator,
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -73,6 +77,7 @@ public sealed class CreateCategoryEndpoint : ICarterModule
         {
             var parent = await dbContext.Categories
                 .AsNoTracking()
+                .ForUser(userId)
                 .FirstOrDefaultAsync(category => category.Id == request.ParentId, cancellationToken);
 
             if (parent is null)

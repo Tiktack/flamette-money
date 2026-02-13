@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -28,11 +29,15 @@ public sealed class ListTripsEndpoint : ICarterModule
     }
 
     private static async Task<Ok<List<TripListItemResponse>>> Handle(
+        [FromServices] ICurrentUserContext currentUserContext,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
+        var userId = currentUserContext.GetScopedUserId();
+
         var trips = await dbContext.Trips
             .AsNoTracking()
+            .ForUser(userId)
             .OrderBy(trip => trip.StartDate == null)
             .ThenByDescending(trip => trip.StartDate)
             .ThenBy(trip => trip.Name)

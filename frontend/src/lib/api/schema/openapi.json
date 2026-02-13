@@ -776,6 +776,70 @@
         }
       }
     },
+    "/api/auth/login/google": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login with Google",
+        "description": "Starts Google OAuth login flow.",
+        "parameters": [
+          {
+            "name": "returnUrl",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "Signs out current user session.",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Current user",
+        "description": "Returns currently authenticated user profile.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/api/accounts": {
       "post": {
         "tags": [
@@ -1605,6 +1669,34 @@
           }
         }
       },
+      "CurrentUserResponse": {
+        "required": [
+          "id",
+          "name",
+          "email",
+          "googleSubject",
+          "subscriptionType"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "googleSubject": {
+            "type": "string"
+          },
+          "subscriptionType": {
+            "$ref": "#/components/schemas/SubscriptionType"
+          }
+        }
+      },
       "GetAccountResponse": {
         "required": [
           "id",
@@ -2164,6 +2256,12 @@
             "format": "date-time"
           }
         }
+      },
+      "SubscriptionType": {
+        "enum": [
+          "Free",
+          "Premium"
+        ]
       },
       "TransactionItemResponse": {
         "required": [
@@ -2843,6 +2941,9 @@
     },
     {
       "name": "Categories"
+    },
+    {
+      "name": "Auth"
     },
     {
       "name": "Accounts"
