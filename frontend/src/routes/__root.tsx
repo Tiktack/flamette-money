@@ -198,7 +198,7 @@ function RootLayout() {
               <Menu.Dropdown>
                 <Menu.Label>Account</Menu.Label>
                 <Menu.Item>Settings</Menu.Item>
-                <Menu.Item>Profile</Menu.Item>
+                <Menu.Item onClick={() => navigate({ to: '/profile' })}>Profile</Menu.Item>
                 <Menu.Divider />
                 <Box px="sm" py={6}>
                   <Group justify="space-between" wrap="nowrap" gap="sm">
