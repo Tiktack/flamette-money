@@ -629,6 +629,62 @@
         }
       }
     },
+    "/api/profile/import-backup": {
+      "post": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Import data backup",
+        "description": "Import profile data from external backup formats such as 1Money CSV.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file",
+                  "type"
+                ],
+                "type": "object",
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "file": {
+                        "$ref": "#/components/schemas/IFormFile"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportBackupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
     "/api/categories": {
       "post": {
         "tags": [
@@ -1401,8 +1457,7 @@
           "originalTransactionId",
           "note",
           "merchantName",
-          "location",
-          "items"
+          "location"
         ],
         "type": "object",
         "properties": {
@@ -1478,6 +1533,27 @@
               "string"
             ]
           },
+          "amount2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "items": {
             "type": [
               "null",
@@ -1495,6 +1571,9 @@
           "date",
           "type",
           "amount",
+          "amount2",
+          "currency",
+          "currency2",
           "accountId",
           "tripId",
           "categoryId",
@@ -1527,6 +1606,27 @@
               "string"
             ],
             "format": "double"
+          },
+          "amount2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency2": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "accountId": {
             "type": "string",
@@ -1749,6 +1849,9 @@
           "date",
           "type",
           "amount",
+          "amount2",
+          "currency",
+          "currency2",
           "accountId",
           "tripId",
           "categoryId",
@@ -1781,6 +1884,27 @@
               "string"
             ],
             "format": "double"
+          },
+          "amount2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency2": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "accountId": {
             "type": "string",
@@ -1900,6 +2024,71 @@
       "IFormFile": {
         "type": "string",
         "format": "binary"
+      },
+      "ImportBackupResponse": {
+        "required": [
+          "type",
+          "importedTransactions",
+          "importedAccounts",
+          "importedCategories",
+          "importedSubCategories",
+          "updatedBalanceSnapshots",
+          "skippedRows"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "importedTransactions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "importedAccounts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "importedCategories": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "importedSubCategories": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updatedBalanceSnapshots": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "skippedRows": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
       },
       "ReceiptItemResponse": {
         "required": [
@@ -2344,6 +2533,9 @@
           "date",
           "type",
           "amount",
+          "amount2",
+          "currency",
+          "currency2",
           "accountId",
           "tripId",
           "categoryId",
@@ -2376,6 +2568,27 @@
               "string"
             ],
             "format": "double"
+          },
+          "amount2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency2": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "accountId": {
             "type": "string",
@@ -2653,8 +2866,7 @@
           "originalTransactionId",
           "note",
           "merchantName",
-          "location",
-          "items"
+          "location"
         ],
         "type": "object",
         "properties": {
@@ -2730,6 +2942,27 @@
               "string"
             ]
           },
+          "amount2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency2": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "items": {
             "type": [
               "null",
@@ -2747,6 +2980,9 @@
           "date",
           "type",
           "amount",
+          "amount2",
+          "currency",
+          "currency2",
           "accountId",
           "tripId",
           "categoryId",
@@ -2779,6 +3015,27 @@
               "string"
             ],
             "format": "double"
+          },
+          "amount2": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency2": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "accountId": {
             "type": "string",
@@ -2938,6 +3195,9 @@
     },
     {
       "name": "Receipts"
+    },
+    {
+      "name": "Profile"
     },
     {
       "name": "Categories"

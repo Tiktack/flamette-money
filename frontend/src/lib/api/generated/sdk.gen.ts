@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiAuthLoginGoogleData, GetApiAuthLoginGoogleResponses, GetApiAuthMeData, GetApiAuthMeErrors, GetApiAuthMeResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiAuthLogoutData, PostApiAuthLogoutResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
+import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiAuthLoginGoogleData, GetApiAuthLoginGoogleResponses, GetApiAuthMeData, GetApiAuthMeErrors, GetApiAuthMeResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiAuthLogoutData, PostApiAuthLogoutResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiProfileImportBackupData, PostApiProfileImportBackupErrors, PostApiProfileImportBackupResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -131,6 +131,21 @@ export const getApiReportsCategorySeries = <ThrowOnError extends boolean = false
 export const postApiReceiptsScan = <ThrowOnError extends boolean = false>(options: Options<PostApiReceiptsScanData, ThrowOnError>) => (options.client ?? client).post<PostApiReceiptsScanResponses, PostApiReceiptsScanErrors, ThrowOnError>({
     ...formDataBodySerializer,
     url: '/api/receipts/scan',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Import data backup
+ *
+ * Import profile data from external backup formats such as 1Money CSV.
+ */
+export const postApiProfileImportBackup = <ThrowOnError extends boolean = false>(options: Options<PostApiProfileImportBackupData, ThrowOnError>) => (options.client ?? client).post<PostApiProfileImportBackupResponses, PostApiProfileImportBackupErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    url: '/api/profile/import-backup',
     ...options,
     headers: {
         'Content-Type': null,

@@ -22,13 +22,19 @@ public record UpdateTransactionRequest(
     string? Note,
     string? MerchantName,
     string? Location,
-    List<CreateTransactionItemRequest>? Items);
+    decimal? Amount2 = null,
+    string? Currency = null,
+    string? Currency2 = null,
+    List<CreateTransactionItemRequest>? Items = null);
 
 public record UpdateTransactionResponse(
     Guid Id,
     DateTime Date,
     TransactionType Type,
     decimal Amount,
+    decimal? Amount2,
+    string? Currency,
+    string? Currency2,
     Guid AccountId,
     Guid? TripId,
     Guid? CategoryId,
@@ -48,6 +54,10 @@ public sealed class UpdateTransactionRequestValidator : AbstractValidator<Update
         RuleFor(request => request.Amount)
             .GreaterThan(0);
 
+        RuleFor(request => request.Amount2)
+            .GreaterThan(0)
+            .When(request => request.Amount2.HasValue);
+
         RuleFor(request => request.Date)
             .NotEmpty();
 
@@ -59,6 +69,21 @@ public sealed class UpdateTransactionRequestValidator : AbstractValidator<Update
 
         RuleFor(request => request.Location)
             .MaximumLength(400);
+
+        RuleFor(request => request.Currency)
+            .Must(IsValidCurrencyCode)
+            .When(request => !string.IsNullOrWhiteSpace(request.Currency))
+            .WithMessage("Currency must be a 3-letter code.");
+
+        RuleFor(request => request.Currency2)
+            .Must(IsValidCurrencyCode)
+            .When(request => !string.IsNullOrWhiteSpace(request.Currency2))
+            .WithMessage("Currency 2 must be a 3-letter code.");
+    }
+
+    private static bool IsValidCurrencyCode(string? currency)
+    {
+        return currency is not null && currency.Trim().Length == 3;
     }
 }
 
@@ -382,12 +407,17 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
             }
         }
 
-        RevertBalances(oldAccount, oldTargetAccount, transaction.Type, transaction.Amount);
-        ApplyBalances(newAccount, newTargetAccount, request.Type, request.Amount);
+        RevertBalances(oldAccount, oldTargetAccount, transaction.Type, transaction.Amount, transaction.Amount2);
+        ApplyBalances(newAccount, newTargetAccount, request.Type, request.Amount, request.Amount2);
 
         transaction.Date = request.Date;
         transaction.Type = request.Type;
         transaction.Amount = request.Amount;
+        transaction.Amount2 = NormalizeAmount2(request.Type, request.Amount, request.Amount2);
+        transaction.Currency = NormalizeCurrency(request.Currency) ?? newAccount.Currency;
+        transaction.Currency2 = request.Type == TransactionType.Transfer
+            ? NormalizeCurrency(request.Currency2) ?? newTargetAccount?.Currency ?? NormalizeCurrency(request.Currency) ?? newAccount.Currency
+            : NormalizeCurrency(request.Currency2);
         transaction.AccountId = request.AccountId;
         transaction.TripId = tripId;
         transaction.CategoryId = categoryId;
@@ -436,6 +466,9 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
             transaction.Date,
             transaction.Type,
             transaction.Amount,
+            transaction.Amount2,
+            transaction.Currency,
+            transaction.Currency2,
             transaction.AccountId,
             transaction.TripId,
             transaction.CategoryId,
@@ -459,9 +492,9 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
         };
     }
 
-    private static void ApplyBalances(Account account, Account? targetAccount, TransactionType type, decimal amount)
+    private static void ApplyBalances(Account account, Account? targetAccount, TransactionType type, decimal amount, decimal? amount2)
     {
-        var (sourceDelta, targetDelta) = GetBalanceDeltas(type, amount);
+        var (sourceDelta, targetDelta) = GetBalanceDeltas(type, amount, amount2);
         account.CurrentBalance += sourceDelta;
 
         if (targetDelta is not null && targetAccount is not null)
@@ -470,9 +503,9 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
         }
     }
 
-    private static void RevertBalances(Account account, Account? targetAccount, TransactionType type, decimal amount)
+    private static void RevertBalances(Account account, Account? targetAccount, TransactionType type, decimal amount, decimal? amount2)
     {
-        var (sourceDelta, targetDelta) = GetBalanceDeltas(type, amount);
+        var (sourceDelta, targetDelta) = GetBalanceDeltas(type, amount, amount2);
         account.CurrentBalance -= sourceDelta;
 
         if (targetDelta is not null && targetAccount is not null)
@@ -481,15 +514,35 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
         }
     }
 
-    private static (decimal SourceDelta, decimal? TargetDelta) GetBalanceDeltas(TransactionType type, decimal amount)
+    private static (decimal SourceDelta, decimal? TargetDelta) GetBalanceDeltas(TransactionType type, decimal amount, decimal? amount2)
     {
         return type switch
         {
             TransactionType.Expense => (-amount, null),
             TransactionType.Income => (amount, null),
             TransactionType.Refund => (amount, null),
-            TransactionType.Transfer => (-amount, amount),
+            TransactionType.Transfer => (-amount, amount2 ?? amount),
             _ => (0m, null)
         };
+    }
+
+    private static decimal? NormalizeAmount2(TransactionType type, decimal amount, decimal? amount2)
+    {
+        if (type == TransactionType.Transfer)
+        {
+            return amount2 is > 0 ? amount2 : amount;
+        }
+
+        return amount2;
+    }
+
+    private static string? NormalizeCurrency(string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+        {
+            return null;
+        }
+
+        return currency.Trim().ToUpperInvariant();
     }
 }

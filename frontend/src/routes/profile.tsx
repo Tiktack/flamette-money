@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  FileInput,
   Group,
   Modal,
   NumberInput,
@@ -11,7 +12,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useState } from 'react'
-import { useCurrentUser, useSeedDemo } from '../lib/api/hooks'
+import { useCurrentUser, useImportBackup, useSeedDemo } from '../lib/api/hooks'
 import { getApiErrorMessage } from '../lib/api/errors'
 import { currentUserQueryOptions } from '../lib/api/queryOptions'
 import { queryClient } from '../lib/api/queryClient'
@@ -25,8 +26,11 @@ export const Route = createFileRoute('/profile')({
 function ProfilePage() {
   const currentUserQuery = useCurrentUser()
   const seedDemoMutation = useSeedDemo()
+  const importBackupMutation = useImportBackup()
   const [seedModalOpen, setSeedModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
   const [years, setYears] = useState<number>(3)
+  const [backupFile, setBackupFile] = useState<File | null>(null)
 
   const user = currentUserQuery.data
 
@@ -39,6 +43,25 @@ function ProfilePage() {
     seedDemoMutation.mutate(years, {
       onSuccess: () => setSeedModalOpen(false),
     })
+  }
+
+  const openImportModal = () => {
+    importBackupMutation.reset()
+    setBackupFile(null)
+    setImportModalOpen(true)
+  }
+
+  const handleImport = () => {
+    if (!backupFile) {
+      return
+    }
+
+    importBackupMutation.mutate(
+      { file: backupFile, type: 'one-money' },
+      {
+        onSuccess: () => setImportModalOpen(false),
+      },
+    )
   }
 
   return (
@@ -60,14 +83,62 @@ function ProfilePage() {
           </Text>
           <Group justify="flex-start" mt="sm">
             <Button onClick={openSeedModal}>Seed demo data</Button>
+            <Button variant="light" onClick={openImportModal}>
+              Import 1Money CSV
+            </Button>
           </Group>
           {seedDemoMutation.isSuccess ? (
             <Alert color="green" variant="light">
               Demo data seeded successfully.
             </Alert>
           ) : null}
+          {importBackupMutation.isSuccess ? (
+            <Alert color="green" variant="light">
+              Imported {Number(importBackupMutation.data.importedTransactions)} transactions,{' '}
+              {Number(importBackupMutation.data.importedAccounts)} accounts, and{' '}
+              {Number(importBackupMutation.data.importedCategories) + Number(importBackupMutation.data.importedSubCategories)}{' '}
+              categories.
+            </Alert>
+          ) : null}
         </Stack>
       </Card>
+
+      <Modal
+        opened={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        title="Import 1Money backup"
+      >
+        <Stack gap="sm">
+          <Text size="sm" c="dimmed">
+            Upload a 1Money CSV backup. This will create missing accounts, categories, and transactions.
+          </Text>
+          <FileInput
+            label="CSV backup"
+            placeholder="Choose file"
+            accept=".csv,text/csv"
+            value={backupFile}
+            onChange={setBackupFile}
+            clearable
+          />
+          {importBackupMutation.isError ? (
+            <Alert color="red" variant="light">
+              {getApiErrorMessage(importBackupMutation.error, 'Unable to import backup.')}
+            </Alert>
+          ) : null}
+          <Group justify="flex-end" mt="sm">
+            <Button variant="default" onClick={() => setImportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              loading={importBackupMutation.isPending}
+              onClick={handleImport}
+              disabled={!backupFile}
+            >
+              Import
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={seedModalOpen}

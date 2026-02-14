@@ -7,6 +7,9 @@ public sealed class Transaction : IUserOwnedEntity
     public DateTime Date { get; set; }
     public TransactionType Type { get; set; }
     public decimal Amount { get; set; }
+    public decimal? Amount2 { get; set; }
+    public string? Currency { get; set; }
+    public string? Currency2 { get; set; }
     public Guid AccountId { get; set; }
     public Guid? CategoryId { get; set; }
     public Guid? SubCategoryId { get; set; }

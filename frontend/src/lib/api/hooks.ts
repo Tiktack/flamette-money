@@ -17,6 +17,7 @@ import {
   postApiAccounts,
   postApiAuthLogout,
   postApiCategories,
+  postApiProfileImportBackup,
   postApiReceiptsScan,
   postApiSeedDemo,
   postApiTransactions,
@@ -37,6 +38,8 @@ import type {
   TransactionCreateRequest,
   TransactionUpdateRequest,
 } from './types'
+
+export type BackupImportType = 'one-money'
 
 export function useAccounts() {
   return useQuery(accountsQueryOptions())
@@ -252,6 +255,24 @@ export function useSeedDemo() {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+    },
+  })
+}
+
+export function useImportBackup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ file, type }: { file: File; type: BackupImportType }) =>
+      postApiProfileImportBackup({ body: { file, type }, throwOnError: true }).then(
+        (result) => result.data,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })

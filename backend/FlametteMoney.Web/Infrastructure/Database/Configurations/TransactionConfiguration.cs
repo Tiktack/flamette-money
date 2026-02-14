@@ -11,6 +11,9 @@ public sealed class TransactionConfiguration : IEntityTypeConfiguration<Transact
         builder.HasKey(transaction => transaction.Id);
         builder.Property(transaction => transaction.UserId).IsRequired();
         builder.Property(transaction => transaction.Amount).HasPrecision(18, 2);
+        builder.Property(transaction => transaction.Amount2).HasPrecision(18, 2);
+        builder.Property(transaction => transaction.Currency).HasMaxLength(3);
+        builder.Property(transaction => transaction.Currency2).HasMaxLength(3);
         builder.Property(transaction => transaction.Type).IsRequired();
         builder.Property(transaction => transaction.Date).IsRequired();
         builder.Property(transaction => transaction.MerchantName).HasMaxLength(200);

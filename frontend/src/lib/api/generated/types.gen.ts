@@ -97,7 +97,10 @@ export type CreateTransactionRequest = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
-    items: null | Array<CreateTransactionItemRequest>;
+    amount2?: null | number | string;
+    currency?: null | string;
+    currency2?: null | string;
+    items?: null | Array<CreateTransactionItemRequest>;
 };
 
 export type CreateTransactionResponse = {
@@ -105,6 +108,9 @@ export type CreateTransactionResponse = {
     date: string;
     type: TransactionType;
     amount: number | string;
+    amount2: null | number | string;
+    currency: null | string;
+    currency2: null | string;
     accountId: string;
     tripId: null | string;
     categoryId: null | string;
@@ -156,6 +162,9 @@ export type GetTransactionResponse = {
     date: string;
     type: TransactionType;
     amount: number | string;
+    amount2: null | number | string;
+    currency: null | string;
+    currency2: null | string;
     accountId: string;
     tripId: null | string;
     categoryId: null | string;
@@ -181,6 +190,16 @@ export type HttpValidationProblemDetails = {
 };
 
 export type IFormFile = Blob | File;
+
+export type ImportBackupResponse = {
+    type: string;
+    importedTransactions: number | string;
+    importedAccounts: number | string;
+    importedCategories: number | string;
+    importedSubCategories: number | string;
+    updatedBalanceSnapshots: number | string;
+    skippedRows: number | string;
+};
 
 export type ReceiptItemResponse = {
     name: string;
@@ -266,6 +285,9 @@ export type TransactionListItemResponse = {
     date: string;
     type: TransactionType;
     amount: number | string;
+    amount2: null | number | string;
+    currency: null | string;
+    currency2: null | string;
     accountId: string;
     tripId: null | string;
     categoryId: null | string;
@@ -336,7 +358,10 @@ export type UpdateTransactionRequest = {
     note: null | string;
     merchantName: null | string;
     location: null | string;
-    items: null | Array<CreateTransactionItemRequest>;
+    amount2?: null | number | string;
+    currency?: null | string;
+    currency2?: null | string;
+    items?: null | Array<CreateTransactionItemRequest>;
 };
 
 export type UpdateTransactionResponse = {
@@ -344,6 +369,9 @@ export type UpdateTransactionResponse = {
     date: string;
     type: TransactionType;
     amount: number | string;
+    amount2: null | number | string;
+    currency: null | string;
+    currency2: null | string;
     accountId: string;
     tripId: null | string;
     categoryId: null | string;
@@ -672,6 +700,33 @@ export type PostApiReceiptsScanResponses = {
 };
 
 export type PostApiReceiptsScanResponse = PostApiReceiptsScanResponses[keyof PostApiReceiptsScanResponses];
+
+export type PostApiProfileImportBackupData = {
+    body: {
+        file: IFormFile;
+    } & {
+        type: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/profile/import-backup';
+};
+
+export type PostApiProfileImportBackupErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiProfileImportBackupResponses = {
+    /**
+     * OK
+     */
+    200: ImportBackupResponse;
+};
+
+export type PostApiProfileImportBackupResponse = PostApiProfileImportBackupResponses[keyof PostApiProfileImportBackupResponses];
 
 export type GetApiCategoriesData = {
     body?: never;

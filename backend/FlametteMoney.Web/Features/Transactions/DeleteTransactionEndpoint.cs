@@ -40,16 +40,16 @@ public sealed class DeleteTransactionEndpoint : ICarterModule
             ? null
             : await dbContext.Accounts.FirstOrDefaultAsync(item => item.Id == transaction.TargetAccountId, cancellationToken);
 
-        RevertBalances(account, targetAccount, transaction.Type, transaction.Amount);
+        RevertBalances(account, targetAccount, transaction.Type, transaction.Amount, transaction.Amount2);
         dbContext.Transactions.Remove(transaction);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return TypedResults.NoContent();
     }
 
-    private static void RevertBalances(Account account, Account? targetAccount, TransactionType type, decimal amount)
+    private static void RevertBalances(Account account, Account? targetAccount, TransactionType type, decimal amount, decimal? amount2)
     {
-        var (sourceDelta, targetDelta) = GetBalanceDeltas(type, amount);
+        var (sourceDelta, targetDelta) = GetBalanceDeltas(type, amount, amount2);
         account.CurrentBalance -= sourceDelta;
 
         if (targetDelta is not null && targetAccount is not null)
@@ -58,14 +58,14 @@ public sealed class DeleteTransactionEndpoint : ICarterModule
         }
     }
 
-    private static (decimal SourceDelta, decimal? TargetDelta) GetBalanceDeltas(TransactionType type, decimal amount)
+    private static (decimal SourceDelta, decimal? TargetDelta) GetBalanceDeltas(TransactionType type, decimal amount, decimal? amount2)
     {
         return type switch
         {
             TransactionType.Expense => (-amount, null),
             TransactionType.Income => (amount, null),
             TransactionType.Refund => (amount, null),
-            TransactionType.Transfer => (-amount, amount),
+            TransactionType.Transfer => (-amount, amount2 ?? amount),
             _ => (0m, null)
         };
     }
