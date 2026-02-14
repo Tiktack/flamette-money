@@ -4,13 +4,17 @@ import {
   Button,
   Card,
   Chip,
+  Collapse,
   Divider,
   FileInput,
   Group,
   Image,
   Modal,
   NumberInput,
+  Paper,
+  SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
   Table,
   ThemeIcon,
@@ -65,6 +69,9 @@ type TransactionFormState = {
   date: string
   type: TransactionType
   amount: number | ''
+  amount2: number | ''
+  currency: string
+  currency2: string
   accountId: string
   tripId: string | null
   categoryId: string | null
@@ -102,6 +109,9 @@ const buildDefaultState = (type: TransactionType): TransactionFormState => ({
   date: formatDateInput(new Date()),
   type,
   amount: '',
+  amount2: '',
+  currency: 'PLN',
+  currency2: 'PLN',
   accountId: '',
   tripId: null,
   categoryId: null,
@@ -118,6 +128,12 @@ const fillFromTransaction = (transaction: TransactionDetail): TransactionFormSta
   date: transaction.date ? transaction.date.slice(0, 10) : formatDateInput(new Date()),
   type: transaction.type,
   amount: Number(transaction.amount),
+  amount2:
+    transaction.amount2 === null || transaction.amount2 === undefined
+      ? ''
+      : Number(transaction.amount2),
+  currency: (transaction.currency ?? 'PLN').toUpperCase(),
+  currency2: (transaction.currency2 ?? transaction.currency ?? 'PLN').toUpperCase(),
   accountId: transaction.accountId,
   tripId: transaction.tripId,
   categoryId: transaction.categoryId,
@@ -166,6 +182,8 @@ const applyPresetCategory = (
   }
 }
 
+const defaultCurrencyOptions = ['PLN', 'EUR', 'USD', 'CAD']
+
 export function TransactionEditorModal({
   opened,
   mode,
@@ -186,6 +204,7 @@ export function TransactionEditorModal({
     buildDefaultState(presetType ?? defaultType),
   )
   const [activeTab, setActiveTab] = useState<string>('manual')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [scanFile, setScanFile] = useState<File | null>(null)
   const [scanPreview, setScanPreview] = useState<string | null>(null)
   const [scanAccountId, setScanAccountId] = useState('')
@@ -197,6 +216,24 @@ export function TransactionEditorModal({
 
   const categories = categoriesQuery.data ?? []
   const categoryMap = useMemo(() => buildCategoryMap(categories), [categories])
+
+  const accountsById = useMemo(() => {
+    const map = new Map<string, { name: string; currency: string }>()
+    for (const account of accountsQuery.data ?? []) {
+      map.set(account.id, { name: account.name, currency: account.currency })
+    }
+    return map
+  }, [accountsQuery.data])
+
+  const currencyOptions = useMemo(() => {
+    const set = new Set(defaultCurrencyOptions)
+    for (const account of accountsQuery.data ?? []) {
+      if (account.currency) {
+        set.add(account.currency.toUpperCase())
+      }
+    }
+    return [...set].map((value) => ({ value, label: value }))
+  }, [accountsQuery.data])
 
   const accountOptions = useMemo(
     () =>
@@ -313,10 +350,14 @@ export function TransactionEditorModal({
           ? applyPresetCategory(nextState, presetCategoryId, categories)
           : nextState
 
-      const accountId = withCategory.accountId || accountsQuery.data?.[0]?.id || ''
+      const defaultAccount = accountsQuery.data?.[0]
+      const accountId = withCategory.accountId || defaultAccount?.id || ''
+      const sourceCurrency = defaultAccount?.currency?.toUpperCase() ?? withCategory.currency
       setForm({
         ...withCategory,
         accountId,
+        currency: sourceCurrency,
+        currency2: sourceCurrency,
         type: (presetType ?? withCategory.type) as TransactionType,
       })
     }
@@ -334,6 +375,7 @@ export function TransactionEditorModal({
   useEffect(() => {
     if (!opened) {
       setActiveTab('manual')
+      setAdvancedOpen(false)
       setScanFile(null)
       setScanPreview(null)
       setScanAccountId('')
@@ -342,8 +384,6 @@ export function TransactionEditorModal({
     }
   }, [opened])
 
-  const categoryType = form.categoryId ? categoryMap.get(form.categoryId)?.type : null
-  const typeHint = categoryType ? `Category: ${categoryType}` : null
   const requiresTarget = form.type === 'Transfer'
   const requiresOriginal = form.type === 'Refund'
   const showCategoryFields = form.type !== 'Transfer'
@@ -371,6 +411,11 @@ export function TransactionEditorModal({
       return
     }
 
+    if (requiresTarget && form.amount2 !== '' && Number(form.amount2) <= 0) {
+      setErrorMessage('Transfer amount to target must be greater than 0.')
+      return
+    }
+
     if (requiresOriginal && !form.originalTransactionId) {
       setErrorMessage('Original transaction is required for refunds.')
       return
@@ -380,6 +425,20 @@ export function TransactionEditorModal({
       date: new Date(`${form.date}T00:00:00`).toISOString(),
       type: form.type,
       amount: Number(form.amount),
+      amount2:
+        form.type === 'Transfer'
+          ? form.amount2 === ''
+            ? Number(form.amount)
+            : Number(form.amount2)
+          : form.amount2 === ''
+            ? null
+            : Number(form.amount2),
+      currency: form.currency ? form.currency.toUpperCase() : null,
+      currency2: form.type === 'Transfer'
+        ? (form.currency2 || form.currency).toUpperCase()
+        : form.currency2
+          ? form.currency2.toUpperCase()
+          : null,
       accountId: form.accountId,
       tripId: form.type === 'Expense' ? form.tripId : null,
       categoryId: showCategoryFields ? form.categoryId : null,
@@ -447,126 +506,119 @@ export function TransactionEditorModal({
   }
 
   const manualTabContent = (
-    <Stack gap="sm">
+    <Stack gap="lg">
       {isEditingLoading ? (
-        <Text size="sm" c="dimmed">
-          Loading transaction...
-        </Text>
+        <Text size="sm" c="dimmed">Loading transaction...</Text>
       ) : null}
       {transactionLoadError ? (
-        <Text size="sm" c="red">
-          Unable to load transaction details.
-        </Text>
+        <Text size="sm" c="red">Unable to load transaction details.</Text>
       ) : null}
-      <Group gap="md" wrap="wrap">
-        <DatePickerInput
-          label="Date"
-          value={form.date || null}
-          onChange={(value) =>
-            setForm((state) => ({
-              ...state,
-              date: value ?? '',
-            }))
-          }
-          valueFormat="YYYY-MM-DD"
-          disabled={isEditingLoading}
-        />
-        <Select
-          label="Type"
-          data={typeOptions}
-          value={form.type}
-          onChange={(value) =>
-            setForm((state) => {
-              const nextType = (value ?? defaultType) as TransactionType
-              const allowedType = nextType === 'Income' ? 'Income' : 'Expense'
-              const category = state.categoryId ? categoryMap.get(state.categoryId) : null
-              const keepsCategory = category && category.type === allowedType
 
-              return {
-                ...state,
-                type: nextType,
-                tripId: nextType === 'Expense' ? state.tripId : null,
-                categoryId: nextType === 'Transfer' || !keepsCategory ? null : state.categoryId,
-                subCategoryId:
-                  nextType === 'Transfer' || !keepsCategory ? null : state.subCategoryId,
-                targetAccountId: nextType === 'Transfer' ? state.targetAccountId : null,
-                originalTransactionId: nextType === 'Refund' ? state.originalTransactionId : '',
-              }
-            })
-          }
-          allowDeselect={false}
-          disabled={isEditingLoading}
-        />
-        <NumberInput
-          label="Amount"
-          min={0}
-          value={form.amount}
-          onChange={(value) =>
-            setForm((state) => ({
-              ...state,
-              amount: typeof value === 'number' ? value : '',
-            }))
-          }
-          disabled={isEditingLoading}
-        />
-      </Group>
+      {/* Type selector */}
+      <SegmentedControl
+        data={typeOptions}
+        value={form.type}
+        onChange={(value) =>
+          setForm((state) => {
+            const nextType = (value ?? defaultType) as TransactionType
+            const allowedType = nextType === 'Income' ? 'Income' : 'Expense'
+            const category = state.categoryId ? categoryMap.get(state.categoryId) : null
+            const keepsCategory = category && category.type === allowedType
+            const sourceCurrency = state.accountId
+              ? (accountsById.get(state.accountId)?.currency ?? state.currency)
+              : state.currency
 
-      <Group gap="md" wrap="wrap">
-        <Select
-          label={requiresTarget ? 'From account' : 'Account'}
-          data={accountOptions}
-          value={form.accountId}
-          onChange={(value) => setForm((state) => ({ ...state, accountId: value ?? '' }))}
-          allowDeselect={false}
-          disabled={isEditingLoading}
-          renderOption={({ option }) => (
-            <Group gap="sm">
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
-                  backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
-                }}
-              />
-              <Text size="sm">{option.label}</Text>
-            </Group>
-          )}
-        />
-        {requiresTarget ? (
-          <Select
-            label="To account"
-            data={accountOptions}
-            value={form.targetAccountId}
-            onChange={(value) =>
-              setForm((state) => ({ ...state, targetAccountId: value ?? null }))
+            return {
+              ...state,
+              type: nextType,
+              tripId: nextType === 'Expense' ? state.tripId : null,
+              categoryId: nextType === 'Transfer' || !keepsCategory ? null : state.categoryId,
+              subCategoryId:
+                nextType === 'Transfer' || !keepsCategory ? null : state.subCategoryId,
+              targetAccountId: nextType === 'Transfer' ? state.targetAccountId : null,
+              originalTransactionId: nextType === 'Refund' ? state.originalTransactionId : '',
+              amount2: nextType === 'Transfer' ? state.amount2 : '',
+              currency2: nextType === 'Transfer' ? state.currency2 : sourceCurrency,
             }
+          })
+        }
+        fullWidth
+        radius="xl"
+        disabled={isEditingLoading}
+      />
+
+      {/* Account & Category blocks */}
+      <SimpleGrid cols={{ base: 1, sm: showCategoryFields ? 2 : 1 }} spacing="sm">
+        {/* Source account */}
+        <Paper
+          withBorder
+          p="sm"
+          radius="md"
+          style={{
+            borderLeft: `4px solid ${accountColorMap.get(form.accountId) ?? '#CED4DA'}`,
+          }}
+        >
+          <Text size="xs" c="dimmed" mb={2}>
+            {requiresTarget ? 'From account' : 'Account'}
+          </Text>
+          <Select
+            data={accountOptions}
+            value={form.accountId}
+            onChange={(value) =>
+              setForm((state) => {
+                const nextAccountId = value ?? ''
+                const nextCurrency =
+                  accountsById.get(nextAccountId)?.currency?.toUpperCase() ?? state.currency
+                return {
+                  ...state,
+                  accountId: nextAccountId,
+                  currency: nextCurrency,
+                  currency2: requiresTarget ? state.currency2 : nextCurrency,
+                }
+              })
+            }
+            variant="unstyled"
             allowDeselect={false}
             disabled={isEditingLoading}
+            styles={{
+              input: {
+                fontWeight: 600,
+                fontSize: 16,
+                padding: 0,
+                minHeight: 'unset',
+                height: 28,
+              },
+            }}
+            renderOption={({ option }) => (
+              <Group gap="sm">
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 999,
+                    backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
+                  }}
+                />
+                <Text size="sm">{option.label}</Text>
+              </Group>
+            )}
           />
-        ) : null}
-      </Group>
+        </Paper>
 
-      {showCategoryFields ? (
-        <>
-          <Group gap="md" wrap="wrap">
+        {/* Category */}
+        {showCategoryFields ? (
+          <Paper
+            withBorder
+            p="sm"
+            radius="md"
+            style={{
+              borderLeft: `4px solid ${selectedCategoryColor ?? '#CED4DA'}`,
+            }}
+          >
+            <Text size="xs" c="dimmed" mb={2}>
+              Category
+            </Text>
             <Select
-              label="Trip"
-              data={tripOptions}
-              value={form.tripId}
-              onChange={(value) =>
-                setForm((state) => ({
-                  ...state,
-                  tripId: value ?? null,
-                }))
-              }
-              searchable
-              clearable
-              placeholder="Optional"
-              disabled={isEditingLoading || form.type !== 'Expense' || tripsQuery.isLoading}
-            />
-            <Select
-              label="Category"
               data={categoryOptionsByType}
               value={form.categoryId}
               onChange={(value) =>
@@ -576,10 +628,29 @@ export function TransactionEditorModal({
                   subCategoryId: null,
                 }))
               }
+              variant="unstyled"
               searchable
               clearable
               placeholder="Select category"
               disabled={isEditingLoading}
+              styles={{
+                input: {
+                  fontWeight: 600,
+                  fontSize: 16,
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                  paddingRight: 0,
+                  paddingLeft: 30,
+                  minHeight: 'unset',
+                  height: 28,
+                  lineHeight: '28px',
+                },
+                section: {
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                },
+              }}
               leftSection={
                 selectedCategory && selectedCategoryColor ? (
                   <CategoryIcon
@@ -593,7 +664,6 @@ export function TransactionEditorModal({
               renderOption={({ option }) => {
                 const category = categoryMap.get(option.value)
                 const color = normalizeCategoryColor(category?.color)
-
                 return (
                   <Group gap="sm" wrap="nowrap">
                     <ThemeIcon
@@ -614,285 +684,494 @@ export function TransactionEditorModal({
                 )
               }}
             />
-          </Group>
 
-          {form.categoryId && subcategoriesForParent.length > 0 ? (
-            <Stack gap={6}>
-              <Text size="sm" fw={600}>
-                Subcategory
-              </Text>
-              <Chip.Group
-                multiple={false}
-                value={form.subCategoryId}
-                onChange={(value) =>
-                  setForm((state) => ({
-                    ...state,
-                    subCategoryId: typeof value === 'string' ? value : null,
-                  }))
-                }
-              >
-                <Group gap="xs" wrap="wrap">
-                  {subcategoriesForParent.map((subcategory) => {
-                    const color = normalizeCategoryColor(subcategory.color)
+          </Paper>
+        ) : null}
+      </SimpleGrid>
 
-                    return (
-                      <Chip
-                        key={subcategory.id}
-                        value={subcategory.id}
-                        disabled={isEditingLoading}
-                        variant="light"
-                        radius="xl"
-                        color={color}
-                        onClick={(event) => {
-                          if (event.currentTarget.value === form.subCategoryId) {
-                            setForm((state) => ({ ...state, subCategoryId: null }))
-                          }
-                        }}
-                      >
-                        <Group gap={6} wrap="nowrap">
-                          <CategoryIcon
-                            icon={subcategory.icon ?? 'tag'}
-                            color={color}
-                            size={16}
-                          />
-                          <Text size="sm" fw={600}>
-                            {subcategory.name}
-                          </Text>
-                        </Group>
-                      </Chip>
-                    )
-                  })}
-                </Group>
-              </Chip.Group>
-            </Stack>
-          ) : null}
-
-          {typeHint ? (
-            <Badge variant="light" color={categoryType === 'Income' ? 'teal' : 'red'}>
-              {typeHint}
-            </Badge>
-          ) : null}
-        </>
-      ) : null}
-
-      {requiresOriginal ? (
-        <TextInput
-          label="Original transaction ID"
-          value={form.originalTransactionId}
-          onChange={(event) =>
+      {showCategoryFields && form.categoryId && subcategoriesForParent.length > 0 ? (
+        <Chip.Group
+          multiple={false}
+          value={form.subCategoryId}
+          onChange={(value) =>
             setForm((state) => ({
               ...state,
-              originalTransactionId: event.currentTarget.value,
+              subCategoryId: typeof value === 'string' ? value : null,
             }))
           }
-          placeholder="Paste transaction ID"
-          disabled={isEditingLoading}
-        />
-      ) : null}
-
-      <Divider />
-
-      <Group gap="md" wrap="wrap">
-        <TextInput
-          label="Merchant"
-          value={form.merchantName}
-          onChange={(event) =>
-            setForm((state) => ({ ...state, merchantName: event.currentTarget.value }))
-          }
-          disabled={isEditingLoading}
-        />
-        <TextInput
-          label="Note"
-          value={form.note}
-          onChange={(event) => setForm((state) => ({ ...state, note: event.currentTarget.value }))}
-          disabled={isEditingLoading}
-        />
-        <TextInput
-          label="Location"
-          value={form.location}
-          onChange={(event) =>
-            setForm((state) => ({ ...state, location: event.currentTarget.value }))
-          }
-          disabled={isEditingLoading}
-        />
-      </Group>
-
-      {/* Transaction items section */}
-      {form.items.length > 0 ? (
-        <>
-          <Divider />
-          <Group justify="space-between" align="center">
-            <Text fw={600} size="sm">
-              Items ({form.items.length})
-            </Text>
-            <Button
-              variant="subtle"
-              size="xs"
-              onClick={() => setForm((state) => ({ ...state, items: [] }))}
-            >
-              Clear all
-            </Button>
+        >
+          <Group gap={4} wrap="wrap">
+            {subcategoriesForParent.map((subcategory) => {
+              const color = normalizeCategoryColor(subcategory.color)
+              return (
+                <Chip
+                  key={subcategory.id}
+                  value={subcategory.id}
+                  disabled={isEditingLoading}
+                  variant="light"
+                  radius="xl"
+                  size="xs"
+                  color={color}
+                  onClick={(event) => {
+                    if (event.currentTarget.value === form.subCategoryId) {
+                      setForm((state) => ({ ...state, subCategoryId: null }))
+                    }
+                  }}
+                >
+                  <Group gap={4} wrap="nowrap">
+                    <CategoryIcon
+                      icon={subcategory.icon ?? 'tag'}
+                      color={color}
+                      size={14}
+                    />
+                    <Text size="xs" fw={600}>
+                      {subcategory.name}
+                    </Text>
+                  </Group>
+                </Chip>
+              )
+            })}
           </Group>
-          <div style={{ overflowX: 'auto' }}>
-            <Table verticalSpacing="xs" horizontalSpacing="xs">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Name</Table.Th>
-                  <Table.Th>Qty</Table.Th>
-                  <Table.Th>Unit price</Table.Th>
-                  <Table.Th>Promo</Table.Th>
-                  <Table.Th>Category</Table.Th>
-                  <Table.Th />
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {form.items.map((item, index) => (
-                  <Table.Tr key={index}>
-                    <Table.Td>
-                      <TextInput
-                        value={item.name}
-                        onChange={(e) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((it, i) =>
-                              i === index ? { ...it, name: e.currentTarget.value } : it,
-                            ),
-                          }))
-                        }
-                        size="xs"
-                        variant="unstyled"
-                        styles={{ input: { fontWeight: 500 } }}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberInput
-                        value={item.quantity}
-                        onChange={(value) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((it, i) =>
-                              i === index
-                                ? { ...it, quantity: typeof value === 'number' ? value : 1 }
-                                : it,
-                            ),
-                          }))
-                        }
-                        min={0}
-                        size="xs"
-                        variant="unstyled"
-                        w={50}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberInput
-                        value={item.unitPrice}
-                        onChange={(value) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((it, i) =>
-                              i === index
-                                ? { ...it, unitPrice: typeof value === 'number' ? value : 0 }
-                                : it,
-                            ),
-                          }))
-                        }
-                        min={0}
-                        decimalScale={2}
-                        size="xs"
-                        variant="unstyled"
-                        w={80}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <NumberInput
-                        value={item.promotionAmount}
-                        onChange={(value) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((it, i) =>
-                              i === index
-                                ? {
-                                    ...it,
-                                    promotionAmount: typeof value === 'number' ? value : 0,
-                                  }
-                                : it,
-                            ),
-                          }))
-                        }
-                        min={0}
-                        decimalScale={2}
-                        size="xs"
-                        variant="unstyled"
-                        w={70}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <Select
-                        data={categoryOptionsByType}
-                        value={item.categoryId}
-                        onChange={(value) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((it, i) =>
-                              i === index
-                                ? { ...it, categoryId: value, subCategoryId: null }
-                                : it,
-                            ),
-                          }))
-                        }
-                        size="xs"
-                        clearable
-                        placeholder="Category"
-                        w={130}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        size="sm"
-                        onClick={() =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.filter((_, i) => i !== index),
-                          }))
-                        }
-                      >
-                        ×
-                      </ActionIcon>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </div>
-        </>
+        </Chip.Group>
       ) : null}
 
-      <Button
-        variant="light"
-        size="xs"
-        onClick={() =>
-          setForm((state) => ({
-            ...state,
-            items: [
-              ...state.items,
-              {
-                name: '',
-                quantity: 1,
-                unit: '',
-                unitPrice: 0,
-                promotionAmount: 0,
-                categoryId: null,
-                subCategoryId: null,
+      {/* Target account for transfers */}
+      {requiresTarget ? (
+        <Paper
+          withBorder
+          p="sm"
+          radius="md"
+          style={{
+            borderLeft: `4px solid ${accountColorMap.get(form.targetAccountId ?? '') ?? '#CED4DA'}`,
+          }}
+        >
+          <Text size="xs" c="dimmed" mb={2}>
+            To account
+          </Text>
+          <Select
+            data={accountOptions}
+            value={form.targetAccountId}
+            onChange={(value) =>
+              setForm((state) => {
+                const nextTarget = value ?? null
+                const targetCurrency =
+                  (nextTarget ? accountsById.get(nextTarget)?.currency : null) ?? state.currency2
+                return {
+                  ...state,
+                  targetAccountId: nextTarget,
+                  currency2: targetCurrency,
+                }
+              })
+            }
+            variant="unstyled"
+            allowDeselect={false}
+            disabled={isEditingLoading}
+            styles={{
+              input: {
+                fontWeight: 600,
+                fontSize: 16,
+                padding: 0,
+                minHeight: 'unset',
+                height: 28,
               },
-            ],
-          }))
-        }
-        disabled={isEditingLoading}
+            }}
+            renderOption={({ option }) => (
+              <Group gap="sm">
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 999,
+                    backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
+                  }}
+                />
+                <Text size="sm">{option.label}</Text>
+              </Group>
+            )}
+          />
+        </Paper>
+      ) : null}
+
+      {/* Amount area - prominent & centered */}
+      <Paper
+        withBorder
+        radius="lg"
+        p="md"
+        style={{
+          backgroundColor: 'var(--mantine-color-default)',
+          borderColor: 'var(--mantine-color-default-border)',
+        }}
       >
-        + Add item
-      </Button>
+        <Stack gap={4} align="center">
+          <Group gap={4} justify="center" align="baseline" wrap="nowrap">
+            <NumberInput
+              value={form.amount}
+              onChange={(value) =>
+                setForm((state) => ({
+                  ...state,
+                  amount: typeof value === 'number' ? value : '',
+                }))
+              }
+              min={0}
+              decimalScale={2}
+              variant="unstyled"
+              placeholder="0.00"
+              hideControls
+              styles={{
+                input: {
+                  fontSize: 36,
+                  fontWeight: 700,
+                  textAlign: 'right',
+                  width: 180,
+                  padding: 0,
+                },
+              }}
+              disabled={isEditingLoading}
+            />
+            <Select
+              data={currencyOptions}
+              value={form.currency}
+              onChange={(value) =>
+                setForm((state) => ({ ...state, currency: value ?? state.currency }))
+              }
+              variant="unstyled"
+              searchable
+              allowDeselect={false}
+              disabled={isEditingLoading}
+              styles={{
+                input: {
+                  fontSize: 20,
+                  fontWeight: 600,
+                  width: 70,
+                  padding: 0,
+                  color: 'var(--mantine-color-dimmed)',
+                },
+              }}
+            />
+          </Group>
+
+          {/* Transfer target amount */}
+          {requiresTarget ? (
+            <>
+              <Text c="dimmed" size="lg" lh={1}>
+                ↓
+              </Text>
+              <Group gap={4} justify="center" align="baseline" wrap="nowrap">
+                <NumberInput
+                  value={form.amount2}
+                  onChange={(value) =>
+                    setForm((state) => ({
+                      ...state,
+                      amount2: typeof value === 'number' ? value : '',
+                    }))
+                  }
+                  min={0}
+                  decimalScale={2}
+                  variant="unstyled"
+                  placeholder={String(form.amount || '0.00')}
+                  hideControls
+                  styles={{
+                    input: {
+                      fontSize: 28,
+                      fontWeight: 600,
+                      textAlign: 'right',
+                      width: 150,
+                      padding: 0,
+                      opacity: 0.7,
+                    },
+                  }}
+                  disabled={isEditingLoading}
+                />
+                <Select
+                  data={currencyOptions}
+                  value={form.currency2}
+                  onChange={(value) =>
+                    setForm((state) => ({ ...state, currency2: value ?? state.currency2 }))
+                  }
+                  variant="unstyled"
+                  searchable
+                  allowDeselect={false}
+                  disabled={isEditingLoading}
+                  styles={{
+                    input: {
+                      fontSize: 16,
+                      fontWeight: 600,
+                      width: 65,
+                      padding: 0,
+                      color: 'var(--mantine-color-dimmed)',
+                    },
+                  }}
+                />
+              </Group>
+            </>
+          ) : null}
+
+        </Stack>
+      </Paper>
+
+      {/* Note & Date - minimal */}
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+        <TextInput
+          placeholder="Add a note..."
+          variant="filled"
+          radius="md"
+          value={form.note}
+          onChange={(event) =>
+            setForm((state) => ({ ...state, note: event.currentTarget.value }))
+          }
+          disabled={isEditingLoading}
+        />
+        <DatePickerInput
+          variant="filled"
+          radius="md"
+          value={form.date || null}
+          onChange={(value) =>
+            setForm((state) => ({
+              ...state,
+              date: value ?? '',
+            }))
+          }
+          valueFormat="YYYY-MM-DD"
+          disabled={isEditingLoading}
+        />
+      </SimpleGrid>
+
+      {/* Advanced section toggle */}
+      <Divider
+        label={
+          <Button
+            variant="subtle"
+            size="xs"
+            color="gray"
+            onClick={() => setAdvancedOpen((o) => !o)}
+          >
+            {advancedOpen ? '▾ Less options' : '▸ More options'}
+          </Button>
+        }
+        labelPosition="center"
+      />
+
+      <Collapse in={advancedOpen}>
+        <Stack gap="md">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
+            <TextInput
+              label="Merchant"
+              value={form.merchantName}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, merchantName: event.currentTarget.value }))
+              }
+              disabled={isEditingLoading}
+              placeholder="Optional"
+            />
+            <TextInput
+              label="Location"
+              value={form.location}
+              onChange={(event) =>
+                setForm((state) => ({ ...state, location: event.currentTarget.value }))
+              }
+              disabled={isEditingLoading}
+              placeholder="Optional"
+            />
+          </SimpleGrid>
+
+          {form.type === 'Expense' ? (
+            <Select
+              label="Trip"
+              data={tripOptions}
+              value={form.tripId}
+              onChange={(value) =>
+                setForm((state) => ({
+                  ...state,
+                  tripId: value ?? null,
+                }))
+              }
+              searchable
+              clearable
+              placeholder="Optional"
+              disabled={isEditingLoading || tripsQuery.isLoading}
+            />
+          ) : null}
+
+          {requiresOriginal ? (
+            <TextInput
+              label="Original transaction ID"
+              value={form.originalTransactionId}
+              onChange={(event) =>
+                setForm((state) => ({
+                  ...state,
+                  originalTransactionId: event.currentTarget.value,
+                }))
+              }
+              placeholder="Paste transaction ID"
+              disabled={isEditingLoading}
+            />
+          ) : null}
+
+          {/* Items */}
+          <Divider label="Items" labelPosition="left" />
+
+          {form.items.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <Table verticalSpacing="xs" horizontalSpacing="xs">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Qty</Table.Th>
+                    <Table.Th>Unit price</Table.Th>
+                    <Table.Th>Promo</Table.Th>
+                    <Table.Th>Category</Table.Th>
+                    <Table.Th />
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {form.items.map((item, index) => (
+                    <Table.Tr key={index}>
+                      <Table.Td>
+                        <TextInput
+                          value={item.name}
+                          onChange={(e) =>
+                            setForm((state) => ({
+                              ...state,
+                              items: state.items.map((it, i) =>
+                                i === index ? { ...it, name: e.currentTarget.value } : it,
+                              ),
+                            }))
+                          }
+                          size="xs"
+                          variant="unstyled"
+                          styles={{ input: { fontWeight: 500 } }}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <NumberInput
+                          value={item.quantity}
+                          onChange={(value) =>
+                            setForm((state) => ({
+                              ...state,
+                              items: state.items.map((it, i) =>
+                                i === index
+                                  ? { ...it, quantity: typeof value === 'number' ? value : 1 }
+                                  : it,
+                              ),
+                            }))
+                          }
+                          min={0}
+                          size="xs"
+                          variant="unstyled"
+                          w={50}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <NumberInput
+                          value={item.unitPrice}
+                          onChange={(value) =>
+                            setForm((state) => ({
+                              ...state,
+                              items: state.items.map((it, i) =>
+                                i === index
+                                  ? { ...it, unitPrice: typeof value === 'number' ? value : 0 }
+                                  : it,
+                              ),
+                            }))
+                          }
+                          min={0}
+                          decimalScale={2}
+                          size="xs"
+                          variant="unstyled"
+                          w={80}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <NumberInput
+                          value={item.promotionAmount}
+                          onChange={(value) =>
+                            setForm((state) => ({
+                              ...state,
+                              items: state.items.map((it, i) =>
+                                i === index
+                                  ? {
+                                      ...it,
+                                      promotionAmount: typeof value === 'number' ? value : 0,
+                                    }
+                                  : it,
+                              ),
+                            }))
+                          }
+                          min={0}
+                          decimalScale={2}
+                          size="xs"
+                          variant="unstyled"
+                          w={70}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Select
+                          data={categoryOptionsByType}
+                          value={item.categoryId}
+                          onChange={(value) =>
+                            setForm((state) => ({
+                              ...state,
+                              items: state.items.map((it, i) =>
+                                i === index
+                                  ? { ...it, categoryId: value, subCategoryId: null }
+                                  : it,
+                              ),
+                            }))
+                          }
+                          size="xs"
+                          clearable
+                          placeholder="Category"
+                          w={130}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                          onClick={() =>
+                            setForm((state) => ({
+                              ...state,
+                              items: state.items.filter((_, i) => i !== index),
+                            }))
+                          }
+                        >
+                          ×
+                        </ActionIcon>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </div>
+          ) : null}
+
+          <Button
+            variant="light"
+            size="xs"
+            onClick={() =>
+              setForm((state) => ({
+                ...state,
+                items: [
+                  ...state.items,
+                  {
+                    name: '',
+                    quantity: 1,
+                    unit: '',
+                    unitPrice: 0,
+                    promotionAmount: 0,
+                    categoryId: null,
+                    subCategoryId: null,
+                  },
+                ],
+              }))
+            }
+            disabled={isEditingLoading}
+          >
+            + Add item
+          </Button>
+        </Stack>
+      </Collapse>
 
       {errorMessage ? (
         <Text size="sm" c="red">

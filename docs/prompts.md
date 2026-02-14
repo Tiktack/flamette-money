@@ -313,6 +313,10 @@ An exception of type 'Microsoft.Data.Sqlite.SqliteException' occurred in System.
 ----------------------------
 2026-02-14 00:00:00
 Awesome, but can we generate some colors for categories randomly, since csv doesn't have that info.
+
+----------------------------
+2026-02-14 00:00:00
+Can we update adding transaction modal? It looks not good visual + missing features. I want beatiful modal to create transaction selecting category, subcategory amount, currency, amount and note, and date. And some toggle like advanced fields, like merchant location and other items. It should not be simple top down layout. Make it visually pleasant and simple to use.
 3. "all transactions trips and so on should be binded to some userid." - User emphasizes the need for user ID association with transactions.
 4. "Make sure proper indexes added, to make fetching data optimized." - User requests optimization for data retrieval.
 5. "For Users I believe we need to store name, email, some id ofc and maybe subscription type, but for now it won't be used." - User outlines the data structure for user accounts.
@@ -547,3 +551,19 @@ I am getting Unhandled exception. System.InvalidOperationException: An error was
 2026-02-13 17:23:38
 Can you implement profile page, which I can navigate from profile button in a header. For now there just add some button to seed the data, Like a modal confirmation with selection of how many years.
 
+----------------------------
+2026-02-14
+It's not what I meant, advanced fields applies to "Items" as well. It's still top down layout that looks just ugly, where date amounts currency and transaction type mixed together. 
+I added screenshot of 1Money mobile app. Look how they made it work all well together. 
+We are building for web, so we can't just copy it, but we still can make this modal feel right. 
+
+----------------------------
+2026-02-14
+I do like new design. Only thing, remove this strange ship below the amount, that says "category:income/expense" it's redundant, also, remove expense/income label above the amount, we have segmented control on top, why do we duplicate these things. 
+Card for amount is not optimized for dark mode. 
+When I select category, right now subcategories appear below category in a card basically, I want them appear In between two rows (account, category) and second row amount. I want it to be like a third row between them. 
+
+----------------------------
+2026-02-14
+Awesome, just remove "card" layout around subcategories, they should be just there without any borders like card. 
+Also, spotted small bug, category icon when selected just misplaced and seats on top of label...
