@@ -398,6 +398,9 @@ Can we update adding transaction modal? It looks not good visual + missing featu
 - Pending Task 1: Implement user model changes in Account.cs to support multi-user functionality.
 - Pending Task 2: Integrate Google sign-in functionality and ensure proper indexing for data optimization.
 - Priority Information: Focus on implementing the user model and authentication first.
+----------------------------
+2026-02-14 15:01:52
+Start implementation
 - Next Action: Begin coding the user model in Account.cs with fields for name, email, user ID, and subscription type.
 </summary>
 ----------------------------
@@ -567,3 +570,173 @@ When I select category, right now subcategories appear below category in a card 
 2026-02-14
 Awesome, just remove "card" layout around subcategories, they should be just there without any borders like card. 
 Also, spotted small bug, category icon when selected just misplaced and seats on top of label...
+
+----------------------------
+2026-02-14 15:19:31
+I said that it should be different routes, not just stupid segmented control on top. 
+I attached roughly how it handles snowball income website. I want similar thing. 
+You can fetch some instruction for file routing here: 
+https://tanstack.com/router/latest/docs/framework/react/routing/file-based-routing
+
+Also, base currency should not be selectable in a chart. For that, let's remove profile page, move the stuff from it to settings page(new one), and make there a setting, that we save in DB in api what base currency is. 
+
+Also, remove this strange page titles like reports, transaction and so on. We have header one row aboe where we can see what page selected, we don't need these strange labels.
+
+----------------------------
+2026-02-15 00:15:16
+Cool, but links looks like without styles at all to navigate between categories, comparison and portfolio. Style them properly with icons from tabler
+
+----------------------------
+2026-02-15 00:31:49
+Adding new transaction doesn't open modal anymore. 
+Use modals manager from Mantine instead of route path. Use this link to get documentation 
+https://mantine.dev/llms.txt
+
+----------------------------
+2026-02-15 00:31:49
+getting this 
+react-dom-client.development.js:4624 
+ Uncaught Error: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+	at getRootForUpdatedFiber (react-dom-client.development.js:4624:11)
+	at enqueueConcurrentHookUpdate (react-dom-client.development.js:4584:14)
+	at dispatchSetStateInternal (react-dom-client.development.js:9167:18)
+	at dispatchSetState (react-dom-client.development.js:9127:7)
+	at setElementRef (SegmentedControl.tsx:193:5)
+	at ref (SegmentedControl.tsx:235:24)
+	at runWithFiberInDEV (react-dom-client.development.js:871:30)
+	at safelyDetachRef (react-dom-client.development.js:13529:37)
+	at commitMutationEffectsOnFiber (react-dom-client.development.js:14826:15)
+	at recursivelyTraverseMutationEffects (react-dom-client.development.js:14576:11)
+getRootForUpdatedFiber	@	react-dom-client.development.js:4624
+enqueueConcurrentHookUpdate	@	react-dom-client.development.js:4584
+dispatchSetStateInternal	@	react-dom-client.development.js:9167
+dispatchSetState	@	react-dom-client.development.js:9127
+setElementRef	@	SegmentedControl.tsx:193
+ref	@	SegmentedControl.tsx:235
+runWithFiberInDEV	@	react-dom-client.development.js:871
+safelyDetachRef	@	react-dom-client.development.js:13529
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14826
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14821
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14911
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14591
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:15102
+recursivelyTraverseMutationEffects	@	react-dom-client.development.js:14576
+commitMutationEffectsOnFiber	@	react-dom-client.development.js:14883
+flushMutationEffects	@	react-dom-client.development.js:17979
+commitRoot	@	react-dom-client.development.js:17953
+commitRootWhenReady	@	react-dom-client.development.js:16824
+performWorkOnRoot	@	react-dom-client.development.js:16722
+performSyncWorkOnRoot	@	react-dom-client.development.js:18972
+flushSyncWorkAcrossRoots_impl	@	react-dom-client.development.js:18814
+flushSyncWork$1	@	react-dom-client.development.js:16898
+f	@	react-dom-client.development.js:27521
+exports.flushSync	@	react-dom.development.js:140
+(anonymous)

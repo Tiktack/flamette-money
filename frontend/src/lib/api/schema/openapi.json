@@ -444,6 +444,72 @@
         }
       }
     },
+    "/api/settings": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Get user settings",
+        "description": "Returns current user settings.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update user settings",
+        "description": "Updates current user settings.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/seed/demo": {
       "post": {
         "tags": [
@@ -555,6 +621,155 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CategorySeriesReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/monthly-yoy": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get monthly year-over-year report",
+        "description": "Returns Jan-Dec monthly totals with grouped series for each selected year.",
+        "parameters": [
+          {
+            "name": "StartYear",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "EndYear",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Type",
+            "in": "query",
+            "schema": {
+              "default": "Expense",
+              "$ref": "#/components/schemas/CategoryType"
+            }
+          },
+          {
+            "name": "TripId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlyYoyReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/portfolio-balance-series": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get portfolio balance series",
+        "description": "Returns portfolio balance time-series converted to a selected base currency.",
+        "parameters": [
+          {
+            "name": "StartDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "EndDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "Interval",
+            "in": "query",
+            "schema": {
+              "default": "Auto",
+              "$ref": "#/components/schemas/ReportInterval"
+            }
+          },
+          {
+            "name": "BaseCurrency",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "USD"
+            }
+          },
+          {
+            "name": "AccountIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioBalanceSeriesResponse"
                 }
               }
             }
@@ -1775,6 +1990,7 @@
           "name",
           "email",
           "googleSubject",
+          "baseCurrency",
           "subscriptionType"
         ],
         "type": "object",
@@ -1790,6 +2006,9 @@
             "type": "string"
           },
           "googleSubject": {
+            "type": "string"
+          },
+          "baseCurrency": {
             "type": "string"
           },
           "subscriptionType": {
@@ -2081,6 +2300,426 @@
             "format": "int32"
           },
           "skippedRows": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "MonthlyYoyPointResponse": {
+        "required": [
+          "month",
+          "monthLabel",
+          "values",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "monthLabel": {
+            "type": "string"
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "MonthlyYoyReportResponse": {
+        "required": [
+          "type",
+          "startYear",
+          "endYear",
+          "months",
+          "series",
+          "data",
+          "yearTotals",
+          "summary"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/CategoryType"
+          },
+          "startYear": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "endYear": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthlyYoySeriesResponse"
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthlyYoyPointResponse"
+            }
+          },
+          "yearTotals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthlyYoyYearTotalResponse"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/MonthlyYoySummaryResponse"
+          }
+        }
+      },
+      "MonthlyYoySeriesResponse": {
+        "required": [
+          "key",
+          "label",
+          "year",
+          "color",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "year": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "color": {
+            "type": "string"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "MonthlyYoySummaryResponse": {
+        "required": [
+          "total",
+          "previousYearTotal",
+          "averagePerMonth",
+          "yearCount"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "previousYearTotal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averagePerMonth": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "yearCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "MonthlyYoyYearTotalResponse": {
+        "required": [
+          "year",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "year": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "PortfolioAccountResponse": {
+        "required": [
+          "id",
+          "name",
+          "color",
+          "currency",
+          "initialBalance",
+          "currentBalance"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "initialBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "currentBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "PortfolioBalancePointResponse": {
+        "required": [
+          "bucketKey",
+          "bucketLabel",
+          "bucketDate",
+          "totalBalance",
+          "accountBalances",
+          "totalsByCurrency",
+          "missingCurrencies"
+        ],
+        "type": "object",
+        "properties": {
+          "bucketKey": {
+            "type": "string"
+          },
+          "bucketLabel": {
+            "type": "string"
+          },
+          "bucketDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "accountBalances": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          "totalsByCurrency": {
+            "type": "object",
+            "additionalProperties": {
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
+              "format": "double"
+            }
+          },
+          "missingCurrencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PortfolioBalanceSeriesResponse": {
+        "required": [
+          "baseCurrency",
+          "startDate",
+          "endDate",
+          "interval",
+          "accounts",
+          "points",
+          "summary",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "baseCurrency": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/ReportInterval"
+          },
+          "accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioAccountResponse"
+            }
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PortfolioBalancePointResponse"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PortfolioBalanceSummaryResponse"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PortfolioBalanceSummaryResponse": {
+        "required": [
+          "startBalance",
+          "endBalance",
+          "delta",
+          "deltaPercent",
+          "pointCount",
+          "dayCount"
+        ],
+        "type": "object",
+        "properties": {
+          "startBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "endBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "delta": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "deltaPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "pointCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "dayCount": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",
@@ -3177,6 +3816,28 @@
             ]
           }
         }
+      },
+      "UpdateUserSettingsRequest": {
+        "required": [
+          "baseCurrency"
+        ],
+        "type": "object",
+        "properties": {
+          "baseCurrency": {
+            "type": "string"
+          }
+        }
+      },
+      "UserSettingsResponse": {
+        "required": [
+          "baseCurrency"
+        ],
+        "type": "object",
+        "properties": {
+          "baseCurrency": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -3186,6 +3847,9 @@
     },
     {
       "name": "Transactions"
+    },
+    {
+      "name": "Settings"
     },
     {
       "name": "Seed"

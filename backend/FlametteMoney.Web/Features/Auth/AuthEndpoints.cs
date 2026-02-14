@@ -16,6 +16,7 @@ public sealed record CurrentUserResponse(
     string Name,
     string Email,
     string GoogleSubject,
+    string BaseCurrency,
     SubscriptionType SubscriptionType);
 
 public sealed class AuthEndpoints : ICarterModule
@@ -81,6 +82,7 @@ public sealed class AuthEndpoints : ICarterModule
             user.Name,
             user.Email,
             user.GoogleSubject,
+            user.BaseCurrency,
             user.SubscriptionType));
     }
 }

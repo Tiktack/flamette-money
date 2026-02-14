@@ -7,32 +7,54 @@ import {
   Group,
   Modal,
   NumberInput,
+  Select,
   Stack,
   Text,
-  Title,
 } from '@mantine/core'
-import { useState } from 'react'
-import { useCurrentUser, useImportBackup, useSeedDemo } from '../lib/api/hooks'
+import { useEffect, useState } from 'react'
+import {
+  useCurrentUser,
+  useImportBackup,
+  useSeedDemo,
+  useSettings,
+  useUpdateSettings,
+} from '../lib/api/hooks'
 import { getApiErrorMessage } from '../lib/api/errors'
-import { currentUserQueryOptions } from '../lib/api/queryOptions'
+import { currentUserQueryOptions, settingsQueryOptions } from '../lib/api/queryOptions'
 import { queryClient } from '../lib/api/queryClient'
 import classes from './page.module.css'
 
-export const Route = createFileRoute('/profile')({
-  loader: () => queryClient.prefetchQuery(currentUserQueryOptions()),
-  component: ProfilePage,
+export const Route = createFileRoute('/settings')({
+  loader: async () => {
+    await Promise.all([
+      queryClient.prefetchQuery(currentUserQueryOptions()),
+      queryClient.prefetchQuery(settingsQueryOptions()),
+    ])
+  },
+  component: SettingsPage,
 })
 
-function ProfilePage() {
+function SettingsPage() {
   const currentUserQuery = useCurrentUser()
+  const settingsQuery = useSettings()
+  const updateSettingsMutation = useUpdateSettings()
   const seedDemoMutation = useSeedDemo()
   const importBackupMutation = useImportBackup()
+
   const [seedModalOpen, setSeedModalOpen] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [years, setYears] = useState<number>(3)
   const [backupFile, setBackupFile] = useState<File | null>(null)
+  const [baseCurrency, setBaseCurrency] = useState('USD')
 
   const user = currentUserQuery.data
+
+  useEffect(() => {
+    const currency = settingsQuery.data?.baseCurrency ?? user?.baseCurrency
+    if (currency) {
+      setBaseCurrency(currency)
+    }
+  }, [settingsQuery.data?.baseCurrency, user?.baseCurrency])
 
   const openSeedModal = () => {
     seedDemoMutation.reset()
@@ -64,34 +86,64 @@ function ProfilePage() {
     )
   }
 
+  const handleSaveSettings = () => {
+    updateSettingsMutation.mutate({ baseCurrency })
+  }
+
   return (
     <Stack className={classes.page}>
-      <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
-        <Stack gap={4}>
-          <Title order={2}>Profile</Title>
-          <Text size="sm" c="dimmed">
-            Account actions and development tools.
-          </Text>
-        </Stack>
-      </Group>
-
       <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
         <Stack gap="sm">
           <Text fw={600}>{user?.name ?? 'User'}</Text>
           <Text size="sm" c="dimmed">
             {user?.email ?? ''}
           </Text>
+
+          <Group align="end" mt="sm">
+            <Select
+              label="Base currency"
+              value={baseCurrency}
+              onChange={(value) => setBaseCurrency(value ?? 'USD')}
+              data={[
+                { label: 'USD', value: 'USD' },
+                { label: 'EUR', value: 'EUR' },
+                { label: 'GBP', value: 'GBP' },
+                { label: 'PLN', value: 'PLN' },
+                { label: 'UAH', value: 'UAH' },
+                { label: 'CAD', value: 'CAD' },
+              ]}
+              w={160}
+            />
+            <Button loading={updateSettingsMutation.isPending} onClick={handleSaveSettings}>
+              Save settings
+            </Button>
+          </Group>
+
+          {updateSettingsMutation.isError ? (
+            <Alert color="red" variant="light">
+              {getApiErrorMessage(updateSettingsMutation.error, 'Unable to save settings.')}
+            </Alert>
+          ) : null}
+
+          {updateSettingsMutation.isSuccess ? (
+            <Alert color="green" variant="light">
+              Settings saved.
+            </Alert>
+          ) : null}
+
           <Group justify="flex-start" mt="sm">
             <Button onClick={openSeedModal}>Seed demo data</Button>
             <Button variant="light" onClick={openImportModal}>
               Import 1Money CSV
             </Button>
           </Group>
+
           {seedDemoMutation.isSuccess ? (
             <Alert color="green" variant="light">
               Demo data seeded successfully.
             </Alert>
           ) : null}
+
           {importBackupMutation.isSuccess ? (
             <Alert color="green" variant="light">
               Imported {Number(importBackupMutation.data.importedTransactions)} transactions,{' '}

@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiAuthLoginGoogleData, GetApiAuthLoginGoogleResponses, GetApiAuthMeData, GetApiAuthMeErrors, GetApiAuthMeResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiAuthLogoutData, PostApiAuthLogoutResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiProfileImportBackupData, PostApiProfileImportBackupErrors, PostApiProfileImportBackupResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
+import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiAuthLoginGoogleData, GetApiAuthLoginGoogleResponses, GetApiAuthMeData, GetApiAuthMeErrors, GetApiAuthMeResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiReportsMonthlyYoyData, GetApiReportsMonthlyYoyErrors, GetApiReportsMonthlyYoyResponses, GetApiReportsPortfolioBalanceSeriesData, GetApiReportsPortfolioBalanceSeriesErrors, GetApiReportsPortfolioBalanceSeriesResponses, GetApiSettingsData, GetApiSettingsErrors, GetApiSettingsResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiAuthLogoutData, PostApiAuthLogoutResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiProfileImportBackupData, PostApiProfileImportBackupErrors, PostApiProfileImportBackupResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiSettingsData, PutApiSettingsErrors, PutApiSettingsResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -110,6 +110,27 @@ export const putApiTransactionsById = <ThrowOnError extends boolean = false>(opt
 export const getApiTransactionsSearch = <ThrowOnError extends boolean = false>(options?: Options<GetApiTransactionsSearchData, ThrowOnError>) => (options?.client ?? client).get<GetApiTransactionsSearchResponses, unknown, ThrowOnError>({ url: '/api/transactions/search', ...options });
 
 /**
+ * Get user settings
+ *
+ * Returns current user settings.
+ */
+export const getApiSettings = <ThrowOnError extends boolean = false>(options?: Options<GetApiSettingsData, ThrowOnError>) => (options?.client ?? client).get<GetApiSettingsResponses, GetApiSettingsErrors, ThrowOnError>({ url: '/api/settings', ...options });
+
+/**
+ * Update user settings
+ *
+ * Updates current user settings.
+ */
+export const putApiSettings = <ThrowOnError extends boolean = false>(options: Options<PutApiSettingsData, ThrowOnError>) => (options.client ?? client).put<PutApiSettingsResponses, PutApiSettingsErrors, ThrowOnError>({
+    url: '/api/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Seed demo data
  *
  * Seed demo accounts and transactions for development.
@@ -122,6 +143,20 @@ export const postApiSeedDemo = <ThrowOnError extends boolean = false>(options?: 
  * Returns category split report for selected period and interval.
  */
 export const getApiReportsCategorySeries = <ThrowOnError extends boolean = false>(options?: Options<GetApiReportsCategorySeriesData, ThrowOnError>) => (options?.client ?? client).get<GetApiReportsCategorySeriesResponses, GetApiReportsCategorySeriesErrors, ThrowOnError>({ url: '/api/reports/category-series', ...options });
+
+/**
+ * Get monthly year-over-year report
+ *
+ * Returns Jan-Dec monthly totals with grouped series for each selected year.
+ */
+export const getApiReportsMonthlyYoy = <ThrowOnError extends boolean = false>(options?: Options<GetApiReportsMonthlyYoyData, ThrowOnError>) => (options?.client ?? client).get<GetApiReportsMonthlyYoyResponses, GetApiReportsMonthlyYoyErrors, ThrowOnError>({ url: '/api/reports/monthly-yoy', ...options });
+
+/**
+ * Get portfolio balance series
+ *
+ * Returns portfolio balance time-series converted to a selected base currency.
+ */
+export const getApiReportsPortfolioBalanceSeries = <ThrowOnError extends boolean = false>(options?: Options<GetApiReportsPortfolioBalanceSeriesData, ThrowOnError>) => (options?.client ?? client).get<GetApiReportsPortfolioBalanceSeriesResponses, GetApiReportsPortfolioBalanceSeriesErrors, ThrowOnError>({ url: '/api/reports/portfolio-balance-series', ...options });
 
 /**
  * Scan receipt

@@ -81,6 +81,7 @@ builder.Services
                     Name = name,
                     Email = email,
                     GoogleSubject = subject,
+                    BaseCurrency = "USD",
                     SubscriptionType = FlametteMoney.Web.Infrastructure.Database.Models.SubscriptionType.Free
                 };
 

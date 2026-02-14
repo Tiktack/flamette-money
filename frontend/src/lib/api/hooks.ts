@@ -4,7 +4,10 @@ import {
   categoriesQueryOptions,
   categorySeriesQueryOptions,
   currentUserQueryOptions,
+  monthlyYoyQueryOptions,
+  portfolioBalanceSeriesQueryOptions,
   queryKeys,
+  settingsQueryOptions,
   transactionQueryOptions,
   transactionsQueryOptions,
   transactionsSearchQueryOptions,
@@ -22,12 +25,19 @@ import {
   postApiSeedDemo,
   postApiTransactions,
   postApiTrips,
+  putApiSettings,
   putApiAccountsById,
   putApiCategoriesById,
   putApiTransactionsById,
   putApiTripsById,
 } from './generated/sdk.gen'
-import type { GetApiReportsCategorySeriesData, GetApiTransactionsSearchData } from './generated/types.gen'
+import type {
+  GetApiReportsCategorySeriesData,
+  GetApiReportsMonthlyYoyData,
+  GetApiReportsPortfolioBalanceSeriesData,
+  UpdateUserSettingsRequest,
+  GetApiTransactionsSearchData,
+} from './generated/types.gen'
 import type {
   AccountCreateRequest,
   AccountUpdateRequest,
@@ -49,6 +59,10 @@ export function useCurrentUser() {
   return useQuery(currentUserQueryOptions())
 }
 
+export function useSettings() {
+  return useQuery(settingsQueryOptions())
+}
+
 export function useLogout() {
   const queryClient = useQueryClient()
 
@@ -62,6 +76,23 @@ export function useLogout() {
       await queryClient.invalidateQueries({ queryKey: ['transactions'] })
       await queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      await queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      await queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
+    },
+  })
+}
+
+export function useUpdateSettings() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: UpdateUserSettingsRequest) =>
+      putApiSettings({ body: request, throwOnError: true }).then((result) => result.data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() })
+      await queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
 }
@@ -72,7 +103,10 @@ export function useCreateAccount() {
   return useMutation({
     mutationFn: (request: AccountCreateRequest) =>
       postApiAccounts({ body: request, throwOnError: true }).then((result) => result.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.accounts() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+    },
   })
 }
 
@@ -84,7 +118,10 @@ export function useUpdateAccount() {
       putApiAccountsById({ path: { id }, body: request, throwOnError: true }).then(
         (result) => result.data,
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.accounts() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+    },
   })
 }
 
@@ -94,7 +131,10 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: (id: string) =>
       deleteApiAccountsById({ path: { id }, throwOnError: true }).then(() => undefined),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.accounts() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+    },
   })
 }
 
@@ -146,6 +186,14 @@ export function useCategorySeriesReport(query?: GetApiReportsCategorySeriesData[
   return useQuery(categorySeriesQueryOptions(query))
 }
 
+export function useMonthlyYoyReport(query?: GetApiReportsMonthlyYoyData['query']) {
+  return useQuery(monthlyYoyQueryOptions(query))
+}
+
+export function usePortfolioBalanceSeriesReport(query?: GetApiReportsPortfolioBalanceSeriesData['query']) {
+  return useQuery(portfolioBalanceSeriesQueryOptions(query))
+}
+
 export function useTrips() {
   return useQuery(tripsQueryOptions())
 }
@@ -159,6 +207,7 @@ export function useCreateTrip() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
     },
   })
 }
@@ -172,6 +221,7 @@ export function useUpdateTrip() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
     },
@@ -195,6 +245,9 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
 }
@@ -211,6 +264,9 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
 }
@@ -225,6 +281,9 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
 }

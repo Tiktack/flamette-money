@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MantineProvider } from '@mantine/core'
+import { ModalsProvider } from '@mantine/modals'
 import { Notifications } from '@mantine/notifications'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -21,10 +22,12 @@ createRoot(document.getElementById('root')!).render(
         defaultColorScheme="light"
         theme={{ fontFamily: 'Space Grotesk, sans-serif' }}
       >
-        <Notifications position="top-right" />
-        <RouterProvider router={router} />
-        {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-        {import.meta.env.DEV ? <TanStackRouterDevtools router={router} /> : null}
+        <ModalsProvider>
+          <Notifications position="top-right" />
+          <RouterProvider router={router} />
+          {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+          {import.meta.env.DEV ? <TanStackRouterDevtools router={router} /> : null}
+        </ModalsProvider>
       </MantineProvider>
     </QueryClientProvider>
   </StrictMode>,

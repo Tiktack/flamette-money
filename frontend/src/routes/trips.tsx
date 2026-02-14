@@ -9,7 +9,6 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useMemo, useState } from 'react'
@@ -134,7 +133,6 @@ function TripsPage() {
   return (
     <Stack className={classes.page}>
       <Group justify="space-between" align="center">
-        <Title order={2}>Trips</Title>
         <Button onClick={openCreate}>Add trip</Button>
       </Group>
 

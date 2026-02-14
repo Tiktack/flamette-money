@@ -46,13 +46,17 @@ import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
 
 export type TransactionModalMode = 'new' | 'edit'
 
-type TransactionEditorModalProps = {
-  opened: boolean
+export type TransactionEditorContentProps = {
   mode: TransactionModalMode
   transactionId?: string
   presetCategoryId?: string
   presetType?: TransactionType
   onClose: () => void
+}
+
+type TransactionEditorModalProps = TransactionEditorContentProps & {
+  opened: boolean
+  withModal?: boolean
 }
 
 type TransactionItemFormState = {
@@ -186,12 +190,14 @@ const defaultCurrencyOptions = ['PLN', 'EUR', 'USD', 'CAD']
 
 export function TransactionEditorModal({
   opened,
+  withModal = true,
   mode,
   transactionId,
   presetCategoryId,
   presetType,
   onClose,
 }: TransactionEditorModalProps) {
+  const isOpen = withModal ? opened : true
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
   const createTransaction = useCreateTransaction()
@@ -214,7 +220,7 @@ export function TransactionEditorModal({
   const isEditingLoading = mode === 'edit' && transactionQuery.isLoading
   const transactionLoadError = mode === 'edit' && transactionQuery.isError
 
-  const categories = categoriesQuery.data ?? []
+  const categories = useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const categoryMap = useMemo(() => buildCategoryMap(categories), [categories])
 
   const accountsById = useMemo(() => {
@@ -332,7 +338,7 @@ export function TransactionEditorModal({
   )
 
   useEffect(() => {
-    if (!opened) {
+    if (!isOpen) {
       return
     }
 
@@ -365,7 +371,7 @@ export function TransactionEditorModal({
     accountsQuery.data,
     categories,
     mode,
-    opened,
+    isOpen,
     presetCategoryId,
     presetType,
     transactionQuery.data,
@@ -373,7 +379,7 @@ export function TransactionEditorModal({
 
   // Reset AI tab state when modal closes
   useEffect(() => {
-    if (!opened) {
+    if (!isOpen) {
       setActiveTab('manual')
       setAdvancedOpen(false)
       setScanFile(null)
@@ -382,7 +388,7 @@ export function TransactionEditorModal({
       setScanResult(null)
       setScanError(null)
     }
-  }, [opened])
+  }, [isOpen])
 
   const requiresTarget = form.type === 'Transfer'
   const requiresOriginal = form.type === 'Refund'
@@ -1313,26 +1319,32 @@ export function TransactionEditorModal({
     </Stack>
   )
 
+  const modalBody = mode === 'edit' ? (
+    manualTabContent
+  ) : (
+    <Tabs value={activeTab} onChange={(value) => setActiveTab(value ?? 'manual')}>
+      <Tabs.List mb="md">
+        <Tabs.Tab value="manual">Manual</Tabs.Tab>
+        <Tabs.Tab value="ai">AI scan</Tabs.Tab>
+      </Tabs.List>
+
+      <Tabs.Panel value="manual">{manualTabContent}</Tabs.Panel>
+      <Tabs.Panel value="ai">{aiTabContent}</Tabs.Panel>
+    </Tabs>
+  )
+
+  if (!withModal) {
+    return modalBody
+  }
+
   return (
     <Modal
-      opened={opened}
+      opened={isOpen}
       onClose={onClose}
       title={mode === 'edit' ? 'Edit transaction' : 'New transaction'}
       size="lg"
     >
-      {mode === 'edit' ? (
-        manualTabContent
-      ) : (
-        <Tabs value={activeTab} onChange={(value) => setActiveTab(value ?? 'manual')}>
-          <Tabs.List mb="md">
-            <Tabs.Tab value="manual">Manual</Tabs.Tab>
-            <Tabs.Tab value="ai">AI scan</Tabs.Tab>
-          </Tabs.List>
-
-          <Tabs.Panel value="manual">{manualTabContent}</Tabs.Panel>
-          <Tabs.Panel value="ai">{aiTabContent}</Tabs.Panel>
-        </Tabs>
-      )}
+      {modalBody}
     </Modal>
   )
 }

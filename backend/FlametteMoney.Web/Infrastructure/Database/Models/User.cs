@@ -11,6 +11,7 @@ public sealed class User
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string GoogleSubject { get; set; } = string.Empty;
+    public string BaseCurrency { get; set; } = "USD";
     public SubscriptionType SubscriptionType { get; set; } = SubscriptionType.Free;
 
     public ICollection<Account> Accounts { get; set; } = new List<Account>();

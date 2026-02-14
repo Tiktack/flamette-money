@@ -1,15 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { AnalyticsView } from '../components/AnalyticsView'
-import { queryClient } from '../lib/api/queryClient'
-import { categorySeriesQueryOptions } from '../lib/api/queryOptions'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
-  loader: () =>
-    queryClient.prefetchQuery(
-      categorySeriesQueryOptions({
-        Type: 'Expense',
-        Interval: 'Auto',
-      }),
-    ),
-  component: AnalyticsView,
+  beforeLoad: () => {
+    throw redirect({ to: '/analytics/comparison' })
+  },
 })

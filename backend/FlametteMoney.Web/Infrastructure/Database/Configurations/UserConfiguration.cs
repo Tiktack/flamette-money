@@ -12,6 +12,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.Name).HasMaxLength(200).IsRequired();
         builder.Property(user => user.Email).HasMaxLength(320).IsRequired();
         builder.Property(user => user.GoogleSubject).HasMaxLength(200).IsRequired();
+        builder.Property(user => user.BaseCurrency).HasMaxLength(3).IsRequired().HasDefaultValue("USD");
         builder.Property(user => user.SubscriptionType).IsRequired();
 
         builder.HasIndex(user => user.Email).IsUnique();

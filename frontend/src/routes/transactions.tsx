@@ -15,7 +15,6 @@ import {
   Table,
   Text,
   ThemeIcon,
-  Title,
 } from '@mantine/core'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -35,7 +34,7 @@ import {
 } from '../lib/state/sharedDateRangeFilters'
 import { useTransactionsFilters } from '../lib/state/transactionsFilters'
 import type { CategoryHierarchy, TransactionListItem, TransactionType } from '../lib/api/types'
-import { Route as RootRoute } from './__root'
+import { openTransactionEditorModal } from '../lib/modals/transactionEditorModal'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/transactions')({
@@ -56,7 +55,6 @@ function TransactionsPage() {
   const dateFilters = useSharedDateRangeFilters()
   const [filtersOpened, setFiltersOpened] = useState(false)
   const [page, setPage] = useState(1)
-  const navigate = RootRoute.useNavigate()
   const pageSize = 12
   const [deleteTarget, setDeleteTarget] = useState<TransactionListItem | null>(null)
 
@@ -310,7 +308,6 @@ function TransactionsPage() {
   return (
     <Stack className={classes.page}>
       <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
-        <Title order={2}>Transactions</Title>
         <Group gap="sm" className={classes.toolbar}>
           <Button
             variant={filtersOpened ? 'light' : 'subtle'}
@@ -511,14 +508,9 @@ function TransactionsPage() {
                             variant="subtle"
                             aria-label="Edit transaction"
                             onClick={() =>
-                              navigate({
-                                search: (previous) => ({
-                                  ...previous,
-                                  transactionMode: 'edit',
-                                  transactionId: transaction.id,
-                                  transactionCategoryId: undefined,
-                                  transactionType: undefined,
-                                }),
+                              openTransactionEditorModal({
+                                mode: 'edit',
+                                transactionId: transaction.id,
                               })
                             }
                           >

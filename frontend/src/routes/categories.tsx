@@ -15,7 +15,6 @@ import {
   Text,
   TextInput,
   ThemeIcon,
-  Title,
   UnstyledButton,
 } from '@mantine/core'
 import { useMemo, useState } from 'react'
@@ -41,7 +40,7 @@ import {
   useSharedDateRangeFilters,
 } from '../lib/state/sharedDateRangeFilters'
 import type { CategoryHierarchy, CategoryType } from '../lib/api/types'
-import { Route as RootRoute } from './__root'
+import { openTransactionEditorModal } from '../lib/modals/transactionEditorModal'
 import classes from './page.module.css'
 
 export const Route = createFileRoute('/categories')({
@@ -59,7 +58,6 @@ function CategoriesPage() {
   const [createOpened, setCreateOpened] = useState(false)
   const [editCategory, setEditCategory] = useState<CategoryHierarchy | null>(null)
   const dateFilters = useSharedDateRangeFilters()
-  const navigate = RootRoute.useNavigate()
   const [deleteTarget, setDeleteTarget] = useState<CategoryHierarchy | null>(null)
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -259,14 +257,10 @@ function CategoriesPage() {
       return
     }
 
-    navigate({
-      search: (previous) => ({
-        ...previous,
-        transactionMode: 'new',
-        transactionId: undefined,
-        transactionCategoryId: category.id,
-        transactionType: category.type,
-      }),
+    openTransactionEditorModal({
+      mode: 'new',
+      presetCategoryId: category.id,
+      presetType: category.type,
     })
   }
 
@@ -322,12 +316,6 @@ function CategoriesPage() {
   return (
     <Stack className={classes.page}>
       <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
-        <Stack gap={4}>
-          <Title order={2}>Categories</Title>
-          <Text size="sm" c="dimmed">
-            Tap a category to start a transaction or manage the taxonomy
-          </Text>
-        </Stack>
         <Group gap="sm" className={classes.toolbar}>
           <SegmentedControl
             value={typeFilter}

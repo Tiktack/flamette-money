@@ -21,44 +21,23 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useState } from 'react'
-import { TransactionEditorModal, type TransactionModalMode } from '../components/TransactionEditorModal'
+import { openTransactionEditorModal } from '../lib/modals/transactionEditorModal'
 import { useCurrentUser, useLogout } from '../lib/api/hooks'
 import { queryClient } from '../lib/api/queryClient'
 import { currentUserQueryOptions } from '../lib/api/queryOptions'
-import type { TransactionType } from '../lib/api/types'
 import classes from './rootLayout.module.css'
 
 const navItems = [
-  { label: 'Analytics', to: '/' },
+  { label: 'Analytics', to: '/analytics' },
   { label: 'Accounts', to: '/accounts' },
   { label: 'Categories', to: '/categories' },
   { label: 'Trips', to: '/trips' },
   { label: 'Transactions', to: '/transactions' },
 ]
 
-type RootSearch = {
-  transactionMode?: TransactionModalMode
-  transactionId?: string
-  transactionCategoryId?: string
-  transactionType?: TransactionType
-}
-
-const isTransactionMode = (value: unknown): value is TransactionModalMode =>
-  value === 'new' || value === 'edit'
-
-const isTransactionType = (value: unknown): value is TransactionType =>
-  value === 'Income' || value === 'Expense' || value === 'Transfer' || value === 'Refund'
-
 export const Route = createRootRoute({
   loader: () => queryClient.prefetchQuery(currentUserQueryOptions()),
   component: RootLayout,
-  validateSearch: (search: Record<string, unknown>): RootSearch => ({
-    transactionMode: isTransactionMode(search.transactionMode) ? search.transactionMode : undefined,
-    transactionId: typeof search.transactionId === 'string' ? search.transactionId : undefined,
-    transactionCategoryId:
-      typeof search.transactionCategoryId === 'string' ? search.transactionCategoryId : undefined,
-    transactionType: isTransactionType(search.transactionType) ? search.transactionType : undefined,
-  }),
 })
 
 function RootLayout() {
@@ -69,25 +48,11 @@ function RootLayout() {
   const logoutMutation = useLogout()
   const { setColorScheme } = useMantineColorScheme()
   const computedColorScheme = useComputedColorScheme('light', { getInitialValueInEffect: true })
-  const search = Route.useSearch()
   const navigate = Route.useNavigate()
   const user = currentUserQuery.data
 
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
   const loginHref = `${apiBaseUrl}/api/auth/login/google?returnUrl=${encodeURIComponent(window.location.href)}`
-
-  const modalOpened = Boolean(search.transactionMode)
-  const handleClose = () => {
-    navigate({
-      search: (previous) => ({
-        ...previous,
-        transactionMode: undefined,
-        transactionId: undefined,
-        transactionCategoryId: undefined,
-        transactionType: undefined,
-      }),
-    })
-  }
 
   const handleToggleColorScheme = () => {
     setColorScheme(computedColorScheme === 'dark' ? 'light' : 'dark')
@@ -153,17 +118,7 @@ function RootLayout() {
               size="lg"
               radius="sm"
               aria-label="New transaction"
-              onClick={() =>
-                navigate({
-                  search: (previous) => ({
-                    ...previous,
-                    transactionMode: 'new',
-                    transactionId: undefined,
-                    transactionCategoryId: undefined,
-                    transactionType: undefined,
-                  }),
-                })
-              }
+              onClick={() => openTransactionEditorModal({ mode: 'new' })}
             >
               <Text fw={700} size="lg" lh={1}>
                 +
@@ -200,8 +155,7 @@ function RootLayout() {
 
               <Menu.Dropdown>
                 <Menu.Label>Account</Menu.Label>
-                <Menu.Item>Settings</Menu.Item>
-                <Menu.Item onClick={() => navigate({ to: '/profile' })}>Profile</Menu.Item>
+                <Menu.Item onClick={() => navigate({ to: '/settings' })}>Settings</Menu.Item>
                 <Menu.Divider />
                 <Box px="sm" py={6}>
                   <Group justify="space-between" wrap="nowrap" gap="sm">
@@ -241,14 +195,6 @@ function RootLayout() {
           <Outlet />
         </Box>
       </AppShell.Main>
-      <TransactionEditorModal
-        opened={modalOpened}
-        mode={search.transactionMode ?? 'new'}
-        transactionId={search.transactionId}
-        presetCategoryId={search.transactionCategoryId}
-        presetType={search.transactionType}
-        onClose={handleClose}
-      />
     </AppShell>
   )
 }

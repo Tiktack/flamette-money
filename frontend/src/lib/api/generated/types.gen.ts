@@ -144,6 +144,7 @@ export type CurrentUserResponse = {
     name: string;
     email: string;
     googleSubject: string;
+    baseCurrency: string;
     subscriptionType: SubscriptionType;
 };
 
@@ -199,6 +200,89 @@ export type ImportBackupResponse = {
     importedSubCategories: number | string;
     updatedBalanceSnapshots: number | string;
     skippedRows: number | string;
+};
+
+export type MonthlyYoyPointResponse = {
+    month: number | string;
+    monthLabel: string;
+    values: {
+        [key: string]: number | string;
+    };
+    total: number | string;
+};
+
+export type MonthlyYoyReportResponse = {
+    type: CategoryType;
+    startYear: number | string;
+    endYear: number | string;
+    months: Array<string>;
+    series: Array<MonthlyYoySeriesResponse>;
+    data: Array<MonthlyYoyPointResponse>;
+    yearTotals: Array<MonthlyYoyYearTotalResponse>;
+    summary: MonthlyYoySummaryResponse;
+};
+
+export type MonthlyYoySeriesResponse = {
+    key: string;
+    label: string;
+    year: number | string;
+    color: string;
+    total: number | string;
+};
+
+export type MonthlyYoySummaryResponse = {
+    total: number | string;
+    previousYearTotal: number | string;
+    averagePerMonth: number | string;
+    yearCount: number | string;
+};
+
+export type MonthlyYoyYearTotalResponse = {
+    year: number | string;
+    total: number | string;
+};
+
+export type PortfolioAccountResponse = {
+    id: string;
+    name: string;
+    color: string;
+    currency: string;
+    initialBalance: number | string;
+    currentBalance: number | string;
+};
+
+export type PortfolioBalancePointResponse = {
+    bucketKey: string;
+    bucketLabel: string;
+    bucketDate: string;
+    totalBalance: number | string;
+    accountBalances: {
+        [key: string]: number | string;
+    };
+    totalsByCurrency: {
+        [key: string]: number | string;
+    };
+    missingCurrencies: Array<string>;
+};
+
+export type PortfolioBalanceSeriesResponse = {
+    baseCurrency: string;
+    startDate: string;
+    endDate: string;
+    interval: ReportInterval;
+    accounts: Array<PortfolioAccountResponse>;
+    points: Array<PortfolioBalancePointResponse>;
+    summary: PortfolioBalanceSummaryResponse;
+    warnings: Array<string>;
+};
+
+export type PortfolioBalanceSummaryResponse = {
+    startBalance: number | string;
+    endBalance: number | string;
+    delta: number | string;
+    deltaPercent: number | string;
+    pointCount: number | string;
+    dayCount: number | string;
 };
 
 export type ReceiptItemResponse = {
@@ -398,6 +482,14 @@ export type UpdateTripResponse = {
     startDate: null | string;
     endDate: null | string;
     imageUrl: null | string;
+};
+
+export type UpdateUserSettingsRequest = {
+    baseCurrency: string;
+};
+
+export type UserSettingsResponse = {
+    baseCurrency: string;
 };
 
 export type GetApiTripsData = {
@@ -623,6 +715,58 @@ export type GetApiTransactionsSearchResponses = {
 
 export type GetApiTransactionsSearchResponse = GetApiTransactionsSearchResponses[keyof GetApiTransactionsSearchResponses];
 
+export type GetApiSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/settings';
+};
+
+export type GetApiSettingsErrors = {
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type GetApiSettingsResponses = {
+    /**
+     * OK
+     */
+    200: UserSettingsResponse;
+};
+
+export type GetApiSettingsResponse = GetApiSettingsResponses[keyof GetApiSettingsResponses];
+
+export type PutApiSettingsData = {
+    body: UpdateUserSettingsRequest;
+    path?: never;
+    query?: never;
+    url: '/api/settings';
+};
+
+export type PutApiSettingsErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type PutApiSettingsError = PutApiSettingsErrors[keyof PutApiSettingsErrors];
+
+export type PutApiSettingsResponses = {
+    /**
+     * OK
+     */
+    200: UserSettingsResponse;
+};
+
+export type PutApiSettingsResponse = PutApiSettingsResponses[keyof PutApiSettingsResponses];
+
 export type PostApiSeedDemoData = {
     body?: never;
     path?: never;
@@ -673,6 +817,67 @@ export type GetApiReportsCategorySeriesResponses = {
 };
 
 export type GetApiReportsCategorySeriesResponse = GetApiReportsCategorySeriesResponses[keyof GetApiReportsCategorySeriesResponses];
+
+export type GetApiReportsMonthlyYoyData = {
+    body?: never;
+    path?: never;
+    query?: {
+        StartYear?: number | string;
+        EndYear?: number | string;
+        Type?: CategoryType;
+        TripId?: string;
+    };
+    url: '/api/reports/monthly-yoy';
+};
+
+export type GetApiReportsMonthlyYoyErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+};
+
+export type GetApiReportsMonthlyYoyError = GetApiReportsMonthlyYoyErrors[keyof GetApiReportsMonthlyYoyErrors];
+
+export type GetApiReportsMonthlyYoyResponses = {
+    /**
+     * OK
+     */
+    200: MonthlyYoyReportResponse;
+};
+
+export type GetApiReportsMonthlyYoyResponse = GetApiReportsMonthlyYoyResponses[keyof GetApiReportsMonthlyYoyResponses];
+
+export type GetApiReportsPortfolioBalanceSeriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        StartDate?: string;
+        EndDate?: string;
+        Interval?: ReportInterval;
+        BaseCurrency?: string;
+        AccountIds?: Array<string>;
+    };
+    url: '/api/reports/portfolio-balance-series';
+};
+
+export type GetApiReportsPortfolioBalanceSeriesErrors = {
+    /**
+     * Bad Request
+     */
+    400: HttpValidationProblemDetails;
+};
+
+export type GetApiReportsPortfolioBalanceSeriesError = GetApiReportsPortfolioBalanceSeriesErrors[keyof GetApiReportsPortfolioBalanceSeriesErrors];
+
+export type GetApiReportsPortfolioBalanceSeriesResponses = {
+    /**
+     * OK
+     */
+    200: PortfolioBalanceSeriesResponse;
+};
+
+export type GetApiReportsPortfolioBalanceSeriesResponse = GetApiReportsPortfolioBalanceSeriesResponses[keyof GetApiReportsPortfolioBalanceSeriesResponses];
 
 export type PostApiReceiptsScanData = {
     body: {

@@ -15,7 +15,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core'
 import { useState } from 'react'
 import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from '../lib/api/hooks'
@@ -193,12 +192,6 @@ function AccountsPage() {
   return (
     <Stack className={classes.page}>
       <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
-        <Stack gap={4}>
-          <Title order={2}>Accounts</Title>
-          <Text size="sm" c="dimmed">
-            Overview of balances and types
-          </Text>
-        </Stack>
         <Button radius="md" onClick={openCreate}>
           Create account
         </Button>

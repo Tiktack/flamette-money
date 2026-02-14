@@ -4,6 +4,9 @@ import {
   getApiAuthMe,
   getApiCategories,
   getApiReportsCategorySeries,
+  getApiReportsMonthlyYoy,
+  getApiReportsPortfolioBalanceSeries,
+  getApiSettings,
   getApiTransactions,
   getApiTransactionsById,
   getApiTransactionsSearch,
@@ -12,6 +15,9 @@ import {
 import type {
   CurrentUserResponse,
   GetApiReportsCategorySeriesData,
+  GetApiReportsMonthlyYoyData,
+  GetApiReportsPortfolioBalanceSeriesData,
+  UserSettingsResponse,
   GetApiTransactionsSearchData,
 } from './generated/types.gen'
 
@@ -26,6 +32,11 @@ export const queryKeys = {
     ['transactions-search', query ?? {}] as const,
   reportsCategorySeries: (query?: GetApiReportsCategorySeriesData['query']) =>
     ['reports-category-series', query ?? {}] as const,
+  reportsMonthlyYoy: (query?: GetApiReportsMonthlyYoyData['query']) =>
+    ['reports-monthly-yoy', query ?? {}] as const,
+  reportsPortfolioBalanceSeries: (query?: GetApiReportsPortfolioBalanceSeriesData['query']) =>
+    ['reports-portfolio-balance-series', query ?? {}] as const,
+  settings: () => ['settings'] as const,
 }
 
 export const accountsQueryOptions = () =>
@@ -96,4 +107,36 @@ export const categorySeriesQueryOptions = (query?: GetApiReportsCategorySeriesDa
       ),
     placeholderData: keepPreviousData,
     select: (result: Awaited<ReturnType<typeof getApiReportsCategorySeries>>) => result.data,
+  })
+
+export const monthlyYoyQueryOptions = (query?: GetApiReportsMonthlyYoyData['query']) =>
+  queryOptions({
+    queryKey: queryKeys.reportsMonthlyYoy(query),
+    queryFn: () =>
+      getApiReportsMonthlyYoy(
+        query ? { query, throwOnError: true } : { throwOnError: true },
+      ),
+    placeholderData: keepPreviousData,
+    select: (result: Awaited<ReturnType<typeof getApiReportsMonthlyYoy>>) => result.data,
+  })
+
+export const portfolioBalanceSeriesQueryOptions = (query?: GetApiReportsPortfolioBalanceSeriesData['query']) =>
+  queryOptions({
+    queryKey: queryKeys.reportsPortfolioBalanceSeries(query),
+    queryFn: () =>
+      getApiReportsPortfolioBalanceSeries(
+        query ? { query, throwOnError: true } : { throwOnError: true },
+      ),
+    placeholderData: keepPreviousData,
+    select: (result: Awaited<ReturnType<typeof getApiReportsPortfolioBalanceSeries>>) => result.data,
+  })
+
+export const settingsQueryOptions = () =>
+  queryOptions<UserSettingsResponse | null>({
+    queryKey: queryKeys.settings(),
+    queryFn: async () => {
+      const result = await getApiSettings({ throwOnError: false })
+      return result.data ?? null
+    },
+    staleTime: 60_000,
   })

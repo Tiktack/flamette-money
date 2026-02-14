@@ -11,11 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TripsRouteImport } from './routes/trips'
 import { Route as TransactionsRouteImport } from './routes/transactions'
-import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalyticsPortfolioRouteImport } from './routes/analytics.portfolio'
+import { Route as AnalyticsComparisonRouteImport } from './routes/analytics.comparison'
+import { Route as AnalyticsCategoriesRouteImport } from './routes/analytics.categories'
 
 const TripsRoute = TripsRouteImport.update({
   id: '/trips',
@@ -27,9 +30,9 @@ const TransactionsRoute = TransactionsRouteImport.update({
   path: '/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesRoute = CategoriesRouteImport.update({
@@ -52,34 +55,58 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyticsPortfolioRoute = AnalyticsPortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => AnalyticsRoute,
+} as any)
+const AnalyticsComparisonRoute = AnalyticsComparisonRouteImport.update({
+  id: '/comparison',
+  path: '/comparison',
+  getParentRoute: () => AnalyticsRoute,
+} as any)
+const AnalyticsCategoriesRoute = AnalyticsCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AnalyticsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
-  '/analytics': typeof AnalyticsRoute
+  '/analytics': typeof AnalyticsRouteWithChildren
   '/categories': typeof CategoriesRoute
-  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
+  '/analytics/categories': typeof AnalyticsCategoriesRoute
+  '/analytics/comparison': typeof AnalyticsComparisonRoute
+  '/analytics/portfolio': typeof AnalyticsPortfolioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
-  '/analytics': typeof AnalyticsRoute
+  '/analytics': typeof AnalyticsRouteWithChildren
   '/categories': typeof CategoriesRoute
-  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
+  '/analytics/categories': typeof AnalyticsCategoriesRoute
+  '/analytics/comparison': typeof AnalyticsComparisonRoute
+  '/analytics/portfolio': typeof AnalyticsPortfolioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRoute
-  '/analytics': typeof AnalyticsRoute
+  '/analytics': typeof AnalyticsRouteWithChildren
   '/categories': typeof CategoriesRoute
-  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
+  '/analytics/categories': typeof AnalyticsCategoriesRoute
+  '/analytics/comparison': typeof AnalyticsComparisonRoute
+  '/analytics/portfolio': typeof AnalyticsPortfolioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -88,35 +115,44 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/categories'
-    | '/profile'
+    | '/settings'
     | '/transactions'
     | '/trips'
+    | '/analytics/categories'
+    | '/analytics/comparison'
+    | '/analytics/portfolio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/accounts'
     | '/analytics'
     | '/categories'
-    | '/profile'
+    | '/settings'
     | '/transactions'
     | '/trips'
+    | '/analytics/categories'
+    | '/analytics/comparison'
+    | '/analytics/portfolio'
   id:
     | '__root__'
     | '/'
     | '/accounts'
     | '/analytics'
     | '/categories'
-    | '/profile'
+    | '/settings'
     | '/transactions'
     | '/trips'
+    | '/analytics/categories'
+    | '/analytics/comparison'
+    | '/analytics/portfolio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRoute: typeof AccountsRoute
-  AnalyticsRoute: typeof AnalyticsRoute
+  AnalyticsRoute: typeof AnalyticsRouteWithChildren
   CategoriesRoute: typeof CategoriesRoute
-  ProfileRoute: typeof ProfileRoute
+  SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
   TripsRoute: typeof TripsRoute
 }
@@ -137,11 +173,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories': {
@@ -172,15 +208,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analytics/portfolio': {
+      id: '/analytics/portfolio'
+      path: '/portfolio'
+      fullPath: '/analytics/portfolio'
+      preLoaderRoute: typeof AnalyticsPortfolioRouteImport
+      parentRoute: typeof AnalyticsRoute
+    }
+    '/analytics/comparison': {
+      id: '/analytics/comparison'
+      path: '/comparison'
+      fullPath: '/analytics/comparison'
+      preLoaderRoute: typeof AnalyticsComparisonRouteImport
+      parentRoute: typeof AnalyticsRoute
+    }
+    '/analytics/categories': {
+      id: '/analytics/categories'
+      path: '/categories'
+      fullPath: '/analytics/categories'
+      preLoaderRoute: typeof AnalyticsCategoriesRouteImport
+      parentRoute: typeof AnalyticsRoute
+    }
   }
 }
+
+interface AnalyticsRouteChildren {
+  AnalyticsCategoriesRoute: typeof AnalyticsCategoriesRoute
+  AnalyticsComparisonRoute: typeof AnalyticsComparisonRoute
+  AnalyticsPortfolioRoute: typeof AnalyticsPortfolioRoute
+}
+
+const AnalyticsRouteChildren: AnalyticsRouteChildren = {
+  AnalyticsCategoriesRoute: AnalyticsCategoriesRoute,
+  AnalyticsComparisonRoute: AnalyticsComparisonRoute,
+  AnalyticsPortfolioRoute: AnalyticsPortfolioRoute,
+}
+
+const AnalyticsRouteWithChildren = AnalyticsRoute._addFileChildren(
+  AnalyticsRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRoute: AccountsRoute,
-  AnalyticsRoute: AnalyticsRoute,
+  AnalyticsRoute: AnalyticsRouteWithChildren,
   CategoriesRoute: CategoriesRoute,
-  ProfileRoute: ProfileRoute,
+  SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
   TripsRoute: TripsRoute,
 }
