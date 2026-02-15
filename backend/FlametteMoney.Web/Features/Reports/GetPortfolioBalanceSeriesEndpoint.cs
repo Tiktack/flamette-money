@@ -5,6 +5,7 @@ using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace FlametteMoney.Web.Features.Reports;
 
@@ -148,13 +149,23 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 []));
         }
 
-        var startDate = query.StartDate?.Date ?? DateTime.UtcNow.Date.AddMonths(-6);
+        var accountIdSet = accounts.Select(account => account.Id).ToHashSet();
+
+        var earliestTransactionDate = await dbContext.Transactions
+            .AsNoTracking()
+            .ForUser(userId)
+            .Where(transaction =>
+                (accountIdSet.Contains(transaction.AccountId) ||
+                 (transaction.TargetAccountId != null && accountIdSet.Contains(transaction.TargetAccountId.Value))) &&
+                (query.EndDate == null || transaction.Date <= query.EndDate.Value.Date.AddDays(1).AddTicks(-1)))
+            .Select(transaction => (DateTime?)transaction.Date)
+            .MinAsync(cancellationToken);
+
         var endDate = query.EndDate?.Date ?? DateTime.UtcNow.Date;
+        var startDate = query.StartDate?.Date ?? earliestTransactionDate?.Date ?? endDate;
 
         var resolvedInterval = ResolveInterval(startDate, endDate, query.Interval);
         var buckets = BuildBuckets(startDate, endDate, resolvedInterval);
-
-        var accountIdSet = accounts.Select(account => account.Id).ToHashSet();
 
         var transactions = await dbContext.Transactions
             .AsNoTracking()
@@ -371,7 +382,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
             for (var cursor = startDate.Date; cursor <= endDate.Date; cursor = cursor.AddDays(1))
             {
                 var key = cursor.ToString("yyyy-MM-dd");
-                var label = singleMonth ? cursor.Day.ToString() : cursor.ToString("MMM d");
+                var label = cursor.ToString("d MMM yyyy", CultureInfo.InvariantCulture);
                 buckets.Add(new PortfolioBucket(
                     cursor,
                     cursor.AddDays(1).AddTicks(-1),
@@ -395,8 +406,8 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 buckets.Add(new PortfolioBucket(
                     cursor,
                     bucketEnd.AddDays(1).AddTicks(-1),
-                    cursor.ToString("yyyy-MM-dd"),
-                    cursor.ToString("MMM d")));
+                    bucketEnd.ToString("yyyy-MM-dd"),
+                    bucketEnd.ToString("d MMM yyyy", CultureInfo.InvariantCulture)));
             }
 
             return buckets;
@@ -415,7 +426,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
             }
 
             var key = monthCursor.ToString("yyyy-MM");
-            var label = showYear ? monthCursor.ToString("MMM yy") : monthCursor.ToString("MMM");
+            var label = monthCursor.ToString("MMM yyyy", CultureInfo.InvariantCulture);
 
             buckets.Add(new PortfolioBucket(
                 monthCursor,

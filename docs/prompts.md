@@ -740,3 +740,15 @@ flushSyncWork$1	@	react-dom-client.development.js:16898
 f	@	react-dom-client.development.js:27521
 exports.flushSync	@	react-dom.development.js:140
 (anonymous)
+
+----------------------------
+2026-02-15 00:38:06
+all time filter for portfolio charts returns not all years. Can you fix it to work properly?
+
+----------------------------
+2026-02-15 16:44:25
+I believe right now labels build like 30 days interval, but I want each label to be end balance of current interval, for example if interval is month, it's end balance of last day of each month and only for current month it's balance after last transaction. 
+Also, labels should be these format depending on interval, examples below
+day interval: 12 Feb 2026
+Week interval (Last day of the week) : 8 Feb 2026
+Month Interval: Feb 2026

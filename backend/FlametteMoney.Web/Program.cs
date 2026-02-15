@@ -7,9 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
 using Scalar.AspNetCore;
-using Microsoft.Extensions.Hosting;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
