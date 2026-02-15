@@ -1,5 +1,6 @@
 using Carter;
 using FlametteMoney.Web.Infrastructure.Auth;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -55,6 +56,7 @@ public sealed record ReportSummaryResponse(
 
 public sealed record CategorySeriesReportResponse(
     CategoryType Type,
+    string BaseCurrency,
     ReportInterval Interval,
     DateTime? StartDate,
     DateTime? EndDate,
@@ -78,10 +80,19 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
     private static async Task<Results<Ok<CategorySeriesReportResponse>, ValidationProblem>> Handle(
         [AsParameters] GetCategorySeriesReportQuery query,
         [FromServices] ICurrentUserContext currentUserContext,
+        [FromServices] IExchangeRateService exchangeRateService,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
         var userId = currentUserContext.GetScopedUserId();
+
+        var userBaseCurrency = await dbContext.Users
+            .AsNoTracking()
+            .Where(item => item.Id == userId)
+            .Select(item => item.BaseCurrency)
+            .FirstOrDefaultAsync(cancellationToken);
+        var baseCurrency = SupportedCurrencies.NormalizeOrDefault(userBaseCurrency, "USD");
+        var fxSnapshot = await exchangeRateService.GetRatesToBaseAsync(baseCurrency, cancellationToken);
 
         if (query.StartDate is not null && query.EndDate is not null && query.StartDate > query.EndDate)
         {
@@ -99,6 +110,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
                 transaction.Date,
                 transaction.Type,
                 transaction.Amount,
+                Currency = transaction.Currency ?? transaction.Account.Currency,
                 transaction.IsRefund,
                 transaction.TripId,
                 transaction.CategoryId,
@@ -189,11 +201,17 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
         foreach (var transaction in transactions)
         {
-            var amount = GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund);
-            if (amount == 0)
+            var signedAmount = GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund);
+            if (signedAmount == 0)
             {
                 continue;
             }
+
+            var amount = TryConvertAmount(
+                signedAmount,
+                transaction.Currency,
+                baseCurrency,
+                fxSnapshot.RatesToBase);
 
             var categoryId = shouldGroupTripsAsCategory && transaction.TripId is Guid tripId
                 ? $"trip:{tripId:D}"
@@ -324,17 +342,26 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
                 transaction.Date,
                 transaction.Type,
                 transaction.Amount,
+                Currency = transaction.Currency ?? transaction.Account.Currency,
                 transaction.IsRefund,
             })
             .ToListAsync(cancellationToken);
 
         var previousFullTotal = Math.Round(previousTransactions
-            .Select(transaction => GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund))
+            .Select(transaction => TryConvertAmount(
+                GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund),
+                transaction.Currency,
+                baseCurrency,
+                fxSnapshot.RatesToBase))
             .Sum(), 2);
 
         var previousTotal = Math.Round(previousTransactions
             .Where(transaction => transaction.Date >= previousTotalStart)
-            .Select(transaction => GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund))
+            .Select(transaction => TryConvertAmount(
+                GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund),
+                transaction.Currency,
+                baseCurrency,
+                fxSnapshot.RatesToBase))
             .Sum(), 2);
 
         var previousFullWeekCount = Math.Max(1m, dayCount / 7m);
@@ -351,6 +378,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
         var response = new CategorySeriesReportResponse(
             query.Type,
+            baseCurrency,
             resolvedInterval,
             startDate,
             endDate,
@@ -380,6 +408,23 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
         }
 
         return 0;
+    }
+
+    private static decimal TryConvertAmount(
+        decimal amount,
+        string sourceCurrency,
+        string baseCurrency,
+        Dictionary<string, decimal> ratesToBase)
+    {
+        if (amount == 0)
+        {
+            return 0m;
+        }
+
+        var normalizedSource = sourceCurrency.Trim().ToUpperInvariant();
+        var rate = ratesToBase[normalizedSource];
+
+        return amount * rate;
     }
 
     private static string ResolveTopLevelCategoryId(

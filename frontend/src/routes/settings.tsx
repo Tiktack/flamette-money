@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import {
+  useAppInfo,
   useCurrentUser,
   useImportBackup,
   useSeedDemo,
@@ -36,7 +37,19 @@ export const Route = createFileRoute('/settings')({
 
 function SettingsPage() {
   const currentUserQuery = useCurrentUser()
+  const appInfoQuery = useAppInfo()
   const settingsQuery = useSettings()
+    const supportedCurrencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) => ({
+      label: item.code,
+      value: item.code,
+    })) ?? [
+      { label: 'USD', value: 'USD' },
+      { label: 'EUR', value: 'EUR' },
+      { label: 'GBP', value: 'GBP' },
+      { label: 'PLN', value: 'PLN' },
+      { label: 'CAD', value: 'CAD' },
+    ]
+
   const updateSettingsMutation = useUpdateSettings()
   const seedDemoMutation = useSeedDemo()
   const importBackupMutation = useImportBackup()
@@ -104,14 +117,7 @@ function SettingsPage() {
               label="Base currency"
               value={baseCurrency}
               onChange={(value) => setBaseCurrency(value ?? 'USD')}
-              data={[
-                { label: 'USD', value: 'USD' },
-                { label: 'EUR', value: 'EUR' },
-                { label: 'GBP', value: 'GBP' },
-                { label: 'PLN', value: 'PLN' },
-                { label: 'UAH', value: 'UAH' },
-                { label: 'CAD', value: 'CAD' },
-              ]}
+              data={supportedCurrencyOptions}
               w={160}
             />
             <Button loading={updateSettingsMutation.isPending} onClick={handleSaveSettings}>

@@ -1,7 +1,9 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Seeding;
+using FlametteMoney.Web.Infrastructure.Options;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -24,7 +26,11 @@ if (!isOpenApiGeneration)
 builder.Services.AddOpenApi();
 builder.Services.AddCarter();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
+builder.Services.Configure<ExchangeRateApiOptions>(builder.Configuration.GetSection(ExchangeRateApiOptions.SectionName));
+builder.Services.AddHttpClient("ExchangeRateApi");
+builder.Services.AddScoped<IExchangeRateService, ExchangeRateService>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);

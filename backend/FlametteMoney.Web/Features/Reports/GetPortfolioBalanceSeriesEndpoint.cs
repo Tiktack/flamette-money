@@ -1,5 +1,6 @@
 using Carter;
 using FlametteMoney.Web.Infrastructure.Auth;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -13,7 +14,7 @@ public sealed record GetPortfolioBalanceSeriesQuery(
     DateTime? StartDate,
     DateTime? EndDate,
     ReportInterval Interval = ReportInterval.Auto,
-    string BaseCurrency = "USD",
+    string? BaseCurrency = null,
     Guid[]? AccountIds = null);
 
 public sealed record PortfolioAccountResponse(
@@ -48,38 +49,12 @@ public sealed record PortfolioBalanceSeriesResponse(
     ReportInterval Interval,
     List<PortfolioAccountResponse> Accounts,
     List<PortfolioBalancePointResponse> Points,
-    PortfolioBalanceSummaryResponse Summary,
-    List<string> Warnings);
+    PortfolioBalanceSummaryResponse Summary);
 
 internal sealed record PortfolioBucket(DateTime Start, DateTime End, string Key, string Label);
 
 public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
 {
-    private static readonly Dictionary<string, decimal> SeedUsdRates = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["USD"] = 1m,
-        ["EUR"] = 1.08m,
-        ["GBP"] = 1.27m,
-        ["CAD"] = 0.74m,
-        ["AUD"] = 0.66m,
-        ["NZD"] = 0.61m,
-        ["JPY"] = 0.0068m,
-        ["CNY"] = 0.14m,
-        ["CHF"] = 1.11m,
-        ["SEK"] = 0.094m,
-        ["NOK"] = 0.094m,
-        ["DKK"] = 0.15m,
-        ["PLN"] = 0.26m,
-        ["CZK"] = 0.043m,
-        ["HUF"] = 0.0028m,
-        ["RON"] = 0.22m,
-        ["UAH"] = 0.024m,
-        ["INR"] = 0.012m,
-        ["AED"] = 0.27m,
-        ["SGD"] = 0.74m,
-        ["HKD"] = 0.13m,
-    };
-
     public void AddRoutes(IEndpointRouteBuilder app)
     {
         app.MapGet("/api/reports/portfolio-balance-series", Handle)
@@ -93,6 +68,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
     private static async Task<Results<Ok<PortfolioBalanceSeriesResponse>, ValidationProblem>> Handle(
         [AsParameters] GetPortfolioBalanceSeriesQuery query,
         [FromServices] ICurrentUserContext currentUserContext,
+        [FromServices] IExchangeRateService exchangeRateService,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
@@ -104,16 +80,22 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
             });
         }
 
-        var baseCurrency = NormalizeCurrency(query.BaseCurrency);
-        if (baseCurrency.Length != 3)
+        if (!string.IsNullOrWhiteSpace(query.BaseCurrency) && !SupportedCurrencies.IsSupported(query.BaseCurrency))
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                [nameof(query.BaseCurrency)] = ["BaseCurrency must be a 3-letter code."],
+                [nameof(query.BaseCurrency)] = [$"BaseCurrency must be one of: {string.Join(", ", SupportedCurrencies.All)}."],
             });
         }
 
         var userId = currentUserContext.GetScopedUserId();
+        var userBaseCurrency = await dbContext.Users
+            .AsNoTracking()
+            .Where(item => item.Id == userId)
+            .Select(item => item.BaseCurrency)
+            .FirstOrDefaultAsync(cancellationToken);
+        var baseCurrency = SupportedCurrencies.NormalizeOrDefault(query.BaseCurrency, SupportedCurrencies.NormalizeOrDefault(userBaseCurrency, "USD"));
+        var fxSnapshot = await exchangeRateService.GetRatesToBaseAsync(baseCurrency, cancellationToken);
 
         var accountsQuery = dbContext.Accounts
             .AsNoTracking()
@@ -145,8 +127,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 ReportInterval.Day,
                 [],
                 [],
-                new PortfolioBalanceSummaryResponse(0, 0, 0, 0, 0, 1),
-                []));
+                new PortfolioBalanceSummaryResponse(0, 0, 0, 0, 0, 1)));
         }
 
         var accountIdSet = accounts.Select(account => account.Id).ToHashSet();
@@ -190,7 +171,6 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
         var accountCurrency = accounts.ToDictionary(account => account.Id, account => account.Currency);
 
         var points = new List<PortfolioBalancePointResponse>(buckets.Count);
-        var warnings = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         var transactionIndex = 0;
         foreach (var bucket in buckets)
@@ -203,7 +183,6 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
 
             var totalsByCurrency = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
             var accountBalancesInBase = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-            var missingCurrencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             decimal totalInBase = 0;
 
             foreach (var (accountId, balance) in accountBalances)
@@ -218,15 +197,9 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                     totalsByCurrency[currency] = Math.Round(totalsByCurrency[currency] + balance, 2);
                 }
 
-                var rate = TryResolveToBaseRate(currency, baseCurrency);
-                if (rate is null)
-                {
-                    missingCurrencies.Add(currency);
-                    warnings.Add($"No FX rate for {currency}->{baseCurrency}; excluded from total balance.");
-                    continue;
-                }
+                var rate = fxSnapshot.RatesToBase[currency];
 
-                var converted = Math.Round(balance * rate.Value, 2);
+                var converted = Math.Round(balance * rate, 2);
                 accountBalancesInBase[accountId.ToString()] = converted;
                 totalInBase += converted;
             }
@@ -238,7 +211,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 Math.Round(totalInBase, 2),
                 accountBalancesInBase,
                 totalsByCurrency,
-                missingCurrencies.OrderBy(value => value).ToList()));
+                []));
         }
 
         var startBalance = points.FirstOrDefault()?.TotalBalance ?? 0;
@@ -262,8 +235,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 delta,
                 deltaPercent,
                 points.Count,
-                dayCount),
-            warnings.OrderBy(value => value).ToList());
+                dayCount));
 
         return TypedResults.Ok(response);
     }
@@ -312,26 +284,6 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
         {
             accountBalances[resolvedTargetId] += amount2 ?? amount;
         }
-    }
-
-    private static decimal? TryResolveToBaseRate(string currency, string baseCurrency)
-    {
-        if (currency.Equals(baseCurrency, StringComparison.OrdinalIgnoreCase))
-        {
-            return 1m;
-        }
-
-        if (!SeedUsdRates.TryGetValue(currency, out var currencyToUsd))
-        {
-            return null;
-        }
-
-        if (!SeedUsdRates.TryGetValue(baseCurrency, out var baseToUsd))
-        {
-            return null;
-        }
-
-        return currencyToUsd / baseToUsd;
     }
 
     private static ReportInterval ResolveInterval(DateTime startDate, DateTime endDate, ReportInterval requested)

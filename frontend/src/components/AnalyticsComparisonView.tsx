@@ -8,13 +8,15 @@ type AnalyticsMode = 'Expense' | 'Income'
 
 const toNumber = (value: number | string) => (typeof value === 'number' ? value : Number(value))
 
-function formatCurrencyLike(value: number | string | undefined) {
+function formatCurrencyLike(value: number | string | undefined, currency: string) {
   const numeric = toNumber(value ?? 0)
   const rounded = Math.round(numeric * 100) / 100
-  return rounded.toLocaleString(undefined, {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  })
+  }).format(rounded)
 }
 
 export function AnalyticsComparisonView() {
@@ -34,6 +36,7 @@ export function AnalyticsComparisonView() {
   }, [currentYear, endYear, mode, startYear])
 
   const reportQuery = useMonthlyYoyReport(query)
+  const baseCurrency = reportQuery.data?.baseCurrency ?? 'USD'
 
   const yearOptions = useMemo(
     () => Array.from({ length: 8 }, (_, index) => String(currentYear - index)).map((year) => ({
@@ -123,15 +126,15 @@ export function AnalyticsComparisonView() {
         <Group mt="md" gap="xl">
           <div>
             <Text c="dimmed" size="sm">Total</Text>
-            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.total)}</Text>
+            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.total, baseCurrency)}</Text>
           </div>
           <div>
             <Text c="dimmed" size="sm">Previous year total</Text>
-            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.previousYearTotal)}</Text>
+            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.previousYearTotal, baseCurrency)}</Text>
           </div>
           <div>
             <Text c="dimmed" size="sm">Avg / month (latest year)</Text>
-            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.averagePerMonth)}</Text>
+            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.averagePerMonth, baseCurrency)}</Text>
           </div>
         </Group>
       </Card>

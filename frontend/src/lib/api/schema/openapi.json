@@ -747,8 +747,7 @@
             "name": "BaseCurrency",
             "in": "query",
             "schema": {
-              "type": "string",
-              "default": "USD"
+              "type": "string"
             }
           },
           {
@@ -793,7 +792,7 @@
           "Receipts"
         ],
         "summary": "Scan receipt",
-        "description": "Upload a receipt image and create a transaction with categorized items using AI.",
+        "description": "Upload a receipt image and return a draft transaction with categorized items using AI.",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -1111,6 +1110,27 @@
         }
       }
     },
+    "/api/app-info": {
+      "get": {
+        "tags": [
+          "AppInfo"
+        ],
+        "summary": "Get app metadata",
+        "description": "Returns application metadata such as supported currencies.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/accounts": {
       "post": {
         "tags": [
@@ -1348,6 +1368,31 @@
           "Savings"
         ]
       },
+      "AppInfoCurrencyResponse": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "AppInfoResponse": {
+        "required": [
+          "supportedCurrencies"
+        ],
+        "type": "object",
+        "properties": {
+          "supportedCurrencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppInfoCurrencyResponse"
+            }
+          }
+        }
+      },
       "CategoryHierarchyResponse": {
         "required": [
           "id",
@@ -1394,6 +1439,7 @@
       "CategorySeriesReportResponse": {
         "required": [
           "type",
+          "baseCurrency",
           "interval",
           "startDate",
           "endDate",
@@ -1406,6 +1452,9 @@
         "properties": {
           "type": {
             "$ref": "#/components/schemas/CategoryType"
+          },
+          "baseCurrency": {
+            "type": "string"
           },
           "interval": {
             "$ref": "#/components/schemas/ReportInterval"
@@ -2353,6 +2402,7 @@
       "MonthlyYoyReportResponse": {
         "required": [
           "type",
+          "baseCurrency",
           "startYear",
           "endYear",
           "months",
@@ -2365,6 +2415,9 @@
         "properties": {
           "type": {
             "$ref": "#/components/schemas/CategoryType"
+          },
+          "baseCurrency": {
+            "type": "string"
           },
           "startYear": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
@@ -2626,8 +2679,7 @@
           "interval",
           "accounts",
           "points",
-          "summary",
-          "warnings"
+          "summary"
         ],
         "type": "object",
         "properties": {
@@ -2659,12 +2711,6 @@
           },
           "summary": {
             "$ref": "#/components/schemas/PortfolioBalanceSummaryResponse"
-          },
-          "warnings": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           }
         }
       },
@@ -2984,7 +3030,6 @@
       },
       "ScanReceiptResponse": {
         "required": [
-          "transactionId",
           "merchant",
           "date",
           "amount",
@@ -2993,10 +3038,6 @@
         ],
         "type": "object",
         "properties": {
-          "transactionId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "merchant": {
             "type": [
               "null",
@@ -3868,6 +3909,9 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "AppInfo"
     },
     {
       "name": "Accounts"

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   accountsQueryOptions,
+  appInfoQueryOptions,
   categoriesQueryOptions,
   categorySeriesQueryOptions,
   currentUserQueryOptions,
@@ -55,6 +56,10 @@ export function useAccounts() {
   return useQuery(accountsQueryOptions())
 }
 
+export function useAppInfo() {
+  return useQuery(appInfoQueryOptions())
+}
+
 export function useCurrentUser() {
   return useQuery(currentUserQueryOptions())
 }
@@ -92,6 +97,9 @@ export function useUpdateSettings() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
       await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      await queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      await queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
@@ -244,6 +252,7 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -263,6 +272,7 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -280,6 +290,7 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -289,18 +300,11 @@ export function useDeleteTransaction() {
 }
 
 export function useScanReceipt() {
-  const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: ({ file, accountId }: { file: File; accountId: string }) =>
       postApiReceiptsScan({ body: { file, accountId }, throwOnError: true }).then(
         (result) => result.data,
       ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
-    },
   })
 }
 

@@ -16,6 +16,14 @@ export type AccountListItemResponse = {
 
 export type AccountType = 'Cash' | 'DebitCard' | 'CreditCard' | 'Savings';
 
+export type AppInfoCurrencyResponse = {
+    code: string;
+};
+
+export type AppInfoResponse = {
+    supportedCurrencies: Array<AppInfoCurrencyResponse>;
+};
+
 export type CategoryHierarchyResponse = {
     id: string;
     name: string;
@@ -28,6 +36,7 @@ export type CategoryHierarchyResponse = {
 
 export type CategorySeriesReportResponse = {
     type: CategoryType;
+    baseCurrency: string;
     interval: ReportInterval;
     startDate: null | string;
     endDate: null | string;
@@ -213,6 +222,7 @@ export type MonthlyYoyPointResponse = {
 
 export type MonthlyYoyReportResponse = {
     type: CategoryType;
+    baseCurrency: string;
     startYear: number | string;
     endYear: number | string;
     months: Array<string>;
@@ -273,7 +283,6 @@ export type PortfolioBalanceSeriesResponse = {
     accounts: Array<PortfolioAccountResponse>;
     points: Array<PortfolioBalancePointResponse>;
     summary: PortfolioBalanceSummaryResponse;
-    warnings: Array<string>;
 };
 
 export type PortfolioBalanceSummaryResponse = {
@@ -333,7 +342,6 @@ export type ReportSummaryResponse = {
 };
 
 export type ScanReceiptResponse = {
-    transactionId: string;
     merchant: null | string;
     date: null | string;
     amount: number | string;
@@ -1092,6 +1100,22 @@ export type GetApiAuthMeResponses = {
 };
 
 export type GetApiAuthMeResponse = GetApiAuthMeResponses[keyof GetApiAuthMeResponses];
+
+export type GetApiAppInfoData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/app-info';
+};
+
+export type GetApiAppInfoResponses = {
+    /**
+     * OK
+     */
+    200: AppInfoResponse;
+};
+
+export type GetApiAppInfoResponse = GetApiAppInfoResponses[keyof GetApiAppInfoResponses];
 
 export type GetApiAccountsData = {
     body?: never;

@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useMemo, useState } from 'react'
-import { useCreateTrip, useTrips, useUpdateTrip } from '../lib/api/hooks'
+import { useCreateTrip, useSettings, useTrips, useUpdateTrip } from '../lib/api/hooks'
 import { getApiErrorMessage } from '../lib/api/errors'
 import { queryClient } from '../lib/api/queryClient'
 import { tripsQueryOptions } from '../lib/api/queryOptions'
@@ -55,6 +55,7 @@ const mapTripToForm = (trip: TripListItem): TripFormState => ({
 
 function TripsPage() {
   const tripsQuery = useTrips()
+  const settingsQuery = useSettings()
   const createTrip = useCreateTrip()
   const updateTrip = useUpdateTrip()
   const [createOpened, setCreateOpened] = useState(false)
@@ -63,6 +64,14 @@ function TripsPage() {
   const [editForm, setEditForm] = useState<TripFormState>(() => buildDefaultForm())
 
   const trips = tripsQuery.data ?? []
+  const baseCurrency = settingsQuery.data?.baseCurrency ?? 'USD'
+  const formatBaseCurrency = (value: number) =>
+    new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: baseCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value)
 
   const orderedTrips = useMemo(() => {
     return [...trips].sort((left, right) => {
@@ -171,7 +180,7 @@ function TripsPage() {
                 </Group>
                 <Group gap="xs">
                   <Text size="sm" c="dimmed">Expenses:</Text>
-                  <Text size="sm" fw={600}>{Number(trip.totalExpenseAmount).toLocaleString()}</Text>
+                  <Text size="sm" fw={600}>{formatBaseCurrency(Number(trip.totalExpenseAmount))}</Text>
                 </Group>
                 <Group gap="xs">
                   <Text size="sm" c="dimmed">Transactions:</Text>

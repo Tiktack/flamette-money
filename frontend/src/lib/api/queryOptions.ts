@@ -1,6 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import {
   getApiAccounts,
+  getApiAppInfo,
   getApiAuthMe,
   getApiCategories,
   getApiReportsCategorySeries,
@@ -13,6 +14,7 @@ import {
   getApiTrips,
 } from './generated/sdk.gen'
 import type {
+  AppInfoResponse,
   CurrentUserResponse,
   GetApiReportsCategorySeriesData,
   GetApiReportsMonthlyYoyData,
@@ -36,6 +38,7 @@ export const queryKeys = {
     ['reports-monthly-yoy', query ?? {}] as const,
   reportsPortfolioBalanceSeries: (query?: GetApiReportsPortfolioBalanceSeriesData['query']) =>
     ['reports-portfolio-balance-series', query ?? {}] as const,
+  appInfo: () => ['app-info'] as const,
   settings: () => ['settings'] as const,
 }
 
@@ -129,6 +132,16 @@ export const portfolioBalanceSeriesQueryOptions = (query?: GetApiReportsPortfoli
       ),
     placeholderData: keepPreviousData,
     select: (result: Awaited<ReturnType<typeof getApiReportsPortfolioBalanceSeries>>) => result.data,
+  })
+
+export const appInfoQueryOptions = () =>
+  queryOptions<AppInfoResponse | null>({
+    queryKey: queryKeys.appInfo(),
+    queryFn: async () => {
+      const result = await getApiAppInfo({ throwOnError: false })
+      return result.data ?? null
+    },
+    staleTime: 60_000,
   })
 
 export const settingsQueryOptions = () =>

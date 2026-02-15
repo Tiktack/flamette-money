@@ -1,5 +1,6 @@
 using Carter;
 using FlametteMoney.Web.Infrastructure.Auth;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -56,11 +57,11 @@ public sealed class SettingsEndpoints : ICarterModule
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.BaseCurrency) || request.BaseCurrency.Trim().Length != 3)
+        if (!SupportedCurrencies.IsSupported(request.BaseCurrency))
         {
             return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
-                [nameof(request.BaseCurrency)] = ["BaseCurrency must be a 3-letter code."],
+                [nameof(request.BaseCurrency)] = [$"BaseCurrency must be one of: {string.Join(", ", SupportedCurrencies.All)}."],
             });
         }
 

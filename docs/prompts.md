@@ -260,6 +260,10 @@ I have a summary like this, can you please implement it?
 2. "I want to be able to sign in with google only." - User specifies the authentication method.
 
 ----------------------------
+2026-02-15 19:31:50
+Start implementation
+
+----------------------------
 2026-02-14 00:00:00
 Can you please in a profile page implement import from csv from 1Money app? 
 Can you analize the csv #file:1Money_2_14_26.csv and implement an endpoint for importing data backups, that accepts type, in this case one money and it does properly creates categories accounts transactions and so on. I believe also another thing that is missing, for transactions I need to save 2 currencies. It's important when we tranfering money from between accounts with different currencies.
@@ -752,3 +756,40 @@ Also, labels should be these format depending on interval, examples below
 day interval: 12 Feb 2026
 Week interval (Last day of the week) : 8 Feb 2026
 Month Interval: Feb 2026
+
+----------------------------
+2026-02-15 19:49:49
+Not bad, but this is how API response from currency API looks like 
+{
+	"result": "success",
+	"documentation": "https://www.exchangerate-api.com/docs",
+	"terms_of_use": "https://www.exchangerate-api.com/terms",
+	"time_last_update_unix": 1585267200,
+	"time_last_update_utc": "Fri, 27 Mar 2020 00:00:00 +0000",
+	"time_next_update_unix": 1585353700,
+	"time_next_update_utc": "Sat, 28 Mar 2020 00:00:00 +0000",
+	"base_code": "USD",
+	"conversion_rates": {
+		"USD": 1,
+		"AUD": 1.4817,
+		"BGN": 1.7741,
+		"CAD": 1.3168,
+		"CHF": 0.9774,
+		"CNY": 6.9454,
+		"EGP": 15.7361,
+		"EUR": 0.9013,
+		"GBP": 0.7679,
+		"...": 7.8536,
+		"...": 1.3127,
+		"...": 7.4722, etc. etc.
+	}
+}
+
+Also, remove all the code that does the assumption that we have wrong currency somewhere. We only need to validate API requests, that include currency. When we read from DB or do something with data from DB, we should not check anything, we should trust that there is currency that we can work with! 
+Also, I didn't ask you to propogate strange warning to UI that we use fallback currencies. 
+Fix http client usage, you need to use client factory and create client from factory. 
+For retryies, Use Polly library, instead of manual logic.
+
+----------------------------
+2026-02-15 19:59:30
+Awesome, create some documentation in docs folder of what we implemented, as summary for future references.

@@ -109,6 +109,7 @@ function CategoriesPage() {
   }, [resolvedDateRange.end, resolvedDateRange.start, typeFilter])
 
   const reportQueryResult = useCategorySeriesReport(reportQuery)
+  const baseCurrency = reportQueryResult.data?.baseCurrency ?? 'USD'
   const isInitialChartLoading = categoriesQuery.isPending || reportQueryResult.isPending
   const hasChartError = categoriesQuery.isError || reportQueryResult.isError
 
@@ -193,6 +194,14 @@ function CategoriesPage() {
     () => donutData.reduce((sum, item) => sum + item.value, 0),
     [donutData],
   )
+
+  const formatBaseCurrency = (value: number) =>
+    new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: baseCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value)
 
   const rangeLabel = useMemo(() => {
     if (dateFilters.preset === 'all') {
@@ -376,14 +385,14 @@ function CategoriesPage() {
                   thickness={donutThickness}
                   paddingAngle={2}
                   tooltipDataSource="segment"
-                  valueFormatter={(value) => value.toLocaleString('en-US')}
+                  valueFormatter={(value) => formatBaseCurrency(Number(value))}
                 />
                 <div className={classes.donutCenter}>
                   <Text fw={800} size={isCompact ? 'xl' : '34px'} lh={1.1}>
                     {typeFilter}
                   </Text>
                   <Text fw={700} size={isCompact ? 'lg' : 'xl'} lh={1.2}>
-                    {donutTotal.toLocaleString('en-US')}
+                    {formatBaseCurrency(donutTotal)}
                   </Text>
                   <Text size="sm" c="dimmed">
                     {rangeLabel}
@@ -399,6 +408,7 @@ function CategoriesPage() {
                     key={category.id}
                     category={category}
                     amount={categoryAmounts.get(category.id) ?? 0}
+                    formatAmount={formatBaseCurrency}
                     onClickCategory={() => handleCategoryClick(category)}
                   />
                 ))}
@@ -654,10 +664,12 @@ function CategoriesPage() {
 function CategoryTile({
   category,
   amount,
+  formatAmount,
   onClickCategory,
 }: {
   category: CategoryHierarchy
   amount: number
+  formatAmount: (value: number) => string
   onClickCategory: () => void
 }) {
   const color = normalizeCategoryColor(category.color)
@@ -689,7 +701,7 @@ function CategoryTile({
             </Group>
             <Group gap={8} wrap="nowrap">
               <Text size="xs" fw={700}>
-                {amount.toLocaleString('en-US')}
+                {formatAmount(amount)}
               </Text>
             </Group>
           </div>

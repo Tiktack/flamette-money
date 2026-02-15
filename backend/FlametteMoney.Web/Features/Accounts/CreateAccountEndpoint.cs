@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using FlametteMoney.Web.Infrastructure.Validation;
@@ -21,14 +22,6 @@ public record CreateAccountResponse(
 
 public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequest>
 {
-    private static readonly HashSet<string> SupportedCurrencies = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "USD",
-        "PLN",
-        "EUR",
-        "CAD"
-    };
-
     public CreateAccountRequestValidator()
     {
         RuleFor(request => request.Name)
@@ -37,8 +30,8 @@ public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAcco
 
         RuleFor(request => request.Currency)
             .NotEmpty()
-            .Must(currency => SupportedCurrencies.Contains(currency))
-            .WithMessage("Currency must be one of: USD, PLN, EUR, CAD.");
+            .Must(SupportedCurrencies.IsSupported)
+            .WithMessage($"Currency must be one of: {string.Join(", ", SupportedCurrencies.All)}.");
 
         RuleFor(request => request.Color)
             .NotEmpty()

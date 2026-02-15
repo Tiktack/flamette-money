@@ -1,5 +1,6 @@
 using Carter;
 using FlametteMoney.Web.Infrastructure.Auth;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -37,6 +38,7 @@ public sealed record MonthlyYoySummaryResponse(
 
 public sealed record MonthlyYoyReportResponse(
     CategoryType Type,
+    string BaseCurrency,
     int StartYear,
     int EndYear,
     List<string> Months,
@@ -79,6 +81,7 @@ public sealed class GetMonthlyYoyReportEndpoint : ICarterModule
     private static async Task<Results<Ok<MonthlyYoyReportResponse>, ValidationProblem>> Handle(
         [AsParameters] GetMonthlyYoyReportQuery query,
         [FromServices] ICurrentUserContext currentUserContext,
+        [FromServices] IExchangeRateService exchangeRateService,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
@@ -104,6 +107,13 @@ public sealed class GetMonthlyYoyReportEndpoint : ICarterModule
         }
 
         var userId = currentUserContext.GetScopedUserId();
+        var userBaseCurrency = await dbContext.Users
+            .AsNoTracking()
+            .Where(item => item.Id == userId)
+            .Select(item => item.BaseCurrency)
+            .FirstOrDefaultAsync(cancellationToken);
+        var baseCurrency = SupportedCurrencies.NormalizeOrDefault(userBaseCurrency, "USD");
+        var fxSnapshot = await exchangeRateService.GetRatesToBaseAsync(baseCurrency, cancellationToken);
         var rangeStart = new DateTime(startYear, 1, 1);
         var rangeEnd = new DateTime(endYear, 12, 31, 23, 59, 59, 999);
 
@@ -116,6 +126,7 @@ public sealed class GetMonthlyYoyReportEndpoint : ICarterModule
                 transaction.Date,
                 transaction.Type,
                 transaction.Amount,
+                Currency = transaction.Currency ?? transaction.Account.Currency,
                 transaction.IsRefund,
                 transaction.TripId,
             });
@@ -149,11 +160,17 @@ public sealed class GetMonthlyYoyReportEndpoint : ICarterModule
 
         foreach (var transaction in transactions)
         {
-            var amount = GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund);
-            if (amount == 0)
+            var signedAmount = GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund);
+            if (signedAmount == 0)
             {
                 continue;
             }
+
+            var amount = TryConvertAmount(
+                signedAmount,
+                transaction.Currency,
+                baseCurrency,
+                fxSnapshot.RatesToBase);
 
             var year = transaction.Date.Year;
             if (year < startYear || year > endYear)
@@ -212,6 +229,7 @@ public sealed class GetMonthlyYoyReportEndpoint : ICarterModule
 
         var response = new MonthlyYoyReportResponse(
             query.Type,
+            baseCurrency,
             startYear,
             endYear,
             MonthLabels.ToList(),
@@ -245,5 +263,22 @@ public sealed class GetMonthlyYoyReportEndpoint : ICarterModule
         }
 
         return 0;
+    }
+
+    private static decimal TryConvertAmount(
+        decimal amount,
+        string sourceCurrency,
+        string baseCurrency,
+        Dictionary<string, decimal> ratesToBase)
+    {
+        if (amount == 0)
+        {
+            return 0m;
+        }
+
+        var normalizedSource = sourceCurrency.Trim().ToUpperInvariant();
+        var rate = ratesToBase[normalizedSource];
+
+        return amount * rate;
     }
 }

@@ -37,13 +37,15 @@ type AggregationPeriod = 'Auto' | 'Day' | 'Week' | 'Month'
 
 const toNumber = (value: number | string) => (typeof value === 'number' ? value : Number(value))
 
-function formatCurrencyLike(value: number | string | undefined) {
+function formatCurrencyLike(value: number | string | undefined, currency: string) {
   const numeric = toNumber(value ?? 0)
   const rounded = Math.round(numeric * 100) / 100
-  return rounded.toLocaleString(undefined, {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  })
+  }).format(rounded)
 }
 
 function toPercentDiff(current: number, previous: number) {
@@ -117,6 +119,7 @@ export function AnalyticsCategoriesView() {
     }))
 
     return {
+      baseCurrency: payload?.baseCurrency ?? 'USD',
       total: toNumber(payload?.summary?.total ?? 0),
       previousTotal: toNumber(payload?.summary?.previousTotal ?? 0),
       avgPerDay: toNumber(payload?.summary?.averagePerDay ?? 0),
@@ -212,7 +215,7 @@ export function AnalyticsCategoriesView() {
                     <Skeleton height={28} mt={20} />
                   ) : (
                     <Group align="flex-end" gap="xs" mt={10}>
-                      <Text className={classes.statValue}>{formatCurrencyLike(stat.value)}</Text>
+                      <Text className={classes.statValue}>{formatCurrencyLike(stat.value, report.baseCurrency)}</Text>
                       <Text
                         c={isGoodTrend ? 'teal' : 'red'}
                         fz="sm"
@@ -310,7 +313,7 @@ export function AnalyticsCategoriesView() {
                               </Text>
                             </Group>
                             <Text size="sm" c="dimmed">
-                              {formatCurrencyLike(item.amount)}
+                              {formatCurrencyLike(item.amount, report.baseCurrency)}
                             </Text>
                           </Group>
                           <Progress

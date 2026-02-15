@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using FlametteMoney.Web.Infrastructure.Validation;
@@ -71,19 +72,14 @@ public sealed class UpdateTransactionRequestValidator : AbstractValidator<Update
             .MaximumLength(400);
 
         RuleFor(request => request.Currency)
-            .Must(IsValidCurrencyCode)
+            .Must(SupportedCurrencies.IsSupported)
             .When(request => !string.IsNullOrWhiteSpace(request.Currency))
-            .WithMessage("Currency must be a 3-letter code.");
+            .WithMessage($"Currency must be one of: {string.Join(", ", SupportedCurrencies.All)}.");
 
         RuleFor(request => request.Currency2)
-            .Must(IsValidCurrencyCode)
+            .Must(SupportedCurrencies.IsSupported)
             .When(request => !string.IsNullOrWhiteSpace(request.Currency2))
-            .WithMessage("Currency 2 must be a 3-letter code.");
-    }
-
-    private static bool IsValidCurrencyCode(string? currency)
-    {
-        return currency is not null && currency.Trim().Length == 3;
+            .WithMessage($"Currency 2 must be one of: {string.Join(", ", SupportedCurrencies.All)}.");
     }
 }
 
@@ -206,6 +202,24 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
             categoryId = null;
             subCategoryId = null;
             tripId = null;
+
+            var requestSourceCurrency = NormalizeCurrency(request.Currency);
+            if (requestSourceCurrency is not null && !requestSourceCurrency.Equals(newAccount.Currency, StringComparison.OrdinalIgnoreCase))
+            {
+                return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    [nameof(request.Currency)] = ["Transfer source currency must match source account currency."]
+                }));
+            }
+
+            var requestTargetCurrency = NormalizeCurrency(request.Currency2);
+            if (requestTargetCurrency is not null && !requestTargetCurrency.Equals(newTargetAccount.Currency, StringComparison.OrdinalIgnoreCase))
+            {
+                return TypedResults.BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
+                {
+                    [nameof(request.Currency2)] = ["Transfer target currency must match target account currency."]
+                }));
+            }
         }
         else if (request.Type == TransactionType.Refund)
         {
@@ -414,9 +428,11 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
         transaction.Type = request.Type;
         transaction.Amount = request.Amount;
         transaction.Amount2 = NormalizeAmount2(request.Type, request.Amount, request.Amount2);
-        transaction.Currency = NormalizeCurrency(request.Currency) ?? newAccount.Currency;
+        transaction.Currency = request.Type == TransactionType.Transfer
+            ? newAccount.Currency
+            : NormalizeCurrency(request.Currency) ?? newAccount.Currency;
         transaction.Currency2 = request.Type == TransactionType.Transfer
-            ? NormalizeCurrency(request.Currency2) ?? newTargetAccount?.Currency ?? NormalizeCurrency(request.Currency) ?? newAccount.Currency
+            ? newTargetAccount?.Currency
             : NormalizeCurrency(request.Currency2);
         transaction.AccountId = request.AccountId;
         transaction.TripId = tripId;
@@ -538,11 +554,6 @@ public sealed class UpdateTransactionEndpoint : ICarterModule
 
     private static string? NormalizeCurrency(string? currency)
     {
-        if (string.IsNullOrWhiteSpace(currency))
-        {
-            return null;
-        }
-
-        return currency.Trim().ToUpperInvariant();
+        return SupportedCurrencies.NormalizeOrNull(currency);
     }
 }

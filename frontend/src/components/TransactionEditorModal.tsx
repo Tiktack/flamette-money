@@ -26,6 +26,7 @@ import { DatePickerInput } from '@mantine/dates'
 import { useEffect, useMemo, useState } from 'react'
 import {
   useAccounts,
+  useAppInfo,
   useCategories,
   useCreateTransaction,
   useScanReceipt,
@@ -186,8 +187,6 @@ const applyPresetCategory = (
   }
 }
 
-const defaultCurrencyOptions = ['PLN', 'EUR', 'USD', 'CAD']
-
 export function TransactionEditorModal({
   opened,
   withModal = true,
@@ -199,6 +198,7 @@ export function TransactionEditorModal({
 }: TransactionEditorModalProps) {
   const isOpen = withModal ? opened : true
   const accountsQuery = useAccounts()
+  const appInfoQuery = useAppInfo()
   const categoriesQuery = useCategories()
   const createTransaction = useCreateTransaction()
   const updateTransaction = useUpdateTransaction()
@@ -232,14 +232,19 @@ export function TransactionEditorModal({
   }, [accountsQuery.data])
 
   const currencyOptions = useMemo(() => {
-    const set = new Set(defaultCurrencyOptions)
+    const set = new Set<string>()
+
+    for (const currency of appInfoQuery.data?.supportedCurrencies ?? []) {
+      set.add(currency.code.toUpperCase())
+    }
+
     for (const account of accountsQuery.data ?? []) {
       if (account.currency) {
         set.add(account.currency.toUpperCase())
       }
     }
     return [...set].map((value) => ({ value, label: value }))
-  }, [accountsQuery.data])
+  }, [accountsQuery.data, appInfoQuery.data?.supportedCurrencies])
 
   const accountOptions = useMemo(
     () =>
@@ -533,6 +538,9 @@ export function TransactionEditorModal({
             const sourceCurrency = state.accountId
               ? (accountsById.get(state.accountId)?.currency ?? state.currency)
               : state.currency
+            const targetCurrency = state.targetAccountId
+              ? (accountsById.get(state.targetAccountId)?.currency ?? state.currency2)
+              : state.currency2
 
             return {
               ...state,
@@ -544,7 +552,8 @@ export function TransactionEditorModal({
               targetAccountId: nextType === 'Transfer' ? state.targetAccountId : null,
               originalTransactionId: nextType === 'Refund' ? state.originalTransactionId : '',
               amount2: nextType === 'Transfer' ? state.amount2 : '',
-              currency2: nextType === 'Transfer' ? state.currency2 : sourceCurrency,
+              currency: nextType === 'Transfer' ? sourceCurrency : state.currency,
+              currency2: nextType === 'Transfer' ? targetCurrency : sourceCurrency,
             }
           })
         }
@@ -575,11 +584,15 @@ export function TransactionEditorModal({
                 const nextAccountId = value ?? ''
                 const nextCurrency =
                   accountsById.get(nextAccountId)?.currency?.toUpperCase() ?? state.currency
+                const nextTargetCurrency =
+                  state.targetAccountId
+                    ? accountsById.get(state.targetAccountId)?.currency?.toUpperCase() ?? state.currency2
+                    : state.currency2
                 return {
                   ...state,
                   accountId: nextAccountId,
                   currency: nextCurrency,
-                  currency2: requiresTarget ? state.currency2 : nextCurrency,
+                  currency2: requiresTarget ? nextTargetCurrency : nextCurrency,
                 }
               })
             }
@@ -843,7 +856,7 @@ export function TransactionEditorModal({
               variant="unstyled"
               searchable
               allowDeselect={false}
-              disabled={isEditingLoading}
+              disabled={isEditingLoading || requiresTarget}
               styles={{
                 input: {
                   fontSize: 20,
@@ -897,7 +910,7 @@ export function TransactionEditorModal({
                   variant="unstyled"
                   searchable
                   allowDeselect={false}
-                  disabled={isEditingLoading}
+                  disabled={isEditingLoading || requiresTarget}
                   styles={{
                     input: {
                       fontSize: 16,
@@ -1250,7 +1263,7 @@ export function TransactionEditorModal({
             <Stack gap="xs">
               <Group gap="xs" align="center">
                 <Badge variant="light" color="green" size="lg">
-                  Transaction created
+                  Draft prepared
                 </Badge>
               </Group>
               <Group gap="md" wrap="wrap">
@@ -1308,7 +1321,7 @@ export function TransactionEditorModal({
           ) : null}
 
           <Text size="sm" c="dimmed">
-            You can edit this transaction from the transactions page.
+            Review values and save manually in the Manual tab.
           </Text>
 
           <Group justify="flex-end">

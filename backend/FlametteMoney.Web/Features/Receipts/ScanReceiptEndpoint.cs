@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -22,7 +23,6 @@ public record ReceiptItemResponse(
     Guid? SubCategoryId);
 
 public record ScanReceiptResponse(
-    Guid TransactionId,
     string? Merchant,
     DateTime? Date,
     decimal Amount,
@@ -36,7 +36,7 @@ public sealed class ScanReceiptEndpoint : ICarterModule
         app.MapPost("/api/receipts/scan", Handle)
             .WithTags("Receipts")
             .WithSummary("Scan receipt")
-            .WithDescription("Upload a receipt image and create a transaction with categorized items using AI.")
+            .WithDescription("Upload a receipt image and return a draft transaction with categorized items using AI.")
             .DisableAntiforgery()
             .Produces<ScanReceiptResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest);
@@ -123,7 +123,7 @@ public sealed class ScanReceiptEndpoint : ICarterModule
                 return TypedResults.BadRequest("AI returned an invalid response. Please try again.");
             }
 
-            var scanResponse = await CreateTransactionFromReceipt(aiResult, account, categories, dbContext, cancellationToken);
+            var scanResponse = BuildDraftFromReceipt(aiResult, account, categories);
             return TypedResults.Ok(scanResponse);
         }
         catch (Exception ex)
@@ -206,12 +206,10 @@ public sealed class ScanReceiptEndpoint : ICarterModule
             """;
     }
 
-    private static async Task<ScanReceiptResponse> CreateTransactionFromReceipt(
+    private static ScanReceiptResponse BuildDraftFromReceipt(
         AiReceiptResult aiResult,
         Account account,
-        List<Category> categories,
-        AppDbContext dbContext,
-        CancellationToken cancellationToken)
+        List<Category> categories)
     {
         var categoryLookup = new Dictionary<string, (Guid Id, Guid? ParentId, CategoryType Type)>(StringComparer.OrdinalIgnoreCase);
         foreach (var category in categories)
@@ -304,40 +302,11 @@ public sealed class ScanReceiptEndpoint : ICarterModule
             transactionDate = DateTime.UtcNow;
         }
 
-        // Best category for transaction header = most common in items
-        Guid? headerCategoryId = transactionItems
-            .Where(i => i.CategoryId is not null)
-            .GroupBy(i => i.CategoryId!.Value)
-            .OrderByDescending(g => g.Count())
-            .Select(g => (Guid?)g.Key)
-            .FirstOrDefault();
-
-        var transaction = new Transaction
-        {
-            Id = Guid.NewGuid(),
-            Date = transactionDate,
-            Type = TransactionType.Expense,
-            Amount = totalAmount,
-            AccountId = account.Id,
-            CategoryId = headerCategoryId,
-            SubCategoryId = null,
-            Note = "Receipt scan" + (aiResult.Merchant is not null ? $" - {aiResult.Merchant}" : ""),
-            MerchantName = aiResult.Merchant,
-            Location = null,
-            Items = transactionItems
-        };
-
-        account.CurrentBalance -= totalAmount;
-
-        dbContext.Transactions.Add(transaction);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
         return new ScanReceiptResponse(
-            transaction.Id,
             aiResult.Merchant,
             transactionDate,
             totalAmount,
-            aiResult.Currency ?? "USD",
+            SupportedCurrencies.NormalizeOrDefault(aiResult.Currency, account.Currency),
             responseItems);
     }
 }

@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiAuthLoginGoogleData, GetApiAuthLoginGoogleResponses, GetApiAuthMeData, GetApiAuthMeErrors, GetApiAuthMeResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiReportsMonthlyYoyData, GetApiReportsMonthlyYoyErrors, GetApiReportsMonthlyYoyResponses, GetApiReportsPortfolioBalanceSeriesData, GetApiReportsPortfolioBalanceSeriesErrors, GetApiReportsPortfolioBalanceSeriesResponses, GetApiSettingsData, GetApiSettingsErrors, GetApiSettingsResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiAuthLogoutData, PostApiAuthLogoutResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiProfileImportBackupData, PostApiProfileImportBackupErrors, PostApiProfileImportBackupResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiSettingsData, PutApiSettingsErrors, PutApiSettingsResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
+import type { DeleteApiAccountsByIdData, DeleteApiAccountsByIdErrors, DeleteApiAccountsByIdResponses, DeleteApiCategoriesByIdData, DeleteApiCategoriesByIdErrors, DeleteApiCategoriesByIdResponses, DeleteApiTransactionsByIdData, DeleteApiTransactionsByIdErrors, DeleteApiTransactionsByIdResponses, GetApiAccountsByIdData, GetApiAccountsByIdErrors, GetApiAccountsByIdResponses, GetApiAccountsData, GetApiAccountsResponses, GetApiAppInfoData, GetApiAppInfoResponses, GetApiAuthLoginGoogleData, GetApiAuthLoginGoogleResponses, GetApiAuthMeData, GetApiAuthMeErrors, GetApiAuthMeResponses, GetApiCategoriesData, GetApiCategoriesResponses, GetApiReportsCategorySeriesData, GetApiReportsCategorySeriesErrors, GetApiReportsCategorySeriesResponses, GetApiReportsMonthlyYoyData, GetApiReportsMonthlyYoyErrors, GetApiReportsMonthlyYoyResponses, GetApiReportsPortfolioBalanceSeriesData, GetApiReportsPortfolioBalanceSeriesErrors, GetApiReportsPortfolioBalanceSeriesResponses, GetApiSettingsData, GetApiSettingsErrors, GetApiSettingsResponses, GetApiTransactionsByIdData, GetApiTransactionsByIdErrors, GetApiTransactionsByIdResponses, GetApiTransactionsData, GetApiTransactionsResponses, GetApiTransactionsSearchData, GetApiTransactionsSearchResponses, GetApiTripsData, GetApiTripsResponses, PostApiAccountsData, PostApiAccountsErrors, PostApiAccountsResponses, PostApiAuthLogoutData, PostApiAuthLogoutResponses, PostApiCategoriesData, PostApiCategoriesErrors, PostApiCategoriesResponses, PostApiProfileImportBackupData, PostApiProfileImportBackupErrors, PostApiProfileImportBackupResponses, PostApiReceiptsScanData, PostApiReceiptsScanErrors, PostApiReceiptsScanResponses, PostApiSeedDemoData, PostApiSeedDemoResponses, PostApiTransactionsData, PostApiTransactionsErrors, PostApiTransactionsResponses, PostApiTripsData, PostApiTripsErrors, PostApiTripsResponses, PutApiAccountsByIdData, PutApiAccountsByIdErrors, PutApiAccountsByIdResponses, PutApiCategoriesByIdData, PutApiCategoriesByIdErrors, PutApiCategoriesByIdResponses, PutApiSettingsData, PutApiSettingsErrors, PutApiSettingsResponses, PutApiTransactionsByIdData, PutApiTransactionsByIdErrors, PutApiTransactionsByIdResponses, PutApiTripsByIdData, PutApiTripsByIdErrors, PutApiTripsByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -161,7 +161,7 @@ export const getApiReportsPortfolioBalanceSeries = <ThrowOnError extends boolean
 /**
  * Scan receipt
  *
- * Upload a receipt image and create a transaction with categorized items using AI.
+ * Upload a receipt image and return a draft transaction with categorized items using AI.
  */
 export const postApiReceiptsScan = <ThrowOnError extends boolean = false>(options: Options<PostApiReceiptsScanData, ThrowOnError>) => (options.client ?? client).post<PostApiReceiptsScanResponses, PostApiReceiptsScanErrors, ThrowOnError>({
     ...formDataBodySerializer,
@@ -250,6 +250,13 @@ export const postApiAuthLogout = <ThrowOnError extends boolean = false>(options?
  * Returns currently authenticated user profile.
  */
 export const getApiAuthMe = <ThrowOnError extends boolean = false>(options?: Options<GetApiAuthMeData, ThrowOnError>) => (options?.client ?? client).get<GetApiAuthMeResponses, GetApiAuthMeErrors, ThrowOnError>({ url: '/api/auth/me', ...options });
+
+/**
+ * Get app metadata
+ *
+ * Returns application metadata such as supported currencies.
+ */
+export const getApiAppInfo = <ThrowOnError extends boolean = false>(options?: Options<GetApiAppInfoData, ThrowOnError>) => (options?.client ?? client).get<GetApiAppInfoResponses, unknown, ThrowOnError>({ url: '/api/app-info', ...options });
 
 /**
  * List accounts

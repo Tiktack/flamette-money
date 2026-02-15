@@ -13,13 +13,15 @@ type AggregationPeriod = 'Auto' | 'Day' | 'Week' | 'Month'
 
 const toNumber = (value: number | string) => (typeof value === 'number' ? value : Number(value))
 
-function formatCurrencyLike(value: number | string | undefined) {
+function formatCurrencyLike(value: number | string | undefined, currency: string) {
   const numeric = toNumber(value ?? 0)
   const rounded = Math.round(numeric * 100) / 100
-  return rounded.toLocaleString(undefined, {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  })
+  }).format(rounded)
 }
 
 export function AnalyticsPortfolioView() {
@@ -52,6 +54,7 @@ export function AnalyticsPortfolioView() {
   }, [baseCurrency, interval, resolvedDateRange.end, resolvedDateRange.start])
 
   const reportQuery = usePortfolioBalanceSeriesReport(query)
+  const resolvedBaseCurrency = reportQuery.data?.baseCurrency ?? baseCurrency
 
   const chartData = useMemo(
     () => (reportQuery.data?.points ?? []).map((point) => ({
@@ -84,7 +87,7 @@ export function AnalyticsPortfolioView() {
               w={130}
             />
             <Text size="sm" c="dimmed" mt={24}>
-              Base currency: {baseCurrency}
+              Base currency: {resolvedBaseCurrency}
             </Text>
           </Group>
         </Group>
@@ -103,7 +106,7 @@ export function AnalyticsPortfolioView() {
             h={320}
             data={chartData}
             dataKey="period"
-            series={[{ name: 'balance', label: `Balance (${baseCurrency})`, color: 'blue.6' }]}
+            series={[{ name: 'balance', label: `Balance (${resolvedBaseCurrency})`, color: 'blue.6' }]}
             curveType="linear"
             tickLine="y"
           />
@@ -115,15 +118,15 @@ export function AnalyticsPortfolioView() {
         <Group mt="md" gap="xl">
           <div>
             <Text c="dimmed" size="sm">Start balance</Text>
-            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.startBalance)}</Text>
+            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.startBalance, resolvedBaseCurrency)}</Text>
           </div>
           <div>
             <Text c="dimmed" size="sm">End balance</Text>
-            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.endBalance)}</Text>
+            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.endBalance, resolvedBaseCurrency)}</Text>
           </div>
           <div>
             <Text c="dimmed" size="sm">Delta</Text>
-            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.delta)}</Text>
+            <Text fw={700}>{formatCurrencyLike(reportQuery.data?.summary.delta, resolvedBaseCurrency)}</Text>
           </div>
           <div>
             <Text c="dimmed" size="sm">Delta %</Text>
@@ -131,11 +134,6 @@ export function AnalyticsPortfolioView() {
           </div>
         </Group>
 
-        {(reportQuery.data?.warnings?.length ?? 0) > 0 ? (
-          <Text c="orange" size="sm" mt="md">
-            {reportQuery.data?.warnings[0]}
-          </Text>
-        ) : null}
       </Card>
     </Stack>
   )
