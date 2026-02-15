@@ -793,3 +793,145 @@ For retryies, Use Polly library, instead of manual logic.
 ----------------------------
 2026-02-15 19:59:30
 Awesome, create some documentation in docs folder of what we implemented, as summary for future references.
+
+----------------------------
+2026-02-15 20:00:00
+I did speak to chat gpt about icons, here conversation: 
+You’re absolutely on the right track thinking about dynamic icons, and yes — it is possible to render Tabler Icons dynamically from a name stored in your database. This is a very common pattern in SPAs where the backend stores “metadata” and the frontend resolves it into actual components.
+Let’s break it down cleanly so you can implement it without fighting tree‑shaking or bundler issues.
+
+✅ How to Render Tabler Icons Dynamically in React
+Tabler Icons are exported as individual React components, so the trick is to import them as an object and reference them by string key.
+1. Import all icons as a single object
+import * as TablerIcons from '@tabler/icons-react';
+
+
+Now TablerIcons is an object like:
+{
+	IconHome: (props) => <svg ... />,
+	IconUser: (props) => <svg ... />,
+	IconSettings: (props) => <svg ... />,
+	...
+}
+
+
+
+✅ 2. Store the icon name in your DB
+Example DB record:
+{
+	"id": 1,
+	"name": "Work",
+	"icon": "IconBriefcase"
+}
+
+
+
+✅ 3. Render the icon dynamically
+const CategoryIcon = ({ iconName, ...props }) => {
+	const IconComponent = TablerIcons[iconName];
+
+	if (!IconComponent) return <TablerIcons.IconQuestionMark {...props} />;
+
+	return <IconComponent {...props} />;
+};
+
+
+Usage:
+<CategoryIcon iconName={category.icon} size={24} stroke={1.5} />
+
+
+
+🧠 How Tree‑Shaking Works Here
+This is the part people worry about.
+If you import * as TablerIcons
+- Your bundler cannot tree‑shake unused icons, because you are referencing them dynamically.
+- This means all icons get bundled.
+For most apps, this is fine — Tabler Icons are lightweight (~300 KB uncompressed).
+But if you want optimal bundle size, keep reading.
+
+⚡ Optimizing Bundle Size (Optional)
+If you want tree‑shaking to work, you need to avoid dynamic imports of the entire icon library.
+Option A — Whitelist icons on the frontend
+If you know the set of icons users can choose from:
+import { IconHome, IconUser, IconBriefcase } from '@tabler/icons-react';
+
+const ICON_MAP = {
+	IconHome,
+	IconUser,
+	IconBriefcase
+};
+
+
+Then:
+const IconComponent = ICON_MAP[iconName];
+
+
+Tree‑shaking works because the bundler sees explicit imports.
+
+Option B — Dynamic import per icon (lazy loading)
+If you want true dynamic loading:
+const DynamicIcon = ({ iconName }) => {
+	const Icon = React.lazy(() =>
+		import(`@tabler/icons-react/dist/esm/icons/${iconName}.js`)
+	);
+
+	return (
+		<React.Suspense fallback={<span>...</span>}>
+			<Icon />
+		</React.Suspense>
+	);
+};
+
+
+This loads only the icons actually used.
+
+🧩 How People Usually Implement This
+Most production apps choose one of these patterns:
+|  |  |  | 
+| import * as TablerIcons |  |  | 
+|  |  |  | 
+|  |  |  | 
+
+
+For most CRUD apps, the first option is perfectly fine.
+
+🎯 Recommended Setup for Your Use Case
+Since you want users to choose icons dynamically:
+- Frontend loads all icons (import * as TablerIcons)
+- Backend stores icon name
+- Frontend resolves icon by name
+This is the simplest and most flexible.
+
+If you want, I can help you:
+- Build a reusable <IconPicker /> component
+- Create a backend schema for categories
+- Optimize bundle size
+- Add fallback icons
+- Build a UI for selecting icons
+Optimizing Bundle Size (Optional)
+If you want tree‑shaking to work, you need to avoid dynamic imports of the entire icon library.
+Option A — Whitelist icons on the frontend
+If you know the set of icons users can choose from:
+import { IconHome, IconUser, IconBriefcase } from '@tabler/icons-react';
+
+const ICON_MAP = {
+	IconHome,
+	IconUser,
+	IconBriefcase
+};
+
+
+Then:
+const IconComponent = ICON_MAP[iconName];
+
+
+Tree‑shaking works because the bundler sees explicit imports.
+
+
+
+
+Can we implement it properly for categories and accounts? No need to consider that some icon might be wrong already in DB, just make sure, evewhere, we see an account, we show proper icon and same applies to categoeies. 
+Mantine docs you can find here: 
+https://mantine.dev/guides/llms/
+
+I believe, in our case we need to create a list of like 50-60 icons that might will be useful for categories and accounts, they should be quite different, no need like 5 a little different icons for a car. Better have like car train plane and so on. And we will use just them, later, if need, we can extend the list more.

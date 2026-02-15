@@ -7,6 +7,7 @@ public sealed class Account : IUserOwnedEntity
     public string Name { get; set; } = string.Empty;
     public string Currency { get; set; } = "USD";
     public string Color { get; set; } = "#4C6EF5";
+    public string Icon { get; set; } = "IconWallet";
     public AccountType Type { get; set; }
     public decimal InitialBalance { get; set; }
     public decimal CurrentBalance { get; set; }

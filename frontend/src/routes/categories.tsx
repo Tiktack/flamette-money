@@ -62,14 +62,14 @@ function CategoriesPage() {
   const [createForm, setCreateForm] = useState({
     name: '',
     color: defaultCategoryColor,
-    icon: 'food',
+    icon: 'IconShoppingCart',
     type: 'Expense' as CategoryType,
     parentId: null as string | null,
   })
   const [editForm, setEditForm] = useState({
     name: '',
     color: defaultCategoryColor,
-    icon: 'food',
+    icon: 'IconShoppingCart',
     parentId: null as string | null,
   })
 
@@ -238,7 +238,7 @@ function CategoriesPage() {
     setCreateForm({
       name: '',
       color: normalizeCategoryColor(parent?.color ?? defaultCategoryColor),
-      icon: parent?.icon ?? 'food',
+      icon: parent?.icon ?? 'IconShoppingCart',
       type: parentType,
       parentId: parent?.id ?? null,
     })
@@ -454,7 +454,7 @@ function CategoriesPage() {
             onChange={(value) =>
               setCreateForm((current) => ({
                 ...current,
-                icon: value ?? 'tag',
+                icon: value ?? 'IconTag',
               }))
             }
             allowDeselect={false}
@@ -539,7 +539,7 @@ function CategoriesPage() {
             onChange={(value) =>
               setEditForm((current) => ({
                 ...current,
-                icon: value ?? 'tag',
+                icon: value ?? 'IconTag',
               }))
             }
             allowDeselect={false}

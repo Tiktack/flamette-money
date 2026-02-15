@@ -13,6 +13,7 @@ public record GetAccountResponse(
     string Name,
     string Currency,
     string Color,
+    string Icon,
     AccountType Type,
     decimal InitialBalance,
     decimal CurrentBalance);
@@ -52,6 +53,7 @@ public sealed class GetAccountEndpoint : ICarterModule
             account.Name,
             account.Currency,
             account.Color,
+            account.Icon,
             account.Type,
             account.InitialBalance,
             account.CurrentBalance));

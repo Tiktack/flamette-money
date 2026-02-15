@@ -13,6 +13,7 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(account => account.Name).HasMaxLength(200).IsRequired();
         builder.Property(account => account.Currency).HasMaxLength(3).IsRequired();
         builder.Property(account => account.Color).HasMaxLength(7).IsRequired();
+        builder.Property(account => account.Icon).HasMaxLength(100).IsRequired();
         builder.Property(account => account.InitialBalance).HasPrecision(18, 2);
         builder.Property(account => account.CurrentBalance).HasPrecision(18, 2);
         builder.Property(account => account.Type).IsRequired();

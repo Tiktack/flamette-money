@@ -26,6 +26,7 @@ import {
 import { getApiErrorMessage } from '../lib/api/errors'
 import { accountsQueryOptions, categoriesQueryOptions } from '../lib/api/queryOptions'
 import { queryClient } from '../lib/api/queryClient'
+import { AccountIcon } from '../lib/accounts/visuals'
 import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
 import { SharedDateRangeChips } from '../components/SharedDateRangeChips'
 import {
@@ -70,12 +71,13 @@ function TransactionsPage() {
   }, [categoriesQuery.data])
 
   const accountMap = useMemo(() => {
-    const map = new Map<string, { name: string; currency: string; color: string }>()
+    const map = new Map<string, { name: string; currency: string; color: string; icon: string }>()
     for (const account of accountsQuery.data ?? []) {
       map.set(account.id, {
         name: account.name,
         currency: account.currency,
         color: account.color,
+        icon: account.icon,
       })
     }
     return map
@@ -266,10 +268,10 @@ function TransactionsPage() {
   const buildAccountBadge = (accountId: string) => {
     const account = accountMap.get(accountId)
     if (!account) {
-      return { name: '-', color: '#CED4DA' }
+      return { name: '-', color: '#CED4DA', icon: 'IconWallet' }
     }
 
-    return { name: account.name, color: account.color }
+    return { name: account.name, color: account.color, icon: account.icon }
   }
 
   const formatDate = (value: string) => {
@@ -335,6 +337,22 @@ function TransactionsPage() {
                 clearable
                 placeholder="Select accounts"
                 nothingFoundMessage="No accounts"
+                renderOption={({ option }) => {
+                  const account = accountMap.get(option.value)
+                  const color = account?.color ?? '#CED4DA'
+                  return (
+                    <Group gap="sm" wrap="nowrap">
+                      <span className={classes.accountBadge} style={{ backgroundColor: color }}>
+                        <AccountIcon
+                          icon={account?.icon ?? 'IconWallet'}
+                          color="var(--mantine-color-white)"
+                          size={14}
+                        />
+                      </span>
+                      <Text size="sm">{option.label}</Text>
+                    </Group>
+                  )
+                }}
               />
               <MultiSelect
                 label="Categories"
@@ -427,7 +445,7 @@ function TransactionsPage() {
                       : transaction.subCategoryId ?? transaction.categoryId
                   const category = categoryId ? categoryMap.get(categoryId) ?? null : null
                   const categoryColor = category ? normalizeCategoryColor(category.color) : '#CED4DA'
-                  const categoryIcon = category?.icon ?? 'tag'
+                  const categoryIcon = category?.icon ?? 'IconTag'
                   const categoryLabel = buildCategoryLabel(transaction)
 
                   return (
@@ -438,7 +456,11 @@ function TransactionsPage() {
                             className={classes.accountBadge}
                             style={{ backgroundColor: accountInfo.color }}
                           >
-                            {accountInfo.name.slice(0, 1)}
+                            <AccountIcon
+                              icon={accountInfo.icon}
+                              color="var(--mantine-color-white)"
+                              size={14}
+                            />
                           </span>
                           <Text fw={600} size="sm">
                             {accountInfo.name}
@@ -450,7 +472,11 @@ function TransactionsPage() {
                                 className={classes.accountBadge}
                                 style={{ backgroundColor: targetInfo.color }}
                               >
-                                {targetInfo.name.slice(0, 1)}
+                                <AccountIcon
+                                  icon={targetInfo.icon}
+                                  color="var(--mantine-color-white)"
+                                  size={14}
+                                />
                               </span>
                               <Text fw={600} size="sm">
                                 {targetInfo.name}

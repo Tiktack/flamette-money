@@ -9,6 +9,7 @@ export type AccountListItemResponse = {
     name: string;
     currency: string;
     color: string;
+    icon: string;
     type: AccountType;
     initialBalance: number | string;
     currentBalance: number | string;
@@ -52,6 +53,7 @@ export type CreateAccountRequest = {
     name: string;
     currency: string;
     color: string;
+    icon: string;
     type: AccountType;
     initialBalance: number | string;
 };
@@ -61,6 +63,7 @@ export type CreateAccountResponse = {
     name: string;
     currency: string;
     color: string;
+    icon: string;
     type: AccountType;
     initialBalance: number | string;
     currentBalance: number | string;
@@ -162,6 +165,7 @@ export type GetAccountResponse = {
     name: string;
     currency: string;
     color: string;
+    icon: string;
     type: AccountType;
     initialBalance: number | string;
     currentBalance: number | string;
@@ -408,6 +412,7 @@ export type TripListItemResponse = {
 export type UpdateAccountRequest = {
     name: string;
     color: string;
+    icon: string;
     type: AccountType;
 };
 
@@ -416,6 +421,7 @@ export type UpdateAccountResponse = {
     name: string;
     currency: string;
     color: string;
+    icon: string;
     type: AccountType;
     initialBalance: number | string;
     currentBalance: number | string;

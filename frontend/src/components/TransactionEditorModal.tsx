@@ -43,6 +43,7 @@ import type {
   TransactionType,
   TransactionUpdateRequest,
 } from '../lib/api/types'
+import { AccountIcon } from '../lib/accounts/visuals'
 import { CategoryIcon, normalizeCategoryColor } from '../lib/categories/visuals'
 
 export type TransactionModalMode = 'new' | 'edit'
@@ -224,9 +225,14 @@ export function TransactionEditorModal({
   const categoryMap = useMemo(() => buildCategoryMap(categories), [categories])
 
   const accountsById = useMemo(() => {
-    const map = new Map<string, { name: string; currency: string }>()
+    const map = new Map<string, { name: string; currency: string; color: string; icon: string }>()
     for (const account of accountsQuery.data ?? []) {
-      map.set(account.id, { name: account.name, currency: account.currency })
+      map.set(account.id, {
+        name: account.name,
+        currency: account.currency,
+        color: normalizeHexColor(account.color),
+        icon: account.icon,
+      })
     }
     return map
   }, [accountsQuery.data])
@@ -610,14 +616,20 @@ export function TransactionEditorModal({
             }}
             renderOption={({ option }) => (
               <Group gap="sm">
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
-                  }}
-                />
+                <span className="account-option-badge" style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 999,
+                  display: 'grid',
+                  placeItems: 'center',
+                  backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
+                }}>
+                  <AccountIcon
+                    icon={accountsById.get(option.value)?.icon ?? 'IconWallet'}
+                    color="var(--mantine-color-white)"
+                    size={14}
+                  />
+                </span>
                 <Text size="sm">{option.label}</Text>
               </Group>
             )}
@@ -673,7 +685,7 @@ export function TransactionEditorModal({
               leftSection={
                 selectedCategory && selectedCategoryColor ? (
                   <CategoryIcon
-                    icon={selectedCategory.icon ?? 'tag'}
+                    icon={selectedCategory.icon ?? 'IconTag'}
                     color={selectedCategoryColor}
                     size={18}
                   />
@@ -694,7 +706,7 @@ export function TransactionEditorModal({
                         color,
                       }}
                     >
-                      <CategoryIcon icon={category?.icon ?? 'tag'} color={color} size={18} />
+                      <CategoryIcon icon={category?.icon ?? 'IconTag'} color={color} size={18} />
                     </ThemeIcon>
                     <Text size="sm" fw={600}>
                       {option.label}
@@ -739,7 +751,7 @@ export function TransactionEditorModal({
                 >
                   <Group gap={4} wrap="nowrap">
                     <CategoryIcon
-                      icon={subcategory.icon ?? 'tag'}
+                      icon={subcategory.icon ?? 'IconTag'}
                       color={color}
                       size={14}
                     />
@@ -796,14 +808,20 @@ export function TransactionEditorModal({
             }}
             renderOption={({ option }) => (
               <Group gap="sm">
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
-                  }}
-                />
+                <span className="account-option-badge" style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 999,
+                  display: 'grid',
+                  placeItems: 'center',
+                  backgroundColor: accountColorMap.get(option.value) ?? '#CED4DA',
+                }}>
+                  <AccountIcon
+                    icon={accountsById.get(option.value)?.icon ?? 'IconWallet'}
+                    color="var(--mantine-color-white)"
+                    size={14}
+                  />
+                </span>
                 <Text size="sm">{option.label}</Text>
               </Group>
             )}

@@ -21,6 +21,11 @@ import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } fro
 import { getApiErrorMessage } from '../lib/api/errors'
 import { accountsQueryOptions } from '../lib/api/queryOptions'
 import { queryClient } from '../lib/api/queryClient'
+import {
+  AccountIcon,
+  accountIconOptions,
+  defaultAccountIcon,
+} from '../lib/accounts/visuals'
 import type { AccountListItem, AccountType } from '../lib/api/types'
 import classes from './page.module.css'
 
@@ -108,12 +113,14 @@ function AccountsPage() {
     name: '',
     currency: 'USD',
     color: defaultAccountColor,
+    icon: defaultAccountIcon,
     type: 'Cash' as AccountType,
     initialBalance: 0,
   })
   const [editForm, setEditForm] = useState({
     name: '',
     color: defaultAccountColor,
+    icon: defaultAccountIcon,
     type: 'Cash' as AccountType,
   })
 
@@ -123,6 +130,7 @@ function AccountsPage() {
       name: '',
       currency: 'USD',
       color: defaultAccountColor,
+      icon: defaultAccountIcon,
       type: 'Cash',
       initialBalance: 0,
     })
@@ -135,6 +143,7 @@ function AccountsPage() {
     setEditForm({
       name: account.name,
       color: normalizeHexColor(account.color),
+      icon: account.icon,
       type: account.type,
     })
   }
@@ -150,6 +159,7 @@ function AccountsPage() {
         name: createForm.name,
         currency: createForm.currency,
         color: createForm.color,
+        icon: createForm.icon,
         type: createForm.type,
         initialBalance: createForm.initialBalance,
       },
@@ -170,6 +180,7 @@ function AccountsPage() {
         request: {
           name: editForm.name,
           color: editForm.color,
+          icon: editForm.icon,
           type: editForm.type,
         },
       },
@@ -233,11 +244,13 @@ function AccountsPage() {
                       <Table.Td>
                         <div className={classes.nameCell}>
                           <span
-                            className={classes.colorDot}
+                            className={classes.accountBadge}
                             style={{
                               backgroundColor: color,
                             }}
-                          />
+                          >
+                            <AccountIcon icon={account.icon} color="var(--mantine-color-white)" size={16} />
+                          </span>
                           <div>
                             <Text fw={600}>{account.name}</Text>
                             <Text size="xs" c="dimmed">
@@ -327,6 +340,26 @@ function AccountsPage() {
             }
           />
           <Select
+            label="Icon"
+            data={accountIconOptions}
+            value={createForm.icon}
+            onChange={(value) =>
+              setCreateForm((current) => ({
+                ...current,
+                icon: value ?? defaultAccountIcon,
+              }))
+            }
+            allowDeselect={false}
+            renderOption={({ option }) => (
+              <Group gap="sm" wrap="nowrap">
+                <span className={classes.optionIcon}>
+                  <AccountIcon icon={option.value} color="var(--mantine-color-dark-6)" />
+                </span>
+                <Text size="sm">{option.label}</Text>
+              </Group>
+            )}
+          />
+          <Select
             label="Type"
             data={accountTypeOptions}
             value={createForm.type}
@@ -399,6 +432,26 @@ function AccountsPage() {
                 color: normalizeHexColor(value),
               }))
             }
+          />
+          <Select
+            label="Icon"
+            data={accountIconOptions}
+            value={editForm.icon}
+            onChange={(value) =>
+              setEditForm((current) => ({
+                ...current,
+                icon: value ?? defaultAccountIcon,
+              }))
+            }
+            allowDeselect={false}
+            renderOption={({ option }) => (
+              <Group gap="sm" wrap="nowrap">
+                <span className={classes.optionIcon}>
+                  <AccountIcon icon={option.value} color="var(--mantine-color-dark-6)" />
+                </span>
+                <Text size="sm">{option.label}</Text>
+              </Group>
+            )}
           />
           <Select
             label="Type"

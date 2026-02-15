@@ -1320,6 +1320,7 @@
           "name",
           "currency",
           "color",
+          "icon",
           "type",
           "initialBalance",
           "currentBalance"
@@ -1337,6 +1338,9 @@
             "type": "string"
           },
           "color": {
+            "type": "string"
+          },
+          "icon": {
             "type": "string"
           },
           "type": {
@@ -1507,6 +1511,7 @@
           "name",
           "currency",
           "color",
+          "icon",
           "type",
           "initialBalance"
         ],
@@ -1519,6 +1524,9 @@
             "type": "string"
           },
           "color": {
+            "type": "string"
+          },
+          "icon": {
             "type": "string"
           },
           "type": {
@@ -1540,6 +1548,7 @@
           "name",
           "currency",
           "color",
+          "icon",
           "type",
           "initialBalance",
           "currentBalance"
@@ -1557,6 +1566,9 @@
             "type": "string"
           },
           "color": {
+            "type": "string"
+          },
+          "icon": {
             "type": "string"
           },
           "type": {
@@ -2071,6 +2083,7 @@
           "name",
           "currency",
           "color",
+          "icon",
           "type",
           "initialBalance",
           "currentBalance"
@@ -2088,6 +2101,9 @@
             "type": "string"
           },
           "color": {
+            "type": "string"
+          },
+          "icon": {
             "type": "string"
           },
           "type": {
@@ -3409,6 +3425,7 @@
         "required": [
           "name",
           "color",
+          "icon",
           "type"
         ],
         "type": "object",
@@ -3417,6 +3434,9 @@
             "type": "string"
           },
           "color": {
+            "type": "string"
+          },
+          "icon": {
             "type": "string"
           },
           "type": {
@@ -3430,6 +3450,7 @@
           "name",
           "currency",
           "color",
+          "icon",
           "type",
           "initialBalance",
           "currentBalance"
@@ -3447,6 +3468,9 @@
             "type": "string"
           },
           "color": {
+            "type": "string"
+          },
+          "icon": {
             "type": "string"
           },
           "type": {

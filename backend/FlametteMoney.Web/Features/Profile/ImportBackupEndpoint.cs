@@ -117,6 +117,7 @@ public sealed class ImportBackupEndpoint : ICarterModule
                 Currency = NormalizeCurrencyCode(inferredCurrency) ?? "PLN",
                 Color = PickAccountColor(accountName),
                 Type = InferAccountType(accountName),
+                Icon = InferAccountIcon(accountName),
                 InitialBalance = 0m,
                 CurrentBalance = 0m
             };
@@ -537,6 +538,37 @@ public sealed class ImportBackupEndpoint : ICarterModule
         }
 
         return AccountType.DebitCard;
+    }
+
+    private static string InferAccountIcon(string accountName)
+    {
+        if (string.IsNullOrWhiteSpace(accountName))
+        {
+            return "IconWallet";
+        }
+
+        var normalized = accountName.Trim().ToLowerInvariant();
+        if (normalized.Contains("cash") || normalized.Contains("wallet"))
+        {
+            return "IconCash";
+        }
+
+        if (normalized.Contains("credit"))
+        {
+            return "IconCreditCard";
+        }
+
+        if (normalized.Contains("saving") || normalized.Contains("deposit"))
+        {
+            return "IconPigMoney";
+        }
+
+        if (normalized.Contains("bank"))
+        {
+            return "IconBuildingBank";
+        }
+
+        return "IconWallet";
     }
 
     private static async Task<OneMoneyParseResult> ParseOneMoneyCsvAsync(Stream stream, CancellationToken cancellationToken)

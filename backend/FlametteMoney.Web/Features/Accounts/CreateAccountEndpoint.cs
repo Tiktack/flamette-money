@@ -9,13 +9,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record CreateAccountRequest(string Name, string Currency, string Color, AccountType Type, decimal InitialBalance);
+public record CreateAccountRequest(string Name, string Currency, string Color, string Icon, AccountType Type, decimal InitialBalance);
 
 public record CreateAccountResponse(
     Guid Id,
     string Name,
     string Currency,
     string Color,
+    string Icon,
     AccountType Type,
     decimal InitialBalance,
     decimal CurrentBalance);
@@ -37,6 +38,10 @@ public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAcco
             .NotEmpty()
             .Matches("^#?[0-9a-fA-F]{6}$")
             .WithMessage("Color must be a 6-digit hex value.");
+
+        RuleFor(request => request.Icon)
+            .NotEmpty()
+            .MaximumLength(100);
 
         RuleFor(request => request.InitialBalance)
             .GreaterThanOrEqualTo(0);
@@ -73,6 +78,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
             Name = request.Name.Trim(),
             Currency = request.Currency.ToUpperInvariant(),
             Color = NormalizeColor(request.Color),
+            Icon = NormalizeIcon(request.Icon),
             Type = request.Type,
             InitialBalance = request.InitialBalance,
             CurrentBalance = request.InitialBalance
@@ -86,6 +92,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
             account.Name,
             account.Currency,
             account.Color,
+            account.Icon,
             account.Type,
             account.InitialBalance,
             account.CurrentBalance));
@@ -97,5 +104,10 @@ public sealed class CreateAccountEndpoint : ICarterModule
         return trimmed.StartsWith('#')
             ? trimmed.ToUpperInvariant()
             : $"#{trimmed.ToUpperInvariant()}";
+    }
+
+    private static string NormalizeIcon(string icon)
+    {
+        return icon.Trim();
     }
 }

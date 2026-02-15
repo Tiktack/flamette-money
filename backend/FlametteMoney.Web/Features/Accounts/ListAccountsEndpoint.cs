@@ -13,6 +13,7 @@ public record AccountListItemResponse(
     string Name,
     string Currency,
     string Color,
+    string Icon,
     AccountType Type,
     decimal InitialBalance,
     decimal CurrentBalance);
@@ -44,6 +45,7 @@ public sealed class ListAccountsEndpoint : ICarterModule
                 account.Name,
                 account.Currency,
                 account.Color,
+                account.Icon,
                 account.Type,
                 account.InitialBalance,
                 account.CurrentBalance))
