@@ -843,13 +843,39 @@
         }
       }
     },
+    "/api/profile/export-backup": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Export user backup",
+        "description": "Exports accounts, categories, transactions, items, and settings in native Flamette XLSX format.",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          },
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/profile/import-backup": {
       "post": {
         "tags": [
           "Profile"
         ],
         "summary": "Import data backup",
-        "description": "Import profile data from external backup formats such as 1Money CSV.",
+        "description": "Import profile data from native Flamette XLSX backups or external formats such as 1Money CSV.",
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -2289,7 +2315,9 @@
           "importedAccounts",
           "importedCategories",
           "importedSubCategories",
+          "importedTransactionItems",
           "updatedBalanceSnapshots",
+          "updatedSettings",
           "skippedRows"
         ],
         "type": "object",
@@ -2329,7 +2357,23 @@
             ],
             "format": "int32"
           },
+          "importedTransactionItems": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
           "updatedBalanceSnapshots": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updatedSettings": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",

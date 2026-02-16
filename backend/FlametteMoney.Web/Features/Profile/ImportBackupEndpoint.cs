@@ -12,7 +12,9 @@ public record ImportBackupResponse(
     int ImportedAccounts,
     int ImportedCategories,
     int ImportedSubCategories,
+    int ImportedTransactionItems,
     int UpdatedBalanceSnapshots,
+    int UpdatedSettings,
     int SkippedRows);
 
 public sealed class ImportBackupEndpoint : ICarterModule
@@ -22,7 +24,7 @@ public sealed class ImportBackupEndpoint : ICarterModule
         app.MapPost("/api/profile/import-backup", Handle)
             .WithTags("Profile")
             .WithSummary("Import data backup")
-            .WithDescription("Import profile data from external backup formats such as 1Money CSV.")
+            .WithDescription("Import profile data from native Flamette XLSX backups or external formats such as 1Money CSV.")
             .DisableAntiforgery()
             .Produces<ImportBackupResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest);
@@ -40,25 +42,43 @@ public sealed class ImportBackupEndpoint : ICarterModule
             return TypedResults.BadRequest("Backup file is required.");
         }
 
-        if (!OneMoneyBackupImporter.IsSupportedType(type))
+        if (!OneMoneyBackupImporter.IsSupportedType(type) && !FlametteBackupPorter.IsSupportedType(type))
         {
-            return TypedResults.BadRequest("Unsupported backup type. Use 'one-money'.");
+            return TypedResults.BadRequest("Unsupported backup type. Use 'one-money' or 'flamette'.");
         }
 
         var userId = currentUserContext.GetScopedUserId();
         try
         {
             await using var stream = file.OpenReadStream();
-            var result = await OneMoneyBackupImporter.ImportAsync(stream, dbContext, userId, cancellationToken);
+            if (FlametteBackupPorter.IsSupportedType(type))
+            {
+                var result = await FlametteBackupPorter.ImportAsync(stream, dbContext, userId, cancellationToken);
+
+                return TypedResults.Ok(new ImportBackupResponse(
+                    "flamette",
+                    result.ImportedTransactions,
+                    result.ImportedAccounts,
+                    result.ImportedCategories,
+                    result.ImportedSubCategories,
+                    result.ImportedTransactionItems,
+                    result.UpdatedBalanceSnapshots,
+                    result.UpdatedSettings,
+                    result.SkippedRows));
+            }
+
+            var oneMoneyResult = await OneMoneyBackupImporter.ImportAsync(stream, dbContext, userId, cancellationToken);
 
             return TypedResults.Ok(new ImportBackupResponse(
                 "one-money",
-                result.ImportedTransactions,
-                result.ImportedAccounts,
-                result.ImportedCategories,
-                result.ImportedSubCategories,
-                result.UpdatedBalanceSnapshots,
-                result.SkippedRows));
+                oneMoneyResult.ImportedTransactions,
+                oneMoneyResult.ImportedAccounts,
+                oneMoneyResult.ImportedCategories,
+                oneMoneyResult.ImportedSubCategories,
+                0,
+                oneMoneyResult.UpdatedBalanceSnapshots,
+                0,
+                oneMoneyResult.SkippedRows));
         }
         catch (InvalidOperationException exception)
         {

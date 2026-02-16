@@ -50,7 +50,8 @@ import type {
   TransactionUpdateRequest,
 } from './types'
 
-export type BackupImportType = 'one-money'
+export type BackupImportType = 'one-money' | 'flamette'
+export type BackupExportType = 'flamette'
 
 export function useAccounts() {
   return useQuery(accountsQueryOptions())
@@ -312,8 +313,10 @@ export function useSeedDemo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (years: number) =>
-      postApiSeedDemo({ query: { Years: years }, throwOnError: true }).then((result) => result.data),
+    mutationFn: ({ years, seed }: { years: number; seed?: number }) =>
+      postApiSeedDemo({ query: { Years: years, Seed: seed }, throwOnError: true }).then(
+        (result) => result.data,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
@@ -321,6 +324,8 @@ export function useSeedDemo() {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
 }
@@ -336,9 +341,45 @@ export function useImportBackup() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+    },
+  })
+}
+
+export function useExportBackup() {
+  return useMutation({
+    mutationFn: async ({ type }: { type: BackupExportType }) => {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
+      const requestUrl = `${baseUrl}/api/profile/export-backup?type=${encodeURIComponent(type)}`
+      const response = await fetch(requestUrl, {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Unable to export backup.')
+      }
+
+      const blob = await response.blob()
+      const disposition = response.headers.get('content-disposition') ?? ''
+      const match = /filename="?([^";]+)"?/i.exec(disposition)
+      const fileName = match?.[1] ?? `flamette-backup-${new Date().toISOString()}.xlsx`
+
+      const downloadUrl = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = downloadUrl
+      anchor.download = fileName
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(downloadUrl)
     },
   })
 }

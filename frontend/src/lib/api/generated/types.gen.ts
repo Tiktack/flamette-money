@@ -208,7 +208,9 @@ export type ImportBackupResponse = {
     importedAccounts: number | string;
     importedCategories: number | string;
     importedSubCategories: number | string;
+    importedTransactionItems: number | string;
     updatedBalanceSnapshots: number | string;
+    updatedSettings: number | string;
     skippedRows: number | string;
 };
 
@@ -915,6 +917,29 @@ export type PostApiReceiptsScanResponses = {
 };
 
 export type PostApiReceiptsScanResponse = PostApiReceiptsScanResponses[keyof PostApiReceiptsScanResponses];
+
+export type GetApiProfileExportBackupData = {
+    body?: never;
+    path?: never;
+    query?: {
+        type?: string;
+    };
+    url: '/api/profile/export-backup';
+};
+
+export type GetApiProfileExportBackupErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type GetApiProfileExportBackupResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type PostApiProfileImportBackupData = {
     body: {

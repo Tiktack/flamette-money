@@ -955,3 +955,20 @@ Can you please remove all that code for infering icons or accounts types? It pro
 ----------------------------
 2026-02-16 00:00:00
 Can one money backup still assign random colors to accounts? Right now they are just blue.
+
+----------------------------
+2026-02-16 00:00:00
+Design and implement back/importing functionality. We already have import from OneMoney, but we need to design our own to store more accurately information. We need to expo accounts(and their related properties like color icon currency and so on.), ssame goes for categories and transactions, also user account info(for now just base currency).
+
+----------------------------
+2026-02-16 00:00:00
+I think json is not the right format for such bakups. either csv or xml would be better. Csv probably hard, because accounts categories and transactions have different fields. So, xml with 3-4 worksheet should be better.
+
+----------------------------
+2026-02-16 00:00:00
+I am sorry, I meant xlsx, basically excel files.
+
+----------------------------
+2026-02-16 00:00:00
+I see theendpoint, but let's update the UI. 
+Please re-design the UI of settings, to have beatiful card design, structured, to support different types of imports of backups, seeding that have generating backup.
