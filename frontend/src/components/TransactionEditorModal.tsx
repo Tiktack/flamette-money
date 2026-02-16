@@ -1,12 +1,10 @@
 import {
   ActionIcon,
-  Badge,
   Button,
-  Card,
   Chip,
   Collapse,
   Divider,
-  FileInput,
+  FileButton,
   Group,
   Image,
   Modal,
@@ -18,11 +16,11 @@ import {
   Stack,
   Table,
   ThemeIcon,
-  Tabs,
   Text,
   TextInput,
 } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
+import { IconSparkles } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   useAccounts,
@@ -160,6 +158,56 @@ const fillFromTransaction = (transaction: TransactionDetail): TransactionFormSta
   })),
 })
 
+const toFiniteNumber = (value: number | string | null | undefined): number | null => {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+const applyReceiptScanToForm = (
+  state: TransactionFormState,
+  scanResult: ReceiptScanResult,
+): TransactionFormState => {
+  const parsedDate = scanResult.date ? new Date(scanResult.date) : null
+  const nextDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime()) ? formatDateInput(parsedDate) : state.date
+  const nextAmount = toFiniteNumber(scanResult.amount)
+  const nextCurrency = scanResult.currency ? scanResult.currency.toUpperCase() : state.currency
+
+  const scannedItems: TransactionItemFormState[] = (scanResult.items ?? []).map((item) => ({
+    name: item.name ?? '',
+    quantity: toFiniteNumber(item.quantity) ?? 1,
+    unit: item.unit ?? '',
+    unitPrice: toFiniteNumber(item.unitPrice) ?? 0,
+    promotionAmount: toFiniteNumber(item.promotionAmount) ?? 0,
+    categoryId: item.categoryId,
+    subCategoryId: item.subCategoryId,
+  }))
+
+  const firstCategorizedItem = scannedItems.find((item) => item.categoryId || item.subCategoryId)
+
+  return {
+    ...state,
+    type: 'Expense',
+    date: nextDate,
+    amount: nextAmount && nextAmount > 0 ? nextAmount : state.amount,
+    amount2: '',
+    currency: nextCurrency,
+    currency2: nextCurrency,
+    targetAccountId: null,
+    originalTransactionId: '',
+    merchantName: scanResult.merchant?.trim() || state.merchantName,
+    categoryId: firstCategorizedItem?.categoryId ?? state.categoryId,
+    subCategoryId:
+      firstCategorizedItem?.subCategoryId ??
+      (firstCategorizedItem?.categoryId ? null : state.subCategoryId),
+    items: scannedItems,
+  }
+}
+
 const applyPresetCategory = (
   state: TransactionFormState,
   presetCategoryId: string,
@@ -210,11 +258,9 @@ export function TransactionEditorModal({
   const [form, setForm] = useState<TransactionFormState>(() =>
     buildDefaultState(presetType ?? defaultType),
   )
-  const [activeTab, setActiveTab] = useState<string>('manual')
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [scanFile, setScanFile] = useState<File | null>(null)
   const [scanPreview, setScanPreview] = useState<string | null>(null)
-  const [scanAccountId, setScanAccountId] = useState('')
   const [scanResult, setScanResult] = useState<ReceiptScanResult | null>(null)
   const [scanError, setScanError] = useState<string | null>(null)
 
@@ -257,15 +303,6 @@ export function TransactionEditorModal({
       (accountsQuery.data ?? []).map((account) => ({
         value: account.id,
         label: account.name,
-      })),
-    [accountsQuery.data],
-  )
-
-  const accountOptionsWithCurrency = useMemo(
-    () =>
-      (accountsQuery.data ?? []).map((account) => ({
-        value: account.id,
-        label: `${account.name} \u00B7 ${account.currency}`,
       })),
     [accountsQuery.data],
   )
@@ -388,18 +425,24 @@ export function TransactionEditorModal({
     transactionQuery.data,
   ])
 
-  // Reset AI tab state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setActiveTab('manual')
       setAdvancedOpen(false)
       setScanFile(null)
       setScanPreview(null)
-      setScanAccountId('')
       setScanResult(null)
       setScanError(null)
     }
   }, [isOpen])
+
+  useEffect(
+    () => () => {
+      if (scanPreview) {
+        URL.revokeObjectURL(scanPreview)
+      }
+    },
+    [scanPreview],
+  )
 
   const requiresTarget = form.type === 'Transfer'
   const requiresOriginal = form.type === 'Refund'
@@ -491,35 +534,34 @@ export function TransactionEditorModal({
     }
   }
 
-  const handleScanFileChange = (value: File | null) => {
+  const handleAiReceiptSelected = async (value: File | null) => {
+    if (scanPreview) {
+      URL.revokeObjectURL(scanPreview)
+    }
+
     setScanFile(value)
     setScanResult(null)
     setScanError(null)
-    if (value) {
-      setScanPreview(URL.createObjectURL(value))
-    } else {
-      setScanPreview(null)
-    }
-  }
 
-  const handleScan = async () => {
-    if (!scanFile) return
-    if (!scanAccountId) {
+    if (!value) {
+      setScanPreview(null)
+      return
+    }
+
+    setScanPreview(URL.createObjectURL(value))
+
+    if (!form.accountId) {
       setScanError('Please select an account first.')
       return
     }
-    setScanError(null)
 
     try {
-      const result = await scanReceipt.mutateAsync({ file: scanFile, accountId: scanAccountId })
+      const result = await scanReceipt.mutateAsync({ file: value, accountId: form.accountId })
       setScanResult(result)
+      setForm((state) => applyReceiptScanToForm(state, result))
     } catch (error) {
       setScanError(getApiErrorMessage(error, 'Failed to scan receipt'))
     }
-  }
-
-  const handleScanClose = () => {
-    onClose()
   }
 
   const manualTabContent = (
@@ -529,6 +571,78 @@ export function TransactionEditorModal({
       ) : null}
       {transactionLoadError ? (
         <Text size="sm" c="red">Unable to load transaction details.</Text>
+      ) : null}
+
+      {mode === 'new' ? (
+        <Paper withBorder p="md" radius="lg">
+          <Stack gap="sm">
+            <Group justify="space-between" align="flex-start" wrap="wrap">
+              <Stack gap={2}>
+                <Group gap="xs">
+                  <ThemeIcon radius="xl" variant="light" color="violet">
+                    <IconSparkles size={16} />
+                  </ThemeIcon>
+                  <Text fw={700}>AI receipt scan</Text>
+                </Group>
+                <Text size="xs" c="dimmed">
+                  Upload a receipt image to auto-fill fields. You can edit everything before saving.
+                </Text>
+              </Stack>
+
+              <FileButton
+                onChange={handleAiReceiptSelected}
+                accept="image/jpeg,image/png,image/webp"
+              >
+                {(props) => (
+                  <Button
+                    {...props}
+                    variant="light"
+                    leftSection={<IconSparkles size={16} />}
+                    loading={scanReceipt.isPending}
+                    loaderProps={{ type: 'dots' }}
+                  >
+                    {scanReceipt.isPending ? 'Scanning...' : 'Scan with AI'}
+                  </Button>
+                )}
+              </FileButton>
+            </Group>
+
+            {scanFile ? (
+              <Text size="xs" c="dimmed">
+                Selected file: {scanFile.name}
+              </Text>
+            ) : null}
+
+            {scanPreview ? (
+              <Image
+                src={scanPreview}
+                alt="Receipt preview"
+                mah={180}
+                fit="contain"
+                radius="md"
+              />
+            ) : null}
+
+            {scanError ? (
+              <Text size="sm" c="red">
+                {scanError}
+              </Text>
+            ) : null}
+
+            {scanResult ? (
+              <Group gap="xs" wrap="wrap">
+                <Text size="sm" fw={600} c="teal">
+                  Draft applied
+                </Text>
+                {scanResult.merchant ? <Text size="sm">• {scanResult.merchant}</Text> : null}
+                <Text size="sm">
+                  • {Number(scanResult.amount).toFixed(2)} {(scanResult.currency ?? form.currency).toUpperCase()}
+                </Text>
+                <Text size="sm">• {scanResult.items.length} items</Text>
+              </Group>
+            ) : null}
+          </Stack>
+        </Paper>
       ) : null}
 
       {/* Type selector */}
@@ -1230,139 +1344,7 @@ export function TransactionEditorModal({
     </Stack>
   )
 
-  const aiTabContent = (
-    <Stack gap="md">
-      <Select
-        label="Account"
-        description="Transaction will be created for this account"
-        data={accountOptionsWithCurrency}
-        value={scanAccountId}
-        onChange={(value) => setScanAccountId(value ?? '')}
-        placeholder="Select account"
-      />
-
-      <FileInput
-        label="Receipt image"
-        placeholder="Choose file..."
-        accept="image/jpeg,image/png,image/webp"
-        value={scanFile}
-        onChange={handleScanFileChange}
-      />
-
-      {scanPreview ? (
-        <Image
-          src={scanPreview}
-          alt="Receipt preview"
-          mah={200}
-          fit="contain"
-          radius="md"
-        />
-      ) : null}
-
-      {!scanResult ? (
-        <Button
-          onClick={handleScan}
-          disabled={!scanFile || !scanAccountId}
-          loading={scanReceipt.isPending}
-        >
-          {scanReceipt.isPending ? 'Scanning...' : 'Scan with AI'}
-        </Button>
-      ) : null}
-
-      {scanError ? (
-        <Text size="sm" c="red">
-          {scanError}
-        </Text>
-      ) : null}
-
-      {scanResult ? (
-        <Stack gap="md">
-          <Card shadow="xs" radius="md" padding="sm" withBorder>
-            <Stack gap="xs">
-              <Group gap="xs" align="center">
-                <Badge variant="light" color="green" size="lg">
-                  Draft prepared
-                </Badge>
-              </Group>
-              <Group gap="md" wrap="wrap">
-                {scanResult.merchant ? (
-                  <Text size="sm">
-                    <Text span fw={600}>Merchant:</Text> {scanResult.merchant}
-                  </Text>
-                ) : null}
-                {scanResult.date ? (
-                  <Text size="sm">
-                    <Text span fw={600}>Date:</Text> {new Date(scanResult.date).toLocaleDateString()}
-                  </Text>
-                ) : null}
-                <Text size="sm">
-                  <Text span fw={600}>Amount:</Text> {Number(scanResult.amount).toFixed(2)} {scanResult.currency}
-                </Text>
-              </Group>
-            </Stack>
-          </Card>
-
-          {scanResult.items.length > 0 ? (
-            <>
-              <Text fw={600} size="sm">
-                Items ({scanResult.items.length})
-              </Text>
-              <div style={{ overflowX: 'auto' }}>
-                <Table verticalSpacing="xs" horizontalSpacing="xs">
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Name</Table.Th>
-                      <Table.Th>Qty</Table.Th>
-                      <Table.Th>Unit price</Table.Th>
-                      <Table.Th>Promo</Table.Th>
-                      <Table.Th>Total</Table.Th>
-                      <Table.Th>Category</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {scanResult.items.map((item, index) => (
-                      <Table.Tr key={index}>
-                        <Table.Td>{item.name}</Table.Td>
-                        <Table.Td>{Number(item.quantity)}</Table.Td>
-                        <Table.Td>{Number(item.unitPrice).toFixed(2)}</Table.Td>
-                        <Table.Td>{Number(item.promotionAmount) > 0 ? `-${Number(item.promotionAmount).toFixed(2)}` : '-'}</Table.Td>
-                        <Table.Td fw={600}>{Number(item.finalAmount).toFixed(2)}</Table.Td>
-                        <Table.Td>
-                          <Text size="xs" c="dimmed">{item.categoryName ?? '-'}</Text>
-                        </Table.Td>
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </div>
-            </>
-          ) : null}
-
-          <Text size="sm" c="dimmed">
-            Review values and save manually in the Manual tab.
-          </Text>
-
-          <Group justify="flex-end">
-            <Button onClick={handleScanClose}>Done</Button>
-          </Group>
-        </Stack>
-      ) : null}
-    </Stack>
-  )
-
-  const modalBody = mode === 'edit' ? (
-    manualTabContent
-  ) : (
-    <Tabs value={activeTab} onChange={(value) => setActiveTab(value ?? 'manual')}>
-      <Tabs.List mb="md">
-        <Tabs.Tab value="manual">Manual</Tabs.Tab>
-        <Tabs.Tab value="ai">AI scan</Tabs.Tab>
-      </Tabs.List>
-
-      <Tabs.Panel value="manual">{manualTabContent}</Tabs.Panel>
-      <Tabs.Panel value="ai">{aiTabContent}</Tabs.Panel>
-    </Tabs>
-  )
+  const modalBody = manualTabContent
 
   if (!withModal) {
     return modalBody
