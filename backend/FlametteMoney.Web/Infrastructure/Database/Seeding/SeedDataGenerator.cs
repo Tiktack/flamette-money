@@ -89,8 +89,7 @@ public sealed class SeedDataGenerator
                 Color = definition.Color,
                 Icon = definition.Icon,
                 Type = definition.Type,
-                InitialBalance = definition.InitialBalance,
-                CurrentBalance = definition.InitialBalance
+                CurrentBalance = definition.CurrentBalance
             };
 
             dbContext.Accounts.Add(account);
@@ -577,7 +576,7 @@ public sealed class SeedDataGenerator
         string Color,
         string Icon,
         AccountType Type,
-        decimal InitialBalance);
+        decimal CurrentBalance);
 
     private sealed record TripWindow(Guid Id, DateTime StartDate, DateTime EndDate);
 

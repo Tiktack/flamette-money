@@ -11,7 +11,6 @@ export type AccountListItemResponse = {
     color: string;
     icon: string;
     type: AccountType;
-    initialBalance: number | string;
     currentBalance: number | string;
 };
 
@@ -55,7 +54,7 @@ export type CreateAccountRequest = {
     color: string;
     icon: string;
     type: AccountType;
-    initialBalance: number | string;
+    currentBalance: number | string;
 };
 
 export type CreateAccountResponse = {
@@ -65,7 +64,6 @@ export type CreateAccountResponse = {
     color: string;
     icon: string;
     type: AccountType;
-    initialBalance: number | string;
     currentBalance: number | string;
 };
 
@@ -167,7 +165,6 @@ export type GetAccountResponse = {
     color: string;
     icon: string;
     type: AccountType;
-    initialBalance: number | string;
     currentBalance: number | string;
 };
 
@@ -261,7 +258,6 @@ export type PortfolioAccountResponse = {
     name: string;
     color: string;
     currency: string;
-    initialBalance: number | string;
     currentBalance: number | string;
 };
 
@@ -414,6 +410,7 @@ export type UpdateAccountRequest = {
     color: string;
     icon: string;
     type: AccountType;
+    currentBalance: number | string;
 };
 
 export type UpdateAccountResponse = {
@@ -423,7 +420,6 @@ export type UpdateAccountResponse = {
     color: string;
     icon: string;
     type: AccountType;
-    initialBalance: number | string;
     currentBalance: number | string;
 };
 

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record UpdateAccountRequest(string Name, string Color, string Icon, AccountType Type);
+public record UpdateAccountRequest(string Name, string Color, string Icon, AccountType Type, decimal CurrentBalance);
 
 public record UpdateAccountResponse(
     Guid Id,
@@ -18,7 +18,6 @@ public record UpdateAccountResponse(
     string Color,
     string Icon,
     AccountType Type,
-    decimal InitialBalance,
     decimal CurrentBalance);
 
 public sealed class UpdateAccountRequestValidator : AbstractValidator<UpdateAccountRequest>
@@ -76,6 +75,7 @@ public sealed class UpdateAccountEndpoint : ICarterModule
         account.Color = NormalizeColor(request.Color);
         account.Icon = NormalizeIcon(request.Icon);
         account.Type = request.Type;
+        account.CurrentBalance = request.CurrentBalance;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -86,7 +86,6 @@ public sealed class UpdateAccountEndpoint : ICarterModule
             account.Color,
             account.Icon,
             account.Type,
-            account.InitialBalance,
             account.CurrentBalance));
     }
 

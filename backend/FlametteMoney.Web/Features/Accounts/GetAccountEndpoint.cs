@@ -15,7 +15,6 @@ public record GetAccountResponse(
     string Color,
     string Icon,
     AccountType Type,
-    decimal InitialBalance,
     decimal CurrentBalance);
 
 public sealed class GetAccountEndpoint : ICarterModule
@@ -55,7 +54,6 @@ public sealed class GetAccountEndpoint : ICarterModule
             account.Color,
             account.Icon,
             account.Type,
-            account.InitialBalance,
             account.CurrentBalance));
     }
 }

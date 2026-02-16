@@ -22,7 +22,6 @@ public sealed record PortfolioAccountResponse(
     string Name,
     string Color,
     string Currency,
-    decimal InitialBalance,
     decimal CurrentBalance);
 
 public sealed record PortfolioBalancePointResponse(
@@ -113,7 +112,6 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 account.Name,
                 account.Color,
                 NormalizeCurrency(account.Currency),
-                account.InitialBalance,
                 account.CurrentBalance))
             .ToListAsync(cancellationToken);
 
@@ -148,10 +146,30 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
         var resolvedInterval = ResolveInterval(startDate, endDate, query.Interval);
         var buckets = BuildBuckets(startDate, endDate, resolvedInterval);
 
-        var transactions = await dbContext.Transactions
+        var transactionsAfterEnd = await dbContext.Transactions
             .AsNoTracking()
             .ForUser(userId)
             .Where(transaction =>
+                transaction.Date > endDate.AddDays(1).AddTicks(-1) &&
+                (accountIdSet.Contains(transaction.AccountId) ||
+                 (transaction.TargetAccountId != null && accountIdSet.Contains(transaction.TargetAccountId.Value))))
+            .OrderByDescending(transaction => transaction.Date)
+            .Select(transaction => new
+            {
+                transaction.Date,
+                transaction.Type,
+                transaction.Amount,
+                transaction.Amount2,
+                transaction.AccountId,
+                transaction.TargetAccountId,
+            })
+            .ToListAsync(cancellationToken);
+
+        var transactionsInRange = await dbContext.Transactions
+            .AsNoTracking()
+            .ForUser(userId)
+            .Where(transaction =>
+                transaction.Date >= startDate &&
                 transaction.Date <= endDate.AddDays(1).AddTicks(-1) &&
                 (accountIdSet.Contains(transaction.AccountId) ||
                  (transaction.TargetAccountId != null && accountIdSet.Contains(transaction.TargetAccountId.Value))))
@@ -167,17 +185,29 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
             })
             .ToListAsync(cancellationToken);
 
-        var accountBalances = accounts.ToDictionary(account => account.Id, account => account.InitialBalance);
+        var accountBalances = accounts.ToDictionary(account => account.Id, account => account.CurrentBalance);
         var accountCurrency = accounts.ToDictionary(account => account.Id, account => account.Currency);
+
+        foreach (var transaction in transactionsAfterEnd)
+        {
+            RollbackBalanceDelta(accountBalances, transaction);
+        }
 
         var points = new List<PortfolioBalancePointResponse>(buckets.Count);
 
+        var bucketsDescending = buckets
+            .OrderByDescending(bucket => bucket.End)
+            .ToList();
+        var transactionsDescending = transactionsInRange
+            .OrderByDescending(transaction => transaction.Date)
+            .ToList();
+
         var transactionIndex = 0;
-        foreach (var bucket in buckets)
+        foreach (var bucket in bucketsDescending)
         {
-            while (transactionIndex < transactions.Count && transactions[transactionIndex].Date <= bucket.End)
+            while (transactionIndex < transactionsDescending.Count && transactionsDescending[transactionIndex].Date > bucket.End)
             {
-                ApplyBalanceDelta(accountBalances, transactions[transactionIndex]);
+                RollbackBalanceDelta(accountBalances, transactionsDescending[transactionIndex]);
                 transactionIndex++;
             }
 
@@ -214,6 +244,8 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
                 []));
         }
 
+        points.Reverse();
+
         var startBalance = points.FirstOrDefault()?.TotalBalance ?? 0;
         var endBalance = points.LastOrDefault()?.TotalBalance ?? 0;
         var delta = Math.Round(endBalance - startBalance, 2);
@@ -240,7 +272,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
         return TypedResults.Ok(response);
     }
 
-    private static void ApplyBalanceDelta(
+    private static void RollbackBalanceDelta(
         Dictionary<Guid, decimal> accountBalances,
         dynamic transaction)
     {
@@ -254,7 +286,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
         {
             if (accountBalances.ContainsKey(sourceId))
             {
-                accountBalances[sourceId] -= amount;
+                accountBalances[sourceId] += amount;
             }
 
             return;
@@ -264,7 +296,7 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
         {
             if (accountBalances.ContainsKey(sourceId))
             {
-                accountBalances[sourceId] += amount;
+                accountBalances[sourceId] -= amount;
             }
 
             return;
@@ -277,12 +309,12 @@ public sealed class GetPortfolioBalanceSeriesEndpoint : ICarterModule
 
         if (accountBalances.ContainsKey(sourceId))
         {
-            accountBalances[sourceId] -= amount;
+            accountBalances[sourceId] += amount;
         }
 
         if (targetId is Guid resolvedTargetId && accountBalances.ContainsKey(resolvedTargetId))
         {
-            accountBalances[resolvedTargetId] += amount2 ?? amount;
+            accountBalances[resolvedTargetId] -= amount2 ?? amount;
         }
     }
 

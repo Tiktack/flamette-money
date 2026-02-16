@@ -9,7 +9,6 @@ public sealed class Account : IUserOwnedEntity
     public string Color { get; set; } = "#4C6EF5";
     public string Icon { get; set; } = "IconWallet";
     public AccountType Type { get; set; }
-    public decimal InitialBalance { get; set; }
     public decimal CurrentBalance { get; set; }
 
     public User User { get; set; } = null!;

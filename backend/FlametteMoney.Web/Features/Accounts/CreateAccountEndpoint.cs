@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record CreateAccountRequest(string Name, string Currency, string Color, string Icon, AccountType Type, decimal InitialBalance);
+public record CreateAccountRequest(string Name, string Currency, string Color, string Icon, AccountType Type, decimal CurrentBalance);
 
 public record CreateAccountResponse(
     Guid Id,
@@ -18,7 +18,6 @@ public record CreateAccountResponse(
     string Color,
     string Icon,
     AccountType Type,
-    decimal InitialBalance,
     decimal CurrentBalance);
 
 public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequest>
@@ -42,9 +41,6 @@ public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAcco
         RuleFor(request => request.Icon)
             .NotEmpty()
             .MaximumLength(100);
-
-        RuleFor(request => request.InitialBalance)
-            .GreaterThanOrEqualTo(0);
     }
 }
 
@@ -55,7 +51,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
         app.MapPost("/api/accounts", Handle)
             .WithTags("Accounts")
             .WithSummary("Create account")
-            .WithDescription("Create a new account with an initial balance.")
+            .WithDescription("Create a new account with the latest balance.")
             .Produces<CreateAccountResponse>(StatusCodes.Status201Created)
             .ProducesValidationProblem();
     }
@@ -80,8 +76,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
             Color = NormalizeColor(request.Color),
             Icon = NormalizeIcon(request.Icon),
             Type = request.Type,
-            InitialBalance = request.InitialBalance,
-            CurrentBalance = request.InitialBalance
+            CurrentBalance = request.CurrentBalance
         };
 
         dbContext.Accounts.Add(account);
@@ -94,7 +89,6 @@ public sealed class CreateAccountEndpoint : ICarterModule
             account.Color,
             account.Icon,
             account.Type,
-            account.InitialBalance,
             account.CurrentBalance));
     }
 

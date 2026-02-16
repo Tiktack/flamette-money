@@ -398,6 +398,18 @@ Can we update adding transaction modal? It looks not good visual + missing featu
 - Pre-Summary State: The agent was preparing to implement multi-user functionality when the token budget was exceeded.
 - Operation Context: The command to start implementation is directly tied to the user's goal of enabling multi-user support and integrating Google sign-in.
 
+----------------------------
+2026-02-16 01:27:58
+Can you review initial balance property of account entity in DB? I have a feeling that it's probably useless compeltely. Like we have current balance, that tells what the state now and we have transactions, that allows us to calculate state at any point in time. Why do we need initial balance?
+
+----------------------------
+2026-02-16 01:34:42
+I still don't get what you are saying for initial balance. Initial balance in one money doesn't exist. It has "Last Balance", not initial. So, to calculate anything in a past, you go through transactions. 
+I don't see any difference between going forward or backward. It will allow us to simplify logic for one money importer and overall, the schema. 
++ It allows for easy edits of balance. From my expirience, sometimes there is situations in life, when it's hard to represent transactions with available functionality. For example, currently app doesn't support loans or like borrowing money. I don't wanna track it as income or expense. I want just edit balance! Having single value for "Latest balance" is what makes it easy. 
+So, please go ahead make it work just with current balance column. 
+Make sure you adjust all the code, remove no longer needed code, make charts works properly and so on.
+
 8. Continuation Plan:
 - Pending Task 1: Implement user model changes in Account.cs to support multi-user functionality.
 - Pending Task 2: Integrate Google sign-in functionality and ensure proper indexing for data optimization.

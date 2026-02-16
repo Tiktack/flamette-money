@@ -1137,7 +1137,7 @@
           "Accounts"
         ],
         "summary": "Create account",
-        "description": "Create a new account with an initial balance.",
+        "description": "Create a new account with the latest balance.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1322,7 +1322,6 @@
           "color",
           "icon",
           "type",
-          "initialBalance",
           "currentBalance"
         ],
         "type": "object",
@@ -1345,14 +1344,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/AccountType"
-          },
-          "initialBalance": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "currentBalance": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -1513,7 +1504,7 @@
           "color",
           "icon",
           "type",
-          "initialBalance"
+          "currentBalance"
         ],
         "type": "object",
         "properties": {
@@ -1532,7 +1523,7 @@
           "type": {
             "$ref": "#/components/schemas/AccountType"
           },
-          "initialBalance": {
+          "currentBalance": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
             "type": [
               "number",
@@ -1550,7 +1541,6 @@
           "color",
           "icon",
           "type",
-          "initialBalance",
           "currentBalance"
         ],
         "type": "object",
@@ -1573,14 +1563,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/AccountType"
-          },
-          "initialBalance": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "currentBalance": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -2085,7 +2067,6 @@
           "color",
           "icon",
           "type",
-          "initialBalance",
           "currentBalance"
         ],
         "type": "object",
@@ -2108,14 +2089,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/AccountType"
-          },
-          "initialBalance": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "currentBalance": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -2591,7 +2564,6 @@
           "name",
           "color",
           "currency",
-          "initialBalance",
           "currentBalance"
         ],
         "type": "object",
@@ -2608,14 +2580,6 @@
           },
           "currency": {
             "type": "string"
-          },
-          "initialBalance": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "currentBalance": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
@@ -3426,7 +3390,8 @@
           "name",
           "color",
           "icon",
-          "type"
+          "type",
+          "currentBalance"
         ],
         "type": "object",
         "properties": {
@@ -3441,6 +3406,14 @@
           },
           "type": {
             "$ref": "#/components/schemas/AccountType"
+          },
+          "currentBalance": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
           }
         }
       },
@@ -3452,7 +3425,6 @@
           "color",
           "icon",
           "type",
-          "initialBalance",
           "currentBalance"
         ],
         "type": "object",
@@ -3475,14 +3447,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/AccountType"
-          },
-          "initialBalance": {
-            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
-            "type": [
-              "number",
-              "string"
-            ],
-            "format": "double"
           },
           "currentBalance": {
             "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",

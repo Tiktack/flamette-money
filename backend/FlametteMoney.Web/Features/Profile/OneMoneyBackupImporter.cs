@@ -100,7 +100,6 @@ internal static class OneMoneyBackupImporter
                 Color = PickAccountColor(accountName),
                 Type = DefaultAccountType,
                 Icon = DefaultAccountIcon,
-                InitialBalance = 0m,
                 CurrentBalance = 0m
             };
 
@@ -239,8 +238,6 @@ internal static class OneMoneyBackupImporter
             }
 
             var targetBalance = balance.Balance;
-            var delta = targetBalance - account.CurrentBalance;
-            account.InitialBalance += delta;
             account.CurrentBalance = targetBalance;
 
             var balanceCurrency = NormalizeCurrencyCode(balance.Currency);

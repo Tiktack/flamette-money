@@ -268,7 +268,7 @@ export const getApiAccounts = <ThrowOnError extends boolean = false>(options?: O
 /**
  * Create account
  *
- * Create a new account with an initial balance.
+ * Create a new account with the latest balance.
  */
 export const postApiAccounts = <ThrowOnError extends boolean = false>(options: Options<PostApiAccountsData, ThrowOnError>) => (options.client ?? client).post<PostApiAccountsResponses, PostApiAccountsErrors, ThrowOnError>({
     url: '/api/accounts',

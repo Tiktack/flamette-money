@@ -115,13 +115,14 @@ function AccountsPage() {
     color: defaultAccountColor,
     icon: defaultAccountIcon,
     type: 'Cash' as AccountType,
-    initialBalance: 0,
+    currentBalance: 0,
   })
   const [editForm, setEditForm] = useState({
     name: '',
     color: defaultAccountColor,
     icon: defaultAccountIcon,
     type: 'Cash' as AccountType,
+    currentBalance: 0,
   })
 
   const openCreate = () => {
@@ -132,7 +133,7 @@ function AccountsPage() {
       color: defaultAccountColor,
       icon: defaultAccountIcon,
       type: 'Cash',
-      initialBalance: 0,
+      currentBalance: 0,
     })
     setCreateOpened(true)
   }
@@ -145,6 +146,7 @@ function AccountsPage() {
       color: normalizeHexColor(account.color),
       icon: account.icon,
       type: account.type,
+      currentBalance: toNumber(account.currentBalance),
     })
   }
 
@@ -161,7 +163,7 @@ function AccountsPage() {
         color: createForm.color,
         icon: createForm.icon,
         type: createForm.type,
-        initialBalance: createForm.initialBalance,
+        currentBalance: createForm.currentBalance,
       },
       {
         onSuccess: () => setCreateOpened(false),
@@ -182,6 +184,7 @@ function AccountsPage() {
           color: editForm.color,
           icon: editForm.icon,
           type: editForm.type,
+          currentBalance: editForm.currentBalance,
         },
       },
       {
@@ -384,13 +387,12 @@ function AccountsPage() {
             allowDeselect={false}
           />
           <NumberInput
-            label="Initial balance"
-            min={0}
-            value={createForm.initialBalance}
+            label="Current balance"
+            value={createForm.currentBalance}
             onChange={(value) =>
               setCreateForm((current) => ({
                 ...current,
-                initialBalance: typeof value === 'number' ? value : 0,
+                currentBalance: typeof value === 'number' ? value : 0,
               }))
             }
           />
@@ -464,6 +466,16 @@ function AccountsPage() {
               }))
             }
             allowDeselect={false}
+          />
+          <NumberInput
+            label="Current balance"
+            value={editForm.currentBalance}
+            onChange={(value) =>
+              setEditForm((current) => ({
+                ...current,
+                currentBalance: typeof value === 'number' ? value : 0,
+              }))
+            }
           />
           {editAccount ? (
             <Text size="sm" c="dimmed">

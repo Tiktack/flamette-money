@@ -15,7 +15,6 @@ public record AccountListItemResponse(
     string Color,
     string Icon,
     AccountType Type,
-    decimal InitialBalance,
     decimal CurrentBalance);
 
 public sealed class ListAccountsEndpoint : ICarterModule
@@ -47,7 +46,6 @@ public sealed class ListAccountsEndpoint : ICarterModule
                 account.Color,
                 account.Icon,
                 account.Type,
-                account.InitialBalance,
                 account.CurrentBalance))
             .ToListAsync(cancellationToken);
 
