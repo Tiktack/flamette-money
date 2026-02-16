@@ -939,3 +939,7 @@ I believe, in our case we need to create a list of like 50-60 icons that might w
 ----------------------------
 2026-02-16 00:00:00
 Can you please remove all that code for infering icons or accounts types? It produces almost nothing useful and this information can be updated by user at any time. Also, extract the code for 1money backup restore to separate file. Basically, each feature folder is its own space, we can use it to split some logic. Later, we will add additiona formats, so put 1money specific code to a different class.
+
+----------------------------
+2026-02-16 00:00:00
+Can one money backup still assign random colors to accounts? Right now they are just blue.

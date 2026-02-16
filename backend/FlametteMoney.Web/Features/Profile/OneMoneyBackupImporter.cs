@@ -17,7 +17,6 @@ public sealed record OneMoneyImportResult(
 internal static class OneMoneyBackupImporter
 {
     private const string DefaultCurrency = "PLN";
-    private const string DefaultAccountColor = "#4C6EF5";
     private const AccountType DefaultAccountType = AccountType.DebitCard;
     private const string DefaultAccountIcon = "IconWallet";
 
@@ -98,7 +97,7 @@ internal static class OneMoneyBackupImporter
                 UserId = userId,
                 Name = accountName.Trim(),
                 Currency = NormalizeCurrencyCode(inferredCurrency) ?? DefaultCurrency,
-                Color = DefaultAccountColor,
+                Color = PickAccountColor(accountName),
                 Type = DefaultAccountType,
                 Icon = DefaultAccountIcon,
                 InitialBalance = 0m,
@@ -469,6 +468,25 @@ internal static class OneMoneyBackupImporter
         var blue = Random.Shared.Next(48, 208);
 
         return $"#{red:X2}{green:X2}{blue:X2}";
+    }
+
+    private static string PickAccountColor(string accountName)
+    {
+        var palette = new[]
+        {
+            "#4C6EF5",
+            "#339AF0",
+            "#22B8CF",
+            "#20C997",
+            "#51CF66",
+            "#FCC419",
+            "#FF922B",
+            "#FF6B6B",
+            "#CC5DE8"
+        };
+
+        var hash = Math.Abs(accountName.Trim().ToUpperInvariant().GetHashCode());
+        return palette[hash % palette.Length];
     }
 
     private static async Task<OneMoneyParseResult> ParseCsvAsync(Stream stream, CancellationToken cancellationToken)
