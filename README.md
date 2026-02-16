@@ -2,6 +2,7 @@
 
 Flamette Money is a sophisticated personal finance application designed to help users track their multi-currency accounts, categorize transactions with precision, and gain insights through detailed reports.
 
+Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkEgudSps3ohrVdpR4AeyTaHfWgvvWkJfkYwKjHLY?e=7aCq8c)
 ## Features
 
 - **Account Management**: Manage multi-currency accounts with accurate balances and visual customization (colors).
