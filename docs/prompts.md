@@ -1,4 +1,9 @@
 ----------------------------
+2026-02-18
+I still see that header uses hardcoded blue and also subpages buttons in analytic page as well hardcoded and have strange styles. Please use mantine docs and do the proper thing.
+https://mantine.dev/llms.txt
+https://ui.mantine.dev/
+----------------------------
 2026-02-06 21:35:21
 Let's refine accounts page. Make table look more beatiful, as some inspiration use Users stack example from 
 https://ui.mantine.dev/category/users/
