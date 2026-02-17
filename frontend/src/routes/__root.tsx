@@ -68,8 +68,8 @@ function RootLayout() {
 
   if (!user) {
     return (
-      <Center h="100dvh" p="lg">
-        <Paper withBorder radius="md" p="xl" maw={420} w="100%">
+      <Center h="100dvh">
+        <Paper withBorder maw={420} w="100%">
           <Stack gap="md">
             <Title order={3}>Sign in to Flamette Money</Title>
             <Text c="dimmed" size="sm">
@@ -85,7 +85,7 @@ function RootLayout() {
   }
 
   return (
-    <AppShell header={{ height: 72 }} padding="lg">
+    <AppShell header={{ height: 65 }} padding="lg">
       <AppShell.Header className={classes.header}>
         <Container size="xl" className={classes.inner}>
           <Group gap="lg" align="center" wrap="nowrap">
@@ -116,7 +116,6 @@ function RootLayout() {
             <ActionIcon
               variant="light"
               size="lg"
-              radius="sm"
               aria-label="New transaction"
               onClick={() => openTransactionEditorModal({ mode: 'new' })}
             >
@@ -135,7 +134,7 @@ function RootLayout() {
               <Menu.Target>
                 <UnstyledButton className={`${classes.user} ${userMenuOpened ? classes.userActive : ''}`}>
                   <Group gap={7} wrap="nowrap">
-                    <Avatar alt={user.name} radius="xl" size={28}>
+                    <Avatar alt={user.name} size={28}>
                       {user.name.slice(0, 1).toUpperCase()}
                     </Avatar>
                     <div className={classes.userInfo}>

@@ -127,11 +127,11 @@ function SettingsPage() {
     <Stack className={classes.page}>
       <Grid gutter="md">
         <Grid.Col span={{ base: 12, md: 5 }}>
-          <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
+          <Card className={classes.card}>
             <Stack gap="md">
               <Group justify="space-between" align="flex-start">
                 <Group gap="sm">
-                  <ThemeIcon size="lg" radius="md" variant="light" color="blue">
+                  <ThemeIcon size="lg" variant="light" color="blue">
                     <IconSettings size={18} />
                   </ThemeIcon>
                   <Stack gap={2}>
@@ -185,11 +185,11 @@ function SettingsPage() {
 
         <Grid.Col span={{ base: 12, md: 7 }}>
           <Stack gap="md">
-            <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
+            <Card className={classes.card}>
               <Stack gap="md">
                 <Group justify="space-between" align="flex-start">
                   <Group gap="sm">
-                    <ThemeIcon size="lg" radius="md" variant="light" color="violet">
+                    <ThemeIcon size="lg" variant="light" color="violet">
                       <IconDatabaseImport size={18} />
                     </ThemeIcon>
                     <Stack gap={2}>
@@ -282,11 +282,11 @@ function SettingsPage() {
               </Stack>
             </Card>
 
-            <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
+            <Card className={classes.card}>
               <Stack gap="md">
                 <Group justify="space-between" align="flex-start">
                   <Group gap="sm">
-                    <ThemeIcon size="lg" radius="md" variant="light" color="teal">
+                    <ThemeIcon size="lg" variant="light" color="teal">
                       <IconDatabasePlus size={18} />
                     </ThemeIcon>
                     <Stack gap={2}>

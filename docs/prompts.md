@@ -1044,3 +1044,8 @@ function Demo() {
 		</Combobox>
 	);
 }
+
+----------------------------
+2026-02-17 00:00:00
+Can you remove usage of such styles across the UI completely? 
+ shadow="sm" radius="lg" padding="lg" for default mantine componenets? I want it look DEFAULT. Later we will just setup mantine theme. But custom colors (except ofc that coming from backend), corners, paddings, sizes and so on should be default.

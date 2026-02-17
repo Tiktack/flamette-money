@@ -14,7 +14,7 @@ export function AnalyticsView() {
 
   return (
     <Stack className={classes.page}>
-      <Card shadow="sm" radius="md" padding="md" className={classes.dateCard}>
+      <Card className={classes.dateCard}>
         <Group gap="xs" className={classes.analyticsNav}>
           {links.map((item) => {
             const isActive = location.pathname === item.to

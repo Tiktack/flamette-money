@@ -206,12 +206,12 @@ function AccountsPage() {
   return (
     <Stack className={classes.page}>
       <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
-        <Button radius="md" onClick={openCreate}>
+        <Button onClick={openCreate}>
           Create account
         </Button>
       </Group>
 
-      <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
+      <Card className={classes.card}>
         {accountsQuery.isPending ? (
           <Skeleton height={200} />
         ) : accountsQuery.isError ? (
@@ -221,8 +221,6 @@ function AccountsPage() {
         ) : (
           <div className={classes.tableWrap}>
             <Table
-              verticalSpacing="sm"
-              horizontalSpacing="md"
               className={classes.table}
             >
               <Table.Thead>
@@ -263,12 +261,12 @@ function AccountsPage() {
                         </div>
                       </Table.Td>
                       <Table.Td>
-                        <Badge variant="light" radius="sm" style={badgeStyle}>
+                        <Badge variant="light" style={badgeStyle}>
                           {account.type}
                         </Badge>
                       </Table.Td>
                       <Table.Td>
-                        <Badge variant="light" radius="sm" style={badgeStyle}>
+                        <Badge variant="light" style={badgeStyle}>
                           {account.currency}
                         </Badge>
                       </Table.Td>

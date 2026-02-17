@@ -320,12 +320,12 @@ function TransactionsPage() {
         </Group>
       </Group>
 
-      <Card shadow="sm" radius="md" padding="md" className={classes.dateBar}>
+      <Card className={classes.dateBar}>
         <SharedDateRangeChips />
       </Card>
 
       <Collapse in={filtersOpened} transitionDuration={180}>
-        <Card shadow="sm" radius="md" padding="md" className={classes.filtersCard}>
+        <Card className={classes.filtersCard}>
           <Stack gap="sm">
             <Group gap="md" wrap="wrap">
               <MultiSelect
@@ -402,7 +402,7 @@ function TransactionsPage() {
         </Card>
       </Collapse>
 
-      <Card shadow="sm" radius="lg" padding="lg" className={classes.card}>
+      <Card className={classes.card}>
         {transactionsQuery.isPending ? (
           <Skeleton height={220} />
         ) : transactionsQuery.isError ? (
@@ -488,7 +488,6 @@ function TransactionsPage() {
                       <Table.Td>
                         <div className={classes.categoryCell}>
                           <ThemeIcon
-                            radius="xl"
                             size={30}
                             variant="light"
                             style={{

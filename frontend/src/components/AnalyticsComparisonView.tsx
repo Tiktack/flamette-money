@@ -68,7 +68,7 @@ export function AnalyticsComparisonView() {
 
   return (
     <Stack>
-      <Card shadow="sm" radius="md" padding="lg">
+      <Card>
         <Group justify="space-between" align="center" wrap="wrap">
           <Text fw={600}>Year-over-year monthly comparison</Text>
           <Group>
@@ -117,7 +117,7 @@ export function AnalyticsComparisonView() {
         )}
       </Card>
 
-      <Card shadow="sm" radius="md" padding="lg">
+      <Card>
         <Group justify="space-between" align="center">
           <Text fw={600}>Summary</Text>
           <Text c="dimmed" size="sm">Calendar years · Jan–Dec</Text>

@@ -66,11 +66,11 @@ export function AnalyticsPortfolioView() {
 
   return (
     <Stack>
-      <Card shadow="sm" radius="md" padding="md">
+      <Card>
         <SharedDateRangeChips />
       </Card>
 
-      <Card shadow="sm" radius="md" padding="lg">
+      <Card>
         <Group justify="space-between" align="center" wrap="wrap">
           <Text fw={600}>Portfolio balance trend</Text>
           <Group>
@@ -113,7 +113,7 @@ export function AnalyticsPortfolioView() {
         )}
       </Card>
 
-      <Card shadow="sm" radius="md" padding="lg">
+      <Card>
         <Text fw={600}>Summary</Text>
         <Group mt="md" gap="xl">
           <div>

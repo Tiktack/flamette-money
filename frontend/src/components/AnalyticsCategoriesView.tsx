@@ -180,12 +180,12 @@ export function AnalyticsCategoriesView() {
         </Group>
       </Group>
 
-      <Card shadow="sm" radius="md" padding="md" className={classes.dateCard}>
+      <Card className={classes.dateCard}>
         <SharedDateRangeChips />
       </Card>
 
       {reportQueryResult.isError && !hasData ? (
-        <Card shadow="sm" radius="md" padding="xl" className={classes.emptyCard}>
+        <Card className={classes.emptyCard}>
           <Stack align="center" gap={6}>
             <Text fw={600}>Unable to load reports</Text>
             <Text c="red" ta="center">
@@ -203,7 +203,7 @@ export function AnalyticsCategoriesView() {
               const isGoodTrend = mode === 'Income' ? diff >= 0 : diff <= 0
 
               return (
-                <Paper withBorder p="md" radius="md" key={stat.title}>
+                <Paper withBorder key={stat.title}>
                   <Group justify="space-between">
                     <Text size="xs" c="dimmed" className={classes.statTitle}>
                       {stat.title}
@@ -237,7 +237,7 @@ export function AnalyticsCategoriesView() {
           </SimpleGrid>
 
           <div className={classes.reportGrid}>
-            <Card shadow="sm" radius="md" padding="lg">
+            <Card>
               <Group justify="space-between" align="center">
                 <Text className={classes.cardTitle}>
                   {mode === 'Expense' ? 'Expenses' : 'Income'} by category
@@ -278,7 +278,7 @@ export function AnalyticsCategoriesView() {
               )}
             </Card>
 
-            <Card shadow="sm" radius="md" padding="lg">
+            <Card>
               <Group justify="space-between" align="center">
                 <Text className={classes.cardTitle}>Categories</Text>
                 {isInitialLoading ? null : (
@@ -319,7 +319,6 @@ export function AnalyticsCategoriesView() {
                           <Progress
                             value={item.percent}
                             color={item.color}
-                            radius="xl"
                             mt={6}
                           />
                         </div>
@@ -332,7 +331,7 @@ export function AnalyticsCategoriesView() {
           </div>
         </>
       ) : (
-        <Card shadow="sm" radius="md" padding="xl" className={classes.emptyCard}>
+        <Card className={classes.emptyCard}>
           <Stack align="center" gap={6}>
             <Text className={classes.emptyEmoji}>🫠</Text>
             <Text fw={600}>No data in this range yet</Text>

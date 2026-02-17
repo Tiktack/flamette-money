@@ -14,13 +14,14 @@ import '@mantine/notifications/styles.css'
 import '@mantine/charts/styles.css'
 import '@mantine/dates/styles.css'
 import './index.css'
+import theme from './lib/Remoraid'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <MantineProvider
-        defaultColorScheme="light"
-        theme={{ fontFamily: 'Space Grotesk, sans-serif' }}
+        defaultColorScheme="dark"
+        theme={theme}
       >
         <ModalsProvider>
           <Notifications position="top-right" />

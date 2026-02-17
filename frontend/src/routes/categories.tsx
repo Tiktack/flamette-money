@@ -351,11 +351,11 @@ function CategoriesPage() {
         </Group>
       </Group>
 
-      <Card shadow="sm" radius="md" padding="md" className={classes.dateBar}>
+      <Card className={classes.dateBar}>
         <SharedDateRangeChips />
       </Card>
 
-      <Card shadow="sm" radius="lg" padding="lg" className={classes.donutCard}>
+      <Card className={classes.donutCard}>
         <Stack gap="md">
         {isInitialChartLoading ? (
           <Skeleton height={320} />
@@ -597,7 +597,7 @@ function CategoriesPage() {
                       onClick={() => openEdit(subcategory)}
                       style={{ textAlign: 'left' }}
                     >
-                      <Card withBorder radius="md" padding="xs">
+                      <Card withBorder>
                         <Group justify="space-between" align="center" wrap="nowrap">
                           <Text size="sm" fw={600} lineClamp={1}>
                             {subcategory.name}
@@ -688,10 +688,9 @@ function CategoryTile({
       className={classes.categoryCardButton}
       onClick={onClickCategory}
     >
-      <Card withBorder radius="md" padding="sm" className={classes.categoryCard}>
+      <Card withBorder className={classes.categoryCard}>
         <div className={classes.categoryCardHeader}>
           <ThemeIcon
-            radius="md"
             size={44}
             variant="light"
             style={{

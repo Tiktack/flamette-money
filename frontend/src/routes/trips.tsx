@@ -146,24 +146,24 @@ function TripsPage() {
       </Group>
 
       {tripsQuery.isPending ? (
-        <Card className={classes.card} radius="md" padding="lg">
+        <Card className={classes.card}>
           <Text c="dimmed">Loading trips...</Text>
         </Card>
       ) : tripsQuery.isError ? (
-        <Card className={classes.card} radius="md" padding="lg">
+        <Card className={classes.card}>
           <Text c="red">{getApiErrorMessage(tripsQuery.error, 'Unable to load trips.')}</Text>
         </Card>
       ) : orderedTrips.length === 0 ? (
-        <Card className={classes.card} radius="md" padding="lg">
+        <Card className={classes.card}>
           <Text c="dimmed">No trips yet. Create your first trip to tag expenses.</Text>
         </Card>
       ) : (
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
           {orderedTrips.map((trip) => (
-            <Card key={trip.id} className={classes.card} radius="md" padding="md">
+            <Card key={trip.id} className={classes.card}>
               <Stack gap="sm">
                 {trip.imageUrl ? (
-                  <Image src={trip.imageUrl} alt={trip.name} radius="sm" h={140} fit="cover" />
+                  <Image src={trip.imageUrl} alt={trip.name} h={140} fit="cover" />
                 ) : null}
                 <Group justify="space-between" align="start">
                   <Stack gap={2}>
