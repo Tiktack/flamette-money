@@ -139,7 +139,6 @@ function CategoriesPage() {
         .map((category) => ({
           value: category.id,
           label: category.name,
-          group: category.type,
         })),
     [parentCategories, typeFilter],
   )
@@ -157,11 +156,18 @@ function CategoriesPage() {
       .map((category) => ({
         value: category.id,
         label: category.name,
-        group: category.type,
       }))
   }, [editCategory, parentCategories, parentOptions])
 
   const safeIconOptions = useMemo(() => categoryIconOptions.filter(Boolean), [])
+  const createSelectedIcon = useMemo(
+    () => safeIconOptions.find((option) => option.value === createForm.icon)?.value ?? 'IconTag',
+    [createForm.icon, safeIconOptions],
+  )
+  const editSelectedIcon = useMemo(
+    () => safeIconOptions.find((option) => option.value === editForm.icon)?.value ?? 'IconTag',
+    [editForm.icon, safeIconOptions],
+  )
   const safeParentOptions = useMemo(
     () => (Array.isArray(parentOptions) ? parentOptions : []).filter(Boolean),
     [parentOptions],
@@ -451,6 +457,7 @@ function CategoriesPage() {
             label="Icon"
             data={safeIconOptions}
             value={createForm.icon}
+            leftSection={<CategoryIcon icon={createSelectedIcon} color="currentColor" />}
             onChange={(value) =>
               setCreateForm((current) => ({
                 ...current,
@@ -461,7 +468,7 @@ function CategoriesPage() {
             renderOption={({ option }) => (
               <Group gap="sm">
                 <span className={classes.optionIcon}>
-                  <CategoryIcon icon={option.value} color="var(--mantine-color-dark-6)" />
+                  <CategoryIcon icon={option.value} color="currentColor" />
                 </span>
                 <Text size="sm">{option.label}</Text>
               </Group>
@@ -536,6 +543,7 @@ function CategoriesPage() {
             label="Icon"
             data={safeIconOptions}
             value={editForm.icon}
+            leftSection={<CategoryIcon icon={editSelectedIcon} color="currentColor" />}
             onChange={(value) =>
               setEditForm((current) => ({
                 ...current,
@@ -546,7 +554,7 @@ function CategoriesPage() {
             renderOption={({ option }) => (
               <Group gap="sm">
                 <span className={classes.optionIcon}>
-                  <CategoryIcon icon={option.value} color="var(--mantine-color-dark-6)" />
+                  <CategoryIcon icon={option.value} color="currentColor" />
                 </span>
                 <Text size="sm">{option.label}</Text>
               </Group>

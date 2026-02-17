@@ -972,3 +972,75 @@ I am sorry, I meant xlsx, basically excel files.
 2026-02-16 00:00:00
 I see theendpoint, but let's update the UI. 
 Please re-design the UI of settings, to have beatiful card design, structured, to support different types of imports of backups, seeding that have generating backup.
+
+----------------------------
+2026-02-17 00:00:00
+I am not able to edit categories, getting this error: 
+TypeError: Cannot read properties of undefined (reading 'map')
+	at parseItem (get-parsed-combobox-data.ts:29:25)
+	at get-parsed-combobox-data.ts:43:29
+	at Array.map (<anonymous>)
+	at getParsedComboboxData (get-parsed-combobox-data.ts:43:15)
+	at Select.tsx:180:36
+	at mountMemo (react-dom-client.development.js:8777:23)
+	at Object.useMemo (react-dom-client.development.js:26216:18)
+	at exports.useMemo (react.development.js:1251:34)
+	at @mantine/core/Select (Select.tsx:180:22)
+	at Object.react_stack_bottom_frame (react-dom-client.development.js:25904:20)
+
+The above error occurred in the <@mantine/core/Select> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl.
+
+Please, use mantine docs to properly setup the UI: 
+https://mantine.dev/guides/llms/
+
+----------------------------
+2026-02-17 00:00:00
+Icons in a dropdown no visible in a dark mode, also it would be nice to see an icon for selected item as well. 
+Here is literally an example of how combobox should work with icons
+import { useState } from 'react';
+import { Input, InputBase, Combobox, useCombobox } from '@mantine/core';
+
+const groceries = ['🍎 Apples', '🍌 Bananas', '🥦 Broccoli', '🥕 Carrots', '🍫 Chocolate'];
+
+function Demo() {
+	const combobox = useCombobox({
+		onDropdownClose: () => combobox.resetSelectedOption(),
+	});
+
+	const [value, setValue] = useState<string | null>(null);
+
+	const options = groceries.map((item) => (
+		<Combobox.Option value={item} key={item}>
+			{item}
+		</Combobox.Option>
+	));
+
+	return (
+		<Combobox
+			store={combobox}
+			onOptionSubmit={(val) => {
+				setValue(val);
+				combobox.closeDropdown();
+			}}
+		>
+			<Combobox.Target>
+				<InputBase
+					component="button"
+					type="button"
+					pointer
+					rightSection={<Combobox.Chevron />}
+					rightSectionPointerEvents="none"
+					onClick={() => combobox.toggleDropdown()}
+				>
+					{value || <Input.Placeholder>Pick value</Input.Placeholder>}
+				</InputBase>
+			</Combobox.Target>
+
+			<Combobox.Dropdown>
+				<Combobox.Options>{options}</Combobox.Options>
+			</Combobox.Dropdown>
+		</Combobox>
+	);
+}
