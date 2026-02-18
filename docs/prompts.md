@@ -104,6 +104,10 @@ and
 https://mantine.dev/charts/donut-chart/?t=styles-api
 
 ----------------------------
+2026-02-19 00:10:00
+Can you refactor transactions page UI? I don't like this Filters button on the top left. It applies directly to table, so it should inside card, top right corner. And instead of expanding new card, it should show like a popup where I can do my filters, when filters applied, I want button icon to be changed. And also, it should be Button with icon only, no label.
+
+----------------------------
 2026-02-07 00:00:00
 Cool, let's now do transactions. I want a global state for filters, use zustand for this. On transaction page I should have beatiful table, that shows transactions based of a filters selected. I don't really want pagination from a API. It just shoud return based on a filters. By default, we wanna show current month data. Transactions table should have pagination. 
 Filters I want: dates(custom range, or chips current month, current year, all time), modal to select accounts, modal to select categories and subcategories, also ablility to select transaction amount range. 
@@ -162,6 +166,18 @@ icons only. and make amount text to be red/green/orange/grey based on transactio
 ----------------------------
 2026-02-08 22:15:25
 Attached screenshot. All amount text is regular black
+
+----------------------------
+2026-02-19 00:14:46
+No need. I just don't like that button without filters has no background basically. I want it to have different variant, that has background. Just when filters applied should have different color from default or different icon. Also, when I select any filter in dropdowns, popup closes automatically, it's annoying. It should not close unless I click outside or click close button.
+
+----------------------------
+2026-02-19 00:23:23
+Good, the only thing, I don't like when I update filters, table flickers while it's loading data.
+
+----------------------------
+2026-02-19 00:25:52
+Yeah, maybe the icon on filter button should switch to loading indicator instead.
 
 ----------------------------
 

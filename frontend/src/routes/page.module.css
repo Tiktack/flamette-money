@@ -118,6 +118,25 @@
   gap: 12px;
 }
 
+.filtersTrigger {
+  min-width: 36px;
+  width: 36px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.filtersPopover {
+  min-width: min(760px, calc(100vw - 48px));
+}
+
+.filterInput {
+  flex: 1 1 220px;
+}
+
+.filterAmountInput {
+  flex: 0 1 180px;
+}
+
 .dateBar {
   border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
   background: light-dark(

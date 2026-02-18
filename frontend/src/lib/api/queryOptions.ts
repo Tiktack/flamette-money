@@ -98,6 +98,7 @@ export const transactionsSearchQueryOptions = (query?: GetApiTransactionsSearchD
       getApiTransactionsSearch(
         query ? { query, throwOnError: true } : { throwOnError: true },
       ),
+    placeholderData: keepPreviousData,
     select: (result: Awaited<ReturnType<typeof getApiTransactionsSearch>>) => result.data ?? [],
   })
 

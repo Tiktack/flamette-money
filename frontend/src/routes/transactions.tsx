@@ -4,12 +4,13 @@ import {
   Badge,
   Button,
   Card,
-  Collapse,
   Group,
   Modal,
   MultiSelect,
   NumberInput,
   Pagination,
+  Popover,
+  Loader,
   Skeleton,
   Stack,
   Table,
@@ -156,6 +157,21 @@ function TransactionsPage() {
   const transactionTypeOptions = useMemo(
     () => ['Income', 'Expense', 'Transfer', 'Refund'],
     [],
+  )
+  const hasActiveFilters = useMemo(
+    () =>
+      filters.accountIds.length > 0 ||
+      filters.categoryIds.length > 0 ||
+      filters.transactionTypes.length > 0 ||
+      filters.amountMin !== null ||
+      filters.amountMax !== null,
+    [
+      filters.accountIds,
+      filters.amountMax,
+      filters.amountMin,
+      filters.categoryIds,
+      filters.transactionTypes,
+    ],
   )
 
   const resolvedDateRange = useMemo(() => {
@@ -307,102 +323,141 @@ function TransactionsPage() {
     </svg>
   )
 
+  const FilterIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M3 5h18" />
+      <path d="M7 12h10" />
+      <path d="M10 19h4" />
+    </svg>
+  )
+
+  const FilterAppliedIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M3 5h18" />
+      <path d="M7 12h10" />
+      <path d="M10 19h4" />
+      <circle cx="18" cy="18" r="3" fill="currentColor" stroke="none" />
+    </svg>
+  )
+
   return (
     <Stack className={classes.page}>
-      <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
-        <Group gap="sm" className={classes.toolbar}>
-          <Button
-            variant={filtersOpened ? 'light' : 'subtle'}
-            onClick={() => setFiltersOpened((current) => !current)}
-          >
-            Filters
-          </Button>
-        </Group>
-      </Group>
-
       <Card className={classes.dateBar}>
         <SharedDateRangeChips />
       </Card>
 
-      <Collapse in={filtersOpened} transitionDuration={180}>
-        <Card className={classes.filtersCard}>
-          <Stack gap="sm">
-            <Group gap="md" wrap="wrap">
-              <MultiSelect
-                label="Accounts"
-                data={safeAccountOptions}
-                value={safeAccountValues}
-                onChange={filters.setAccountIds}
-                searchable
-                clearable
-                placeholder="Select accounts"
-                nothingFoundMessage="No accounts"
-                renderOption={({ option }) => {
-                  const account = accountMap.get(option.value)
-                  const color = account?.color ?? '#CED4DA'
-                  return (
-                    <Group gap="sm" wrap="nowrap">
-                      <span className={classes.accountBadge} style={{ backgroundColor: color }}>
-                        <AccountIcon
-                          icon={account?.icon ?? 'IconWallet'}
-                          color="var(--mantine-color-white)"
-                          size={14}
-                        />
-                      </span>
-                      <Text size="sm">{option.label}</Text>
-                    </Group>
-                  )
-                }}
-              />
-              <MultiSelect
-                label="Categories"
-                data={safeCategoryOptions}
-                value={safeCategoryValues}
-                onChange={filters.setCategoryIds}
-                searchable
-                clearable
-                placeholder="Select categories"
-                nothingFoundMessage="No categories"
-              />
-              <MultiSelect
-                label="Transaction types"
-                data={transactionTypeOptions}
-                value={safeTypeValues}
-                onChange={filters.setTransactionTypes}
-                searchable
-                clearable
-                placeholder="Select types"
-              />
-            </Group>
-            <Group gap="md" wrap="wrap">
-              <NumberInput
-                label="Min amount"
-                min={0}
-                value={filters.amountMin ?? undefined}
-                onChange={(value) =>
-                  filters.setAmountMin(typeof value === 'number' ? value : null)
-                }
-              />
-              <NumberInput
-                label="Max amount"
-                min={0}
-                value={filters.amountMax ?? undefined}
-                onChange={(value) =>
-                  filters.setAmountMax(typeof value === 'number' ? value : null)
-                }
-              />
-            </Group>
-            <Group justify="space-between">
-              <Button variant="subtle" onClick={filters.resetFilters}>
-                Reset
-              </Button>
-              <Button onClick={() => setFiltersOpened(false)}>Collapse</Button>
-            </Group>
-          </Stack>
-        </Card>
-      </Collapse>
-
       <Card className={classes.card}>
+        <Group justify="flex-end" mb="md">
+          <Popover
+            opened={filtersOpened}
+            onDismiss={() => setFiltersOpened(false)}
+            position="bottom-end"
+            shadow="md"
+            width={760}
+            withArrow
+          >
+            <Popover.Target>
+              <Button
+                variant={hasActiveFilters ? 'light' : 'default'}
+                color={hasActiveFilters ? 'blue' : undefined}
+                aria-label="Transaction filters"
+                onClick={() => setFiltersOpened((current) => !current)}
+                className={classes.filtersTrigger}
+              >
+                {transactionsQuery.isFetching ? (
+                  <Loader size={14} />
+                ) : hasActiveFilters ? (
+                  <FilterAppliedIcon width={16} height={16} />
+                ) : (
+                  <FilterIcon width={16} height={16} />
+                )}
+              </Button>
+            </Popover.Target>
+            <Popover.Dropdown className={classes.filtersPopover}>
+              <Stack gap="sm">
+                <Group gap="md" wrap="wrap" align="flex-end">
+                  <MultiSelect
+                    label="Accounts"
+                    data={safeAccountOptions}
+                    value={safeAccountValues}
+                    onChange={filters.setAccountIds}
+                    searchable
+                    clearable
+                    placeholder="Select accounts"
+                    nothingFoundMessage="No accounts"
+                    comboboxProps={{ withinPortal: false }}
+                    renderOption={({ option }) => {
+                      const account = accountMap.get(option.value)
+                      const color = account?.color ?? '#CED4DA'
+                      return (
+                        <Group gap="sm" wrap="nowrap">
+                          <span className={classes.accountBadge} style={{ backgroundColor: color }}>
+                            <AccountIcon
+                              icon={account?.icon ?? 'IconWallet'}
+                              color="var(--mantine-color-white)"
+                              size={14}
+                            />
+                          </span>
+                          <Text size="sm">{option.label}</Text>
+                        </Group>
+                      )
+                    }}
+                    className={classes.filterInput}
+                  />
+                  <MultiSelect
+                    label="Categories"
+                    data={safeCategoryOptions}
+                    value={safeCategoryValues}
+                    onChange={filters.setCategoryIds}
+                    searchable
+                    clearable
+                    placeholder="Select categories"
+                    nothingFoundMessage="No categories"
+                    comboboxProps={{ withinPortal: false }}
+                    className={classes.filterInput}
+                  />
+                  <MultiSelect
+                    label="Transaction types"
+                    data={transactionTypeOptions}
+                    value={safeTypeValues}
+                    onChange={filters.setTransactionTypes}
+                    searchable
+                    clearable
+                    placeholder="Select types"
+                    comboboxProps={{ withinPortal: false }}
+                    className={classes.filterInput}
+                  />
+                </Group>
+                <Group gap="md" wrap="wrap" align="flex-end">
+                  <NumberInput
+                    label="Min amount"
+                    min={0}
+                    value={filters.amountMin ?? undefined}
+                    onChange={(value) =>
+                      filters.setAmountMin(typeof value === 'number' ? value : null)
+                    }
+                    className={classes.filterAmountInput}
+                  />
+                  <NumberInput
+                    label="Max amount"
+                    min={0}
+                    value={filters.amountMax ?? undefined}
+                    onChange={(value) =>
+                      filters.setAmountMax(typeof value === 'number' ? value : null)
+                    }
+                    className={classes.filterAmountInput}
+                  />
+                </Group>
+                <Group justify="space-between">
+                  <Button variant="subtle" onClick={filters.resetFilters}>
+                    Reset
+                  </Button>
+                  <Button onClick={() => setFiltersOpened(false)}>Close</Button>
+                </Group>
+              </Stack>
+            </Popover.Dropdown>
+          </Popover>
+        </Group>
         {transactionsQuery.isPending ? (
           <Skeleton height={220} />
         ) : transactionsQuery.isError ? (

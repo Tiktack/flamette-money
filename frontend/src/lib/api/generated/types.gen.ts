@@ -136,8 +136,8 @@ export type CreateTransactionResponse = {
 
 export type CreateTripRequest = {
     name: string;
-    startDate: null | string;
-    endDate: null | string;
+    startDate: string;
+    endDate: string;
     imageUrl: null | string;
 };
 
@@ -483,8 +483,8 @@ export type UpdateTransactionResponse = {
 
 export type UpdateTripRequest = {
     name: string;
-    startDate: null | string;
-    endDate: null | string;
+    startDate: string;
+    endDate: string;
     imageUrl: null | string;
 };
 
