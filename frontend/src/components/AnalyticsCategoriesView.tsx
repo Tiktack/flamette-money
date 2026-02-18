@@ -203,7 +203,7 @@ export function AnalyticsCategoriesView() {
               const isGoodTrend = mode === 'Income' ? diff >= 0 : diff <= 0
 
               return (
-                <Paper withBorder key={stat.title}>
+                <Paper withBorder key={stat.title} p={"sm"}>
                   <Group justify="space-between">
                     <Text size="xs" c="dimmed" className={classes.statTitle}>
                       {stat.title}

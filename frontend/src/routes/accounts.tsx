@@ -1,5 +1,5 @@
 import { Sparkline } from '@mantine/charts'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ActionIcon,
   Badge,
@@ -7,6 +7,7 @@ import {
   Card,
   ColorInput,
   Group,
+  Menu,
   Modal,
   NumberInput,
   Select,
@@ -16,6 +17,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
+import { IconDots, IconListDetails, IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from '../lib/api/hooks'
 import { getApiErrorMessage } from '../lib/api/errors'
@@ -26,6 +28,7 @@ import {
   accountIconOptions,
   defaultAccountIcon,
 } from '../lib/accounts/visuals'
+import { useTransactionsFilters } from '../lib/state/transactionsFilters'
 import type { AccountListItem, AccountType } from '../lib/api/types'
 import classes from './page.module.css'
 
@@ -93,19 +96,13 @@ const EditIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 )
 
-const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-    <path d="M3 6h18" />
-    <path d="M8 6V4h8v2" />
-    <path d="M6 6l1 14h10l1-14" />
-  </svg>
-)
-
 function AccountsPage() {
+  const navigate = useNavigate()
   const accountsQuery = useAccounts()
   const createAccount = useCreateAccount()
   const updateAccount = useUpdateAccount()
   const deleteAccount = useDeleteAccount()
+  const setTransactionAccountIds = useTransactionsFilters((state) => state.setAccountIds)
   const [createOpened, setCreateOpened] = useState(false)
   const [editAccount, setEditAccount] = useState<AccountListItem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccountListItem | null>(null)
@@ -203,6 +200,11 @@ function AccountsPage() {
     })
   }
 
+  const handleShowTransactions = async (accountId: string) => {
+    setTransactionAccountIds([accountId])
+    await navigate({ to: '/transactions' })
+  }
+
   return (
     <Stack className={classes.page}>
       <Group className={classes.header} justify="space-between" wrap="wrap" gap="md">
@@ -226,7 +228,6 @@ function AccountsPage() {
               <Table.Thead>
                 <Table.Tr className={classes.headRow}>
                   <Table.Th>Account</Table.Th>
-                  <Table.Th>Type</Table.Th>
                   <Table.Th>Currency</Table.Th>
                   <Table.Th>Current balance</Table.Th>
                   <Table.Th className={classes.sparklineHeader}>Activity</Table.Th>
@@ -262,11 +263,6 @@ function AccountsPage() {
                       </Table.Td>
                       <Table.Td>
                         <Badge variant="light" style={badgeStyle}>
-                          {account.type}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge variant="light" style={badgeStyle}>
                           {account.currency}
                         </Badge>
                       </Table.Td>
@@ -297,14 +293,28 @@ function AccountsPage() {
                           >
                             <EditIcon width={18} height={18} />
                           </ActionIcon>
-                          <ActionIcon
-                            color="red"
-                            variant="subtle"
-                            aria-label="Remove account"
-                            onClick={() => openDelete(account)}
-                          >
-                            <TrashIcon width={18} height={18} />
-                          </ActionIcon>
+                          <Menu transitionProps={{ transition: 'pop' }} withArrow position="bottom-end" withinPortal>
+                            <Menu.Target>
+                              <ActionIcon variant="subtle" color="gray" aria-label="More account actions">
+                                <IconDots size={16} stroke={1.5} />
+                              </ActionIcon>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item
+                                leftSection={<IconListDetails size={16} stroke={1.5} />}
+                                onClick={() => handleShowTransactions(account.id)}
+                              >
+                                Show transactions
+                              </Menu.Item>
+                              <Menu.Item
+                                color="red"
+                                leftSection={<IconTrash size={16} stroke={1.5} />}
+                                onClick={() => openDelete(account)}
+                              >
+                                Delete
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
                         </div>
                       </Table.Td>
                     </Table.Tr>

@@ -24,7 +24,7 @@
 
 .table {
   border-collapse: separate;
-  border-spacing: 0 10px;
+  border-spacing: 0 6px;
   min-width: 820px;
 }
 
@@ -39,6 +39,11 @@
 .row {
   background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
   box-shadow: var(--mantine-shadow-xs);
+}
+
+.row td {
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 
 .transactionRow {
@@ -62,7 +67,7 @@
 .nameCell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .colorDot {
@@ -91,7 +96,7 @@
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
 }
 
 .toolbar {
