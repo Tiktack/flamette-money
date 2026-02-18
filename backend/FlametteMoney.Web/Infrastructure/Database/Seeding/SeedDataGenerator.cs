@@ -489,55 +489,26 @@ public sealed class SeedDataGenerator
 
     private static IReadOnlyList<TripSeedDefinition> BuildTripDefinitions(DateTime startDate, DateTime endDate, Random random)
     {
-        var names = new[]
+        const string FranceImageUrl = "https://tse3.mm.bing.net/th/id/OIP.6Yrhn7ORfVo_4tS4VaSPxQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3";
+        const string GermanyImageUrl = "https://th.bing.com/th/id/OIP.t6dxttYixG86lZzVESWdygHaEK?w=286&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3";
+        const string UkImageUrl = "https://th.bing.com/th/id/OIP.mPLXOEAwULJlqrItJA0j2gHaFj?w=226&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3";
+        const string PortugalImageUrl = "https://th.bing.com/th/id/R.8838157e1c8a414875b906139e026bb2?rik=IFMzsIMBmauv8w&pid=ImgRaw&r=0";
+
+        var allDefinitions = new[]
         {
-            "Summer getaway",
-            "City break",
-            "Beach vacation",
-            "Mountain retreat",
-            "Family visit",
-            "Conference trip",
-            "Road trip",
+            new TripSeedDefinition("Paris, France", new DateTime(2022, 6, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2022, 6, 19, 0, 0, 0, DateTimeKind.Utc), FranceImageUrl),
+            new TripSeedDefinition("Berlin, Germany", new DateTime(2022, 10, 3, 0, 0, 0, DateTimeKind.Utc), new DateTime(2022, 10, 9, 0, 0, 0, DateTimeKind.Utc), GermanyImageUrl),
+            new TripSeedDefinition("London, United Kingdom", new DateTime(2023, 3, 15, 0, 0, 0, DateTimeKind.Utc), new DateTime(2023, 3, 20, 0, 0, 0, DateTimeKind.Utc), UkImageUrl),
+            new TripSeedDefinition("Lisbon, Portugal", new DateTime(2023, 8, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2023, 8, 16, 0, 0, 0, DateTimeKind.Utc), PortugalImageUrl),
+            new TripSeedDefinition("Nice, France", new DateTime(2024, 5, 20, 0, 0, 0, DateTimeKind.Utc), new DateTime(2024, 5, 28, 0, 0, 0, DateTimeKind.Utc), FranceImageUrl),
+            new TripSeedDefinition("Munich, Germany", new DateTime(2024, 9, 20, 0, 0, 0, DateTimeKind.Utc), new DateTime(2024, 9, 26, 0, 0, 0, DateTimeKind.Utc), GermanyImageUrl),
+            new TripSeedDefinition("Edinburgh, United Kingdom", new DateTime(2025, 4, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2025, 4, 15, 0, 0, 0, DateTimeKind.Utc), UkImageUrl),
+            new TripSeedDefinition("Porto, Portugal", new DateTime(2025, 7, 2, 0, 0, 0, DateTimeKind.Utc), new DateTime(2025, 7, 12, 0, 0, 0, DateTimeKind.Utc), PortugalImageUrl),
         };
 
-        var result = new List<TripSeedDefinition>();
-        for (var year = startDate.Year; year <= endDate.Year; year++)
-        {
-            var tripCount = random.Next(1, 3);
-            for (var index = 0; index < tripCount; index++)
-            {
-                var startMonth = random.Next(2, 12);
-                var startDay = random.Next(1, 25);
-                var duration = random.Next(4, 12);
-
-                var tripStart = new DateTime(year, startMonth, startDay, 0, 0, 0, DateTimeKind.Utc);
-                var tripEnd = tripStart.AddDays(duration);
-
-                if (tripEnd < startDate || tripStart > endDate)
-                {
-                    continue;
-                }
-
-                if (tripStart < startDate)
-                {
-                    tripStart = startDate;
-                }
-
-                if (tripEnd > endDate)
-                {
-                    tripEnd = endDate;
-                }
-
-                var baseName = names[random.Next(names.Length)];
-                result.Add(new TripSeedDefinition(
-                    $"{baseName} {tripStart:yyyy}",
-                    tripStart,
-                    tripEnd,
-                    null));
-            }
-        }
-
-        return result;
+        return allDefinitions
+            .Where(definition => definition.EndDate >= startDate && definition.StartDate <= endDate)
+            .ToList();
     }
 
     private static decimal NextMoney(Random random, int min, int max)

@@ -1993,17 +1993,11 @@
             "type": "string"
           },
           "startDate": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "date-time"
           },
           "endDate": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "date-time"
           },
           "imageUrl": {
@@ -3830,17 +3824,11 @@
             "type": "string"
           },
           "startDate": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "date-time"
           },
           "endDate": {
-            "type": [
-              "null",
-              "string"
-            ],
+            "type": "string",
             "format": "date-time"
           },
           "imageUrl": {

@@ -10,8 +10,8 @@ namespace FlametteMoney.Web.Features.Trips;
 
 public sealed record UpdateTripRequest(
     string Name,
-    DateTime? StartDate,
-    DateTime? EndDate,
+    DateTime StartDate,
+    DateTime EndDate,
     string? ImageUrl);
 
 public sealed record UpdateTripResponse(
@@ -36,7 +36,7 @@ public sealed class UpdateTripRequestValidator : AbstractValidator<UpdateTripReq
             .WithMessage("ImageUrl must be a valid absolute URL.");
 
         RuleFor(request => request)
-            .Must(request => request.StartDate is null || request.EndDate is null || request.StartDate <= request.EndDate)
+            .Must(request => request.StartDate <= request.EndDate)
             .WithMessage("StartDate cannot be after EndDate.");
     }
 

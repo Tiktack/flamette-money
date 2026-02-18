@@ -3,6 +3,7 @@
     "dotnet ef": true,
     "dotnet build": true,
     "npm install": true,
-    "npm run build": true
+    "npm run build": true,
+    "Set-Content": true
   }
 }

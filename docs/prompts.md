@@ -1,5 +1,25 @@
 ----------------------------
 2026-02-18
+cards on the right side work good, but cards on the left getting smaller when mouse close to bottom of the card, so I basicaly cannot click edit/transactions buttons.
+----------------------------
+2026-02-18
+cool, but can you also change how hover works, right now it works like on whole screen line. I want it to grow only when the card itself howered, not the sace or line around
+----------------------------
+2026-02-18
+Not bad, but I don't like that space between cards so big. They even can overalp vertically, because we have altering layout.
+----------------------------
+2026-02-18
+It's not what I meant. I meant something like react-chrono with altering timeline. It can be that card medium size, but on hover they show more info, or just increase in size. Or maybe they show expenses some stats. Be creative there.
+----------------------------
+2026-02-18
+Can we re-do trips page, to look more beatiful, maybe like a history timeline with cards, make dates required, make sure seed data populates a few trips to countries, like france, germany, uk
+Here is urls
+France: https://tse3.mm.bing.net/th/id/OIP.6Yrhn7ORfVo_4tS4VaSPxQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3
+Germany: https://th.bing.com/th/id/OIP.t6dxttYixG86lZzVESWdygHaEK?w=286&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3
+UK: https://th.bing.com/th/id/OIP.mPLXOEAwULJlqrItJA0j2gHaFj?w=226&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3
+Portugal: https://th.bing.com/th/id/R.8838157e1c8a414875b906139e026bb2?rik=IFMzsIMBmauv8w&pid=ImgRaw&r=0
+----------------------------
+2026-02-18
 I still see that header uses hardcoded blue and also subpages buttons in analytic page as well hardcoded and have strange styles. Please use mantine docs and do the proper thing.
 https://mantine.dev/llms.txt
 https://ui.mantine.dev/
