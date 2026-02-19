@@ -510,6 +510,30 @@
         }
       }
     },
+    "/api/settings/reset-data": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Reset user data",
+        "description": "Deletes all current user transactions, categories, accounts, and trips.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetUserDataResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/seed/demo": {
       "post": {
         "tags": [
@@ -3037,6 +3061,58 @@
             "format": "int32"
           },
           "bucketCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ResetUserDataResponse": {
+        "required": [
+          "deletedTransactions",
+          "deletedCategories",
+          "deletedAccounts",
+          "deletedTrips",
+          "deletedTransactionItems"
+        ],
+        "type": "object",
+        "properties": {
+          "deletedTransactions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deletedCategories": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deletedAccounts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deletedTrips": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deletedTransactionItems": {
             "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "integer",

@@ -24,6 +24,7 @@ import {
   postApiProfileImportBackup,
   postApiReceiptsScan,
   postApiSeedDemo,
+  postApiSettingsResetData,
   postApiTransactions,
   postApiTrips,
   putApiSettings,
@@ -348,6 +349,25 @@ export function useImportBackup() {
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+    },
+  })
+}
+
+export function useResetData() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      postApiSettingsResetData({ throwOnError: true }).then((result) => result.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
 }

@@ -9,13 +9,22 @@ import {
   FileInput,
   Grid,
   Group,
+  Modal,
   NumberInput,
   Select,
   Stack,
   Text,
   ThemeIcon,
 } from '@mantine/core'
-import { IconDatabaseImport, IconDatabasePlus, IconDownload, IconSettings } from '@tabler/icons-react'
+import {
+  IconAlertTriangle,
+  IconDatabaseImport,
+  IconDatabasePlus,
+  IconDownload,
+  IconSettings,
+  IconTrash,
+} from '@tabler/icons-react'
+import { useDisclosure } from '@mantine/hooks'
 import { useEffect, useState } from 'react'
 import {
   type BackupImportType,
@@ -23,6 +32,7 @@ import {
   useCurrentUser,
   useExportBackup,
   useImportBackup,
+  useResetData,
   useSeedDemo,
   useSettings,
   useUpdateSettings,
@@ -62,6 +72,7 @@ function SettingsPage() {
   const seedDemoMutation = useSeedDemo()
   const importBackupMutation = useImportBackup()
   const exportBackupMutation = useExportBackup()
+  const resetDataMutation = useResetData()
 
   const [years, setYears] = useState<number>(3)
   const [seedValue, setSeedValue] = useState<number | ''>('')
@@ -69,6 +80,7 @@ function SettingsPage() {
   const [importType, setImportType] = useState<BackupImportType>('flamette')
   const [backupFile, setBackupFile] = useState<File | null>(null)
   const [baseCurrency, setBaseCurrency] = useState('USD')
+  const [resetModalOpened, { open: openResetModal, close: closeResetModal }] = useDisclosure(false)
 
   const user = currentUserQuery.data
 
@@ -115,6 +127,15 @@ function SettingsPage() {
     }
   }
 
+  const handleResetData = async () => {
+    try {
+      await resetDataMutation.mutateAsync()
+      closeResetModal()
+    } catch {
+      // Errors are rendered via mutation state alerts.
+    }
+  }
+
   const importTypeOptions: Array<{ value: BackupImportType; label: string }> = [
     { value: 'flamette', label: 'Flamette backup (.xlsx)' },
     { value: 'one-money', label: '1Money backup (.csv)' },
@@ -125,6 +146,33 @@ function SettingsPage() {
 
   return (
     <Stack className={classes.page}>
+      <Modal
+        opened={resetModalOpened}
+        onClose={closeResetModal}
+        title="Reset all data"
+        centered
+      >
+        <Stack gap="md">
+          <Alert color="red" variant="light" icon={<IconAlertTriangle size={16} />}>
+            This will permanently delete all your transactions, categories, accounts, trips, and
+            transaction items.
+          </Alert>
+
+          <Text size="sm" c="dimmed">
+            Settings such as base currency are kept.
+          </Text>
+
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closeResetModal}>
+              Cancel
+            </Button>
+            <Button color="red" loading={resetDataMutation.isPending} onClick={handleResetData}>
+              Reset data
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       <Grid gutter="md">
         <Grid.Col span={{ base: 12, md: 5 }}>
           <Card className={classes.card}>
@@ -351,6 +399,51 @@ function SettingsPage() {
                 {seedDemoMutation.isSuccess ? (
                   <Alert color="green" variant="light">
                     Demo data seeded successfully.
+                  </Alert>
+                ) : null}
+              </Stack>
+            </Card>
+
+            <Card className={classes.card}>
+              <Stack gap="md">
+                <Group justify="space-between" align="flex-start">
+                  <Group gap="sm">
+                    <ThemeIcon size="lg" variant="light" color="red">
+                      <IconTrash size={18} />
+                    </ThemeIcon>
+                    <Stack gap={2}>
+                      <Text fw={700}>Data reset</Text>
+                      <Text size="sm" c="dimmed">
+                        Remove all transactions, categories, accounts, and trips from your profile.
+                      </Text>
+                    </Stack>
+                  </Group>
+                  <Badge variant="light" color="red">
+                    Danger zone
+                  </Badge>
+                </Group>
+
+                <Divider />
+
+                <Group justify="flex-end">
+                  <Button color="red" variant="light" onClick={openResetModal}>
+                    Reset all data
+                  </Button>
+                </Group>
+
+                {resetDataMutation.isError ? (
+                  <Alert color="red" variant="light">
+                    {getApiErrorMessage(resetDataMutation.error, 'Unable to reset data.')}
+                  </Alert>
+                ) : null}
+
+                {resetDataMutation.isSuccess ? (
+                  <Alert color="green" variant="light">
+                    Deleted {resetDataMutation.data.deletedTransactions} transactions,{' '}
+                    {resetDataMutation.data.deletedTransactionItems} items,{' '}
+                    {resetDataMutation.data.deletedCategories} categories,{' '}
+                    {resetDataMutation.data.deletedAccounts} accounts, and{' '}
+                    {resetDataMutation.data.deletedTrips} trips.
                   </Alert>
                 ) : null}
               </Stack>

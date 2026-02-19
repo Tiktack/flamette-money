@@ -1,5 +1,6 @@
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
+using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Text;
@@ -74,8 +75,18 @@ internal static class OneMoneyBackupImporter
             .ForUser(userId)
             .ExecuteDeleteAsync(cancellationToken);
 
+        var bulkConfig = new BulkConfig
+        {
+            BatchSize = 2_000,
+            TrackingEntities = false,
+            SetOutputIdentity = false,
+        };
+
         var accountsByName = new Dictionary<string, Account>(StringComparer.OrdinalIgnoreCase);
         var categoriesByKey = new Dictionary<string, Category>(StringComparer.OrdinalIgnoreCase);
+        var importedAccounts = new List<Account>();
+        var importedCategories = new List<Category>();
+        var importedTransactions = new List<Transaction>();
 
         var accountCurrencyByName = BuildAccountCurrencyHints(parsed);
         var createdAccounts = 0;
@@ -103,7 +114,7 @@ internal static class OneMoneyBackupImporter
                 CurrentBalance = 0m
             };
 
-            dbContext.Accounts.Add(account);
+            importedAccounts.Add(account);
             accountsByName[key] = account;
             createdAccounts++;
         }
@@ -129,15 +140,15 @@ internal static class OneMoneyBackupImporter
 
             var (parentName, childName) = ParseCategoryParts(row.Target);
 
-            var parent = EnsureCategory(parentName, categoryType, null, categoriesByKey, dbContext, userId, ref createdCategories);
+            var parent = EnsureCategory(parentName, categoryType, null, categoriesByKey, importedCategories, userId, ref createdCategories);
 
             if (!string.IsNullOrWhiteSpace(childName))
             {
-                EnsureCategory(childName!, categoryType, parent.Id, categoriesByKey, dbContext, userId, ref createdSubCategories);
+                EnsureCategory(childName!, categoryType, parent.Id, categoriesByKey, importedCategories, userId, ref createdSubCategories);
             }
         }
 
-        var importedTransactions = 0;
+        var importedTransactionsCount = 0;
         var skippedRows = 0;
 
         foreach (var row in parsed.Transactions.OrderBy(t => t.Date))
@@ -225,8 +236,8 @@ internal static class OneMoneyBackupImporter
                     continue;
             }
 
-            dbContext.Transactions.Add(transaction);
-            importedTransactions++;
+            importedTransactions.Add(transaction);
+            importedTransactionsCount++;
         }
 
         var updatedBalanceSnapshots = 0;
@@ -249,11 +260,25 @@ internal static class OneMoneyBackupImporter
             updatedBalanceSnapshots++;
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        if (importedAccounts.Count > 0)
+        {
+            await dbContext.BulkInsertAsync(importedAccounts, bulkConfig, cancellationToken: cancellationToken);
+        }
+
+        if (importedCategories.Count > 0)
+        {
+            await dbContext.BulkInsertAsync(importedCategories, bulkConfig, cancellationToken: cancellationToken);
+        }
+
+        if (importedTransactions.Count > 0)
+        {
+            await dbContext.BulkInsertAsync(importedTransactions, bulkConfig, cancellationToken: cancellationToken);
+        }
+
         await importTransaction.CommitAsync(cancellationToken);
 
         return new OneMoneyImportResult(
-            importedTransactions,
+            importedTransactionsCount,
             createdAccounts,
             createdCategories,
             createdSubCategories,
@@ -331,7 +356,7 @@ internal static class OneMoneyBackupImporter
         CategoryType type,
         Guid? parentId,
         Dictionary<string, Category> categoriesByKey,
-        AppDbContext dbContext,
+        List<Category> importedCategories,
         Guid userId,
         ref int createdCount)
     {
@@ -354,7 +379,7 @@ internal static class OneMoneyBackupImporter
                 : "IconTag"
         };
 
-        dbContext.Categories.Add(category);
+        importedCategories.Add(category);
         categoriesByKey[key] = category;
         createdCount++;
 

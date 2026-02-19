@@ -12,6 +12,13 @@ public sealed record UserSettingsResponse(string BaseCurrency);
 
 public sealed record UpdateUserSettingsRequest(string BaseCurrency);
 
+public sealed record ResetUserDataResponse(
+    int DeletedTransactions,
+    int DeletedCategories,
+    int DeletedAccounts,
+    int DeletedTrips,
+    int DeletedTransactionItems);
+
 public sealed class SettingsEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
@@ -30,6 +37,13 @@ public sealed class SettingsEndpoints : ICarterModule
             .Produces<UserSettingsResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .ProducesValidationProblem();
+
+        app.MapPost("/api/settings/reset-data", ResetData)
+            .WithTags("Settings")
+            .WithSummary("Reset user data")
+            .WithDescription("Deletes all current user transactions, categories, accounts, and trips.")
+            .Produces<ResetUserDataResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound);
     }
 
     private static async Task<Results<Ok<UserSettingsResponse>, NotFound>> Get(
@@ -80,5 +94,66 @@ public sealed class SettingsEndpoints : ICarterModule
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return TypedResults.Ok(new UserSettingsResponse(user.BaseCurrency));
+    }
+
+    private static async Task<Results<Ok<ResetUserDataResponse>, NotFound>> ResetData(
+        [FromServices] ICurrentUserContext currentUserContext,
+        [FromServices] AppDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var userId = currentUserContext.GetScopedUserId();
+
+        var userExists = await dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(item => item.Id == userId, cancellationToken);
+
+        if (!userExists)
+        {
+            return TypedResults.NotFound();
+        }
+
+        await using var resetTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        await dbContext.Transactions
+            .ForUser(userId)
+            .ExecuteUpdateAsync(updates => updates
+                .SetProperty(transaction => transaction.OriginalTransactionId, (Guid?)null)
+                .SetProperty(transaction => transaction.RelatedTransactionId, (Guid?)null),
+                cancellationToken);
+
+        var deletedTransactionItems = await dbContext.TransactionItems
+            .Where(item => item.Transaction.UserId == userId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var deletedTransactions = await dbContext.Transactions
+            .ForUser(userId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var deletedTrips = await dbContext.Trips
+            .ForUser(userId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var deletedChildCategories = await dbContext.Categories
+            .ForUser(userId)
+            .Where(category => category.ParentId != null)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var deletedParentCategories = await dbContext.Categories
+            .ForUser(userId)
+            .Where(category => category.ParentId == null)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var deletedAccounts = await dbContext.Accounts
+            .ForUser(userId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await resetTransaction.CommitAsync(cancellationToken);
+
+        return TypedResults.Ok(new ResetUserDataResponse(
+            deletedTransactions,
+            deletedChildCategories + deletedParentCategories,
+            deletedAccounts,
+            deletedTrips,
+            deletedTransactionItems));
     }
 }

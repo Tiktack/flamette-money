@@ -1221,3 +1221,11 @@ export function UsersStack() {
 ----------------------------
 2026-02-18 20:50:03
 cool, can we implement now transactions button? To redirect to transactions page and applied filter.
+----------------------------
+2026-02-19 01:07:23
+Can we try to improve performance of imports using 
+EFCore.BulkExtensions library, because right now it takes very long time. 
+https://github.com/borisdj/EFCore.BulkExtensions
+----------------------------
+2026-02-19 01:16:03
+Can you please create a new endpoint, to reset all data and also improve settings UI and add an option there to reset (remove transactions, categories, accounts, trips) completely.

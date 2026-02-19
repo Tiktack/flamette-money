@@ -343,6 +343,14 @@ export type ReportSummaryResponse = {
     bucketCount: number | string;
 };
 
+export type ResetUserDataResponse = {
+    deletedTransactions: number | string;
+    deletedCategories: number | string;
+    deletedAccounts: number | string;
+    deletedTrips: number | string;
+    deletedTransactionItems: number | string;
+};
+
 export type ScanReceiptResponse = {
     merchant: null | string;
     date: null | string;
@@ -778,6 +786,29 @@ export type PutApiSettingsResponses = {
 };
 
 export type PutApiSettingsResponse = PutApiSettingsResponses[keyof PutApiSettingsResponses];
+
+export type PostApiSettingsResetDataData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/settings/reset-data';
+};
+
+export type PostApiSettingsResetDataErrors = {
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type PostApiSettingsResetDataResponses = {
+    /**
+     * OK
+     */
+    200: ResetUserDataResponse;
+};
+
+export type PostApiSettingsResetDataResponse = PostApiSettingsResetDataResponses[keyof PostApiSettingsResetDataResponses];
 
 export type PostApiSeedDemoData = {
     body?: never;

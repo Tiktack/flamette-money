@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using EFCore.BulkExtensions;
 using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
@@ -105,22 +106,43 @@ internal static class FlametteBackupPorter
 
         var skippedRows = 0;
         var updatedSettings = 0;
+        var bulkConfig = new BulkConfig
+        {
+            BatchSize = 2_000,
+            TrackingEntities = false,
+            SetOutputIdentity = false,
+        };
 
         await using var dbTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        var existingItems = await dbContext.TransactionItems.ToListAsync(cancellationToken);
-        dbContext.TransactionItems.RemoveRange(existingItems);
+        await dbContext.Transactions
+            .ForUser(userId)
+            .ExecuteUpdateAsync(updates => updates
+                .SetProperty(transaction => transaction.OriginalTransactionId, (Guid?)null)
+                .SetProperty(transaction => transaction.RelatedTransactionId, (Guid?)null),
+                cancellationToken);
 
-        var existingTransactions = await dbContext.Transactions.ToListAsync(cancellationToken);
-        dbContext.Transactions.RemoveRange(existingTransactions);
+        await dbContext.TransactionItems
+            .Where(item => item.Transaction.UserId == userId)
+            .ExecuteDeleteAsync(cancellationToken);
 
-        var existingCategories = await dbContext.Categories.ToListAsync(cancellationToken);
-        dbContext.Categories.RemoveRange(existingCategories);
+        await dbContext.Transactions
+            .ForUser(userId)
+            .ExecuteDeleteAsync(cancellationToken);
 
-        var existingAccounts = await dbContext.Accounts.ToListAsync(cancellationToken);
-        dbContext.Accounts.RemoveRange(existingAccounts);
+        await dbContext.Categories
+            .ForUser(userId)
+            .Where(category => category.ParentId != null)
+            .ExecuteDeleteAsync(cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.Categories
+            .ForUser(userId)
+            .Where(category => category.ParentId == null)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await dbContext.Accounts
+            .ForUser(userId)
+            .ExecuteDeleteAsync(cancellationToken);
 
         var importedAccounts = accounts
             .Where(item => item.Id != Guid.Empty && !string.IsNullOrWhiteSpace(item.Name))
@@ -138,7 +160,6 @@ internal static class FlametteBackupPorter
             .ToList();
 
         var accountIds = importedAccounts.Select(item => item.Id).ToHashSet();
-        dbContext.Accounts.AddRange(importedAccounts);
 
         var categoryMap = categories
             .Where(item => item.Id != Guid.Empty && !string.IsNullOrWhiteSpace(item.Name))
@@ -185,7 +206,6 @@ internal static class FlametteBackupPorter
             }
         }
 
-        dbContext.Categories.AddRange(importedCategories);
         var categoryIds = importedCategories.Select(item => item.Id).ToHashSet();
 
         var relatedReferences = new List<(Transaction Transaction, Guid? RelatedId, Guid? OriginalId)>();
@@ -245,6 +265,18 @@ internal static class FlametteBackupPorter
         }
 
         var importedTransactionIds = importedTransactions.Select(item => item.Id).ToHashSet();
+
+        foreach (var (transaction, relatedId, originalId) in relatedReferences)
+        {
+            transaction.RelatedTransactionId = relatedId.HasValue && importedTransactionIds.Contains(relatedId.Value)
+                ? relatedId
+                : null;
+
+            transaction.OriginalTransactionId = originalId.HasValue && importedTransactionIds.Contains(originalId.Value)
+                ? originalId
+                : null;
+        }
+
         var transactionsWithItems = importedTransactionIds;
 
         foreach (var item in transactionItems)
@@ -282,20 +314,24 @@ internal static class FlametteBackupPorter
             });
         }
 
-        dbContext.Transactions.AddRange(importedTransactions);
-        dbContext.TransactionItems.AddRange(importedTransactionItems);
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        foreach (var (transaction, relatedId, originalId) in relatedReferences)
+        if (importedAccounts.Count > 0)
         {
-            transaction.RelatedTransactionId = relatedId.HasValue && importedTransactionIds.Contains(relatedId.Value)
-                ? relatedId
-                : null;
+            await dbContext.BulkInsertAsync(importedAccounts, bulkConfig, cancellationToken: cancellationToken);
+        }
 
-            transaction.OriginalTransactionId = originalId.HasValue && importedTransactionIds.Contains(originalId.Value)
-                ? originalId
-                : null;
+        if (importedCategories.Count > 0)
+        {
+            await dbContext.BulkInsertAsync(importedCategories, bulkConfig, cancellationToken: cancellationToken);
+        }
+
+        if (importedTransactions.Count > 0)
+        {
+            await dbContext.BulkInsertAsync(importedTransactions, bulkConfig, cancellationToken: cancellationToken);
+        }
+
+        if (importedTransactionItems.Count > 0)
+        {
+            await dbContext.BulkInsertAsync(importedTransactionItems, bulkConfig, cancellationToken: cancellationToken);
         }
 
         if (SupportedCurrencies.IsSupported(settings.BaseCurrency))
@@ -304,7 +340,11 @@ internal static class FlametteBackupPorter
             updatedSettings = 1;
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        if (updatedSettings > 0)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         await dbTransaction.CommitAsync(cancellationToken);
 
         var importedSubCategories = importedCategories.Count(item => item.ParentId.HasValue);
