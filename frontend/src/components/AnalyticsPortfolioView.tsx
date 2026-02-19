@@ -106,6 +106,9 @@ export function AnalyticsPortfolioView() {
             h={320}
             data={chartData}
             dataKey="period"
+            areaProps={{
+              isAnimationActive: true
+            }}
             series={[{ name: 'balance', label: `Balance (${resolvedBaseCurrency})`, color: 'blue.6' }]}
             curveType="linear"
             tickLine="y"
