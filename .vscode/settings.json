@@ -4,6 +4,7 @@
     "dotnet build": true,
     "npm install": true,
     "npm run build": true,
-    "Set-Content": true
+    "Set-Content": true,
+    "npm run openapi:all": true
   }
 }
