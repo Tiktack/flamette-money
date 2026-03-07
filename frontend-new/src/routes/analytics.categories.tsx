@@ -3,7 +3,7 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis } from "recharts"
+import { Bar, BarChart, BarStack, CartesianGrid, Cell, Pie, PieChart, XAxis } from "recharts"
 
 import { EmptyState } from "@/components/empty-state"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
@@ -273,9 +273,11 @@ function AnalyticsCategoriesPage() {
                   <CartesianGrid vertical={false} />
                   <XAxis axisLine={false} dataKey="period" tickLine={false} />
                   <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                  <BarStack radius={3}>
                   {report.series.map((series) => (
-                    <Bar key={series.key} dataKey={series.key} stackId="categories" fill={`var(--color-${series.key})`} radius={[0, 0, 0, 0]}  />
+                    <Bar key={series.key} dataKey={series.key} stackId="categories" fill={`var(--color-${series.key})`}  />
                   ))}
+                  </BarStack>
                 </BarChart>
               </ChartContainer>
             </CardContent>
