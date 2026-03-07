@@ -11,7 +11,6 @@ import {
   SentIcon,
 } from "@hugeicons/core-free-icons"
 
-import { Badge } from "@/components/ui/badge"
 import { NavUser } from "@/components/nav-user"
 import { SidebarRail } from "@/components/ui/sidebar"
 import {
@@ -137,23 +136,6 @@ export function AppSidebar({
                 )
               })}
             </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupLabel>Highlights</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <div className="rounded-2xl border border-sidebar-border/80 bg-sidebar-accent/50 p-4 text-sm">
-              <p className="font-medium text-sidebar-foreground">Same backend, new shell</p>
-              <p className="mt-1 text-sidebar-foreground/70">
-                Rebuilt on shadcn/ui with a sidebar-first workspace and compact reporting views.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Badge variant="secondary">Charts</Badge>
-                <Badge variant="secondary">CRUD</Badge>
-                <Badge variant="secondary">Filters</Badge>
-              </div>
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
