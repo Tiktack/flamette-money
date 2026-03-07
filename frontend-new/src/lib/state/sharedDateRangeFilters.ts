@@ -15,6 +15,7 @@ export type SharedDateRangeState = {
   shiftYear: (delta: number) => void
   setCustomStartDate: (value: string) => void
   setCustomEndDate: (value: string) => void
+  shiftCustomRange: (delta: number) => void
 }
 
 const formatDateInput = (value: Date) => {
@@ -27,6 +28,10 @@ const formatDateInput = (value: Date) => {
 const formatMonthAnchor = (value: Date) => {
   const monthStart = new Date(value.getFullYear(), value.getMonth(), 1)
   return formatDateInput(monthStart)
+}
+
+const parseDateInput = (value: string) => {
+  return value ? new Date(`${value}T00:00:00`) : null
 }
 
 const getCurrentMonthRange = () => {
@@ -60,6 +65,7 @@ const buildDefaultState = (): Omit<
   | 'shiftYear'
   | 'setCustomStartDate'
   | 'setCustomEndDate'
+  | 'shiftCustomRange'
 > => {
   const monthRange = getCurrentMonthRange()
   const now = new Date()
@@ -123,6 +129,38 @@ export const useSharedDateRangeFilters = create<SharedDateRangeState>((set) => (
     })),
   setCustomStartDate: (value) => set((state) => ({ ...state, customStartDate: value })),
   setCustomEndDate: (value) => set((state) => ({ ...state, customEndDate: value })),
+  shiftCustomRange: (delta) =>
+    set((state) => {
+      const start = parseDateInput(state.customStartDate)
+      const end = parseDateInput(state.customEndDate)
+
+      if (!start && !end) {
+        return state
+      }
+
+      const safeStart = start ?? end
+      const safeEnd = end ?? start
+
+      if (!safeStart || !safeEnd) {
+        return state
+      }
+
+      const dayCount = Math.max(
+        1,
+        Math.round((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+      )
+      const offset = delta * dayCount
+      const nextStart = new Date(safeStart)
+      const nextEnd = new Date(safeEnd)
+      nextStart.setDate(nextStart.getDate() + offset)
+      nextEnd.setDate(nextEnd.getDate() + offset)
+
+      return {
+        ...state,
+        customStartDate: formatDateInput(nextStart),
+        customEndDate: formatDateInput(nextEnd),
+      }
+    }),
 }))
 
 export function resolveSharedDateRange(state: SharedDateRangeState): { start: Date | null; end: Date | null } {

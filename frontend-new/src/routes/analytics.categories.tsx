@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, XAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis } from "recharts"
 
 import { EmptyState } from "@/components/empty-state"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCategorySeriesReport } from "@/lib/api/hooks"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
@@ -35,6 +36,7 @@ function AnalyticsCategoriesPage() {
   const [mode, setMode] = React.useState<"Expense" | "Income">("Expense")
   const [aggregation, setAggregation] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
   const [groupTripsAsCategory, setGroupTripsAsCategory] = React.useState(false)
+  const isGroupTripsDisabled = mode !== "Expense"
   const dateFilters = useSharedDateRangeFilters()
   const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
 
@@ -108,48 +110,6 @@ function AnalyticsCategoriesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 rounded-[1.75rem] border border-border/60 bg-card/80 p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex flex-col gap-2">
-            <div className="flex rounded-full border border-border bg-muted/60 p-1">
-              {(["Expense", "Income"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setMode(value)}
-                  className={value === mode ? "rounded-full bg-background px-3 py-1.5 text-sm font-medium shadow-sm" : "rounded-full px-3 py-1.5 text-sm text-muted-foreground"}
-                >
-                  {value === "Expense" ? "Expenses" : "Income"}
-                </button>
-              ))}
-            </div>
-            {mode === "Expense" ? (
-              <label className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Switch checked={groupTripsAsCategory} onCheckedChange={setGroupTripsAsCategory} />
-                Group trips as category
-              </label>
-            ) : null}
-          </div>
-          <div className="flex min-w-36 flex-col gap-2">
-            <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Aggregation</span>
-            <Select value={aggregation} onValueChange={(value) => setAggregation((value as typeof aggregation) ?? "Auto")}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Aggregation" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
       <SharedDateRangeToolbar />
 
       {reportQuery.isError && report.series.length === 0 ? (
@@ -180,8 +140,55 @@ function AnalyticsCategoriesPage() {
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
             <Card className="border-border/60 bg-card/80 shadow-sm">
               <CardHeader>
-                <CardTitle>{mode === "Expense" ? "Expenses" : "Income"} by category</CardTitle>
-                <CardDescription>Stacked over the selected aggregation interval.</CardDescription>
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0">
+                    <CardTitle>{mode === "Expense" ? "Expenses" : "Income"} by category</CardTitle>
+                    <CardDescription>Stacked over the selected aggregation interval.</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+                    <ToggleGroup
+                      value={[mode]}
+                      onValueChange={(values) => {
+                        const nextMode = values[0] as typeof mode | undefined
+                        if (nextMode) {
+                          setMode(nextMode)
+                        }
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <ToggleGroupItem value="Expense">Expenses</ToggleGroupItem>
+                      <ToggleGroupItem value="Income">Income</ToggleGroupItem>
+                    </ToggleGroup>
+                    <label
+                      className={isGroupTripsDisabled
+                        ? "flex min-w-[100px] items-center gap-2 whitespace-nowrap text-sm text-muted-foreground opacity-55"
+                        : "flex min-w-[100px] items-center gap-2 whitespace-nowrap text-sm text-muted-foreground"
+                      }
+                    >
+                      <Switch
+                        checked={groupTripsAsCategory}
+                        onCheckedChange={setGroupTripsAsCategory}
+                        disabled={isGroupTripsDisabled}
+                      />
+                      Group Trips
+                    </label>
+                    <Select value={aggregation} onValueChange={(value) => setAggregation((value as typeof aggregation) ?? "Auto")}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Auto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
+                            <SelectItem key={value} value={value}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <ChartContainer className="h-[360px] w-full" config={chartConfig}>
@@ -208,7 +215,7 @@ function AnalyticsCategoriesPage() {
                     <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                     <Pie data={donutData} dataKey="total" nameKey="label" innerRadius={60} outerRadius={92} strokeWidth={0}>
                       {donutData.map((entry) => (
-                        <cell key={entry.key} fill={entry.color} />
+                        <Cell key={entry.key} fill={entry.color} />
                       ))}
                     </Pie>
                   </PieChart>

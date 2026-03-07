@@ -1,117 +1,188 @@
+import * as React from "react"
+
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Calendar03Icon,
+} from "@hugeicons/core-free-icons"
+import { addDays, format, parseISO } from "date-fns"
+import type { DateRange } from "react-day-picker"
+
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { formatMonthLabel } from "@/lib/finance"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   type DateRangePreset,
+  resolveSharedDateRange,
   useSharedDateRangeFilters,
 } from "@/lib/state/sharedDateRangeFilters"
 
 const presets: Array<{ label: string; value: DateRangePreset }> = [
   { label: "Month", value: "month" },
   { label: "Year", value: "year" },
-  { label: "Custom", value: "custom" },
   { label: "All", value: "all" },
+  { label: "Custom", value: "custom" },
 ]
+
+const formatRangeLabel = (start: Date | null, end: Date | null) => {
+  if (!start && !end) {
+    return "All time"
+  }
+
+  if (start && end) {
+    return `${format(start, "LLL dd, y")} - ${format(end, "LLL dd, y")}`
+  }
+
+  if (start) {
+    return format(start, "LLL dd, y")
+  }
+
+  return end ? format(end, "LLL dd, y") : "Pick a date"
+}
+
+const toDateOrUndefined = (value: string) => {
+  return value ? parseISO(value) : undefined
+}
 
 export function SharedDateRangeToolbar() {
   const state = useSharedDateRangeFilters()
+  const isMobile = useIsMobile()
+  const resolvedRange = resolveSharedDateRange(state)
+  const canNavigate = state.preset !== "all"
+  const canPickRange = state.preset === "custom"
+  const selectedRange = React.useMemo<DateRange | undefined>(() => {
+    if (state.preset !== "custom") {
+      return resolvedRange.start || resolvedRange.end
+        ? {
+            from: resolvedRange.start ?? undefined,
+            to: resolvedRange.end ?? undefined,
+          }
+        : undefined
+    }
+
+    return {
+      from: toDateOrUndefined(state.customStartDate),
+      to: toDateOrUndefined(state.customEndDate),
+    }
+  }, [resolvedRange.end, resolvedRange.start, state.customEndDate, state.customStartDate, state.preset])
+
+  const shiftBackward = () => {
+    if (state.preset === "month") {
+      state.shiftMonth(-1)
+      return
+    }
+
+    if (state.preset === "year") {
+      state.shiftYear(-1)
+      return
+    }
+
+    if (state.preset === "custom") {
+      state.shiftCustomRange(-1)
+    }
+  }
+
+  const shiftForward = () => {
+    if (state.preset === "month") {
+      state.shiftMonth(1)
+      return
+    }
+
+    if (state.preset === "year") {
+      state.shiftYear(1)
+      return
+    }
+
+    if (state.preset === "custom") {
+      state.shiftCustomRange(1)
+    }
+  }
+
+  const handleCustomRangeSelect = (range: DateRange | undefined) => {
+    if (!range?.from) {
+      state.setCustomStartDate("")
+      state.setCustomEndDate("")
+      return
+    }
+
+    state.setCustomStartDate(format(range.from, "yyyy-MM-dd"))
+    state.setCustomEndDate(format(range.to ?? range.from, "yyyy-MM-dd"))
+  }
+
+  const rangeLabel = state.preset === "custom"
+    ? formatRangeLabel(
+        state.customStartDate ? parseISO(state.customStartDate) : null,
+        state.customEndDate ? parseISO(state.customEndDate) : null,
+      )
+    : formatRangeLabel(resolvedRange.start, resolvedRange.end)
 
   return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="flex flex-col gap-4 p-4 sm:p-5">
-        <div className="flex flex-wrap gap-2">
-          {presets.map((preset) => (
-            <Button
-              key={preset.value}
-              type="button"
-              variant={state.preset === preset.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => state.setPreset(preset.value)}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
+    <div className="overflow-x-auto py-1">
+      <div className="flex min-w-max items-center gap-2 whitespace-nowrap">
+        {presets.map((preset) => (
+          <Button
+            key={preset.value}
+            type="button"
+            variant={state.preset === preset.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => state.setPreset(preset.value)}
+          >
+            {preset.label}
+          </Button>
+        ))}
 
-        {state.preset === "month" ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">{formatMonthLabel(state.monthAnchor)}</p>
-              <p className="text-xs text-muted-foreground">Month-scoped reporting window</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => state.shiftMonth(-1)}>
-                Previous
-              </Button>
-              <Input
-                type="month"
-                value={state.monthAnchor.slice(0, 7)}
-                onChange={(event) => state.setMonthAnchor(`${event.target.value}-01`)}
-                className="w-40"
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => state.shiftMonth(1)}>
-                Next
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          onClick={shiftBackward}
+          disabled={!canNavigate}
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
+          <span className="sr-only">Previous date range</span>
+        </Button>
 
-        {state.preset === "year" ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">{state.yearAnchor}</p>
-              <p className="text-xs text-muted-foreground">Year-to-date comparison window</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => state.shiftYear(-1)}>
-                Previous
-              </Button>
-              <Input
-                type="number"
-                min={2000}
-                max={2100}
-                value={state.yearAnchor}
-                onChange={(event) => state.setYearAnchor(Number(event.target.value) || new Date().getFullYear())}
-                className="w-28"
-              />
-              <Button type="button" variant="outline" size="sm" onClick={() => state.shiftYear(1)}>
-                Next
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          onClick={shiftForward}
+          disabled={!canNavigate}
+        >
+          <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+          <span className="sr-only">Next date range</span>
+        </Button>
 
-        {state.preset === "custom" ? (
-          <FieldGroup className="grid gap-4 md:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="custom-start-date">Start date</FieldLabel>
-              <Input
-                id="custom-start-date"
-                type="date"
-                value={state.customStartDate}
-                onChange={(event) => state.setCustomStartDate(event.target.value)}
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="outline"
+                className="min-w-72 justify-start px-2.5 text-left font-normal"
+                disabled={!canPickRange}
               />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="custom-end-date">End date</FieldLabel>
-              <Input
-                id="custom-end-date"
-                type="date"
-                value={state.customEndDate}
-                onChange={(event) => state.setCustomEndDate(event.target.value)}
-              />
-            </Field>
-          </FieldGroup>
-        ) : null}
-
-        {state.preset === "all" ? (
-          <p className="text-sm text-muted-foreground">
-            All available history is included in the active report and tables.
-          </p>
-        ) : null}
-      </CardContent>
-    </Card>
+            }
+          >
+            <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} data-icon="inline-start" />
+            {rangeLabel}
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="range"
+              defaultMonth={selectedRange?.from ?? addDays(new Date(), -30)}
+              selected={selectedRange}
+              onSelect={handleCustomRangeSelect}
+              numberOfMonths={isMobile ? 1 : 2}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
   )
 }
