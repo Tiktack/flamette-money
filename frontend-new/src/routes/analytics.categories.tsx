@@ -14,7 +14,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { Progress } from "@/components/ui/progress"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -141,7 +141,40 @@ function AnalyticsCategoriesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SharedDateRangeToolbar />
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0 flex-1">
+          <SharedDateRangeToolbar />
+        </div>
+        <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap xl:justify-end">
+          <label
+            className={isGroupTripsDisabled
+              ? "flex min-w-[100px] items-center gap-2 whitespace-nowrap text-sm text-muted-foreground opacity-55"
+              : "flex min-w-[100px] items-center gap-2 whitespace-nowrap text-sm text-muted-foreground"
+            }
+          >
+            <Switch
+              checked={groupTripsAsCategory}
+              onCheckedChange={setGroupTripsAsCategory}
+              disabled={isGroupTripsDisabled}
+            />
+            Group Trips
+          </label>
+          <ToggleGroup
+            value={[mode]}
+            onValueChange={(values) => {
+              const nextMode = values[0] as typeof mode | undefined
+              if (nextMode) {
+                setMode(nextMode)
+              }
+            }}
+            variant="outline"
+            size="sm"
+          >
+            <ToggleGroupItem value="Expense">Expenses</ToggleGroupItem>
+            <ToggleGroupItem value="Income">Income</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </div>
 
       {reportQuery.isError && report.series.length === 0 ? (
         <EmptyState
@@ -222,34 +255,7 @@ function AnalyticsCategoriesPage() {
                   <CardTitle>{mode === "Expense" ? "Expenses" : "Income"} by category</CardTitle>
                   <CardDescription>Stacked over the selected aggregation interval.</CardDescription>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                  <ToggleGroup
-                    value={[mode]}
-                    onValueChange={(values) => {
-                      const nextMode = values[0] as typeof mode | undefined
-                      if (nextMode) {
-                        setMode(nextMode)
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ToggleGroupItem value="Expense">Expenses</ToggleGroupItem>
-                    <ToggleGroupItem value="Income">Income</ToggleGroupItem>
-                  </ToggleGroup>
-                  <label
-                    className={isGroupTripsDisabled
-                      ? "flex min-w-[100px] items-center gap-2 whitespace-nowrap text-sm text-muted-foreground opacity-55"
-                      : "flex min-w-[100px] items-center gap-2 whitespace-nowrap text-sm text-muted-foreground"
-                    }
-                  >
-                    <Switch
-                      checked={groupTripsAsCategory}
-                      onCheckedChange={setGroupTripsAsCategory}
-                      disabled={isGroupTripsDisabled}
-                    />
-                    Group Trips
-                  </label>
+                <div className="flex items-center gap-3 lg:justify-end">
                   <Select value={aggregation} onValueChange={(value) => setAggregation((value as typeof aggregation) ?? "Auto")}>
                     <SelectTrigger className="w-[120px]">
                       <SelectValue placeholder="Auto" />
@@ -319,22 +325,27 @@ function MetricCard({
     : `${deltaPercent && deltaPercent > 0 ? "+" : ""}${deltaPercent?.toFixed(1) ?? "0.0"}%`
 
   return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="space-y-2 p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">{label}</p>
-            <p className="mt-1 text-[1.9rem] font-semibold tracking-tight text-foreground">{value}</p>
-          </div>
-          <div className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${trendClassName}`}>
+    <Card
+      size="sm"
+      className="border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm"
+    >
+      <CardHeader className="px-4">
+        <CardTitle className="text-sm font-medium tracking-tight text-muted-foreground">{label}</CardTitle>
+        <CardAction>
+          <div className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium leading-none ${trendClassName}`}>
             {trendIcon ? <HugeiconsIcon icon={trendIcon} strokeWidth={2} className="size-3.5" /> : null}
             <span>{trendLabel}</span>
           </div>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Prev {formatCurrency(previousValue, currency)}
+        </CardAction>
+      </CardHeader>
+      <CardContent className="px-4">
+        <p className="break-words text-[2rem] leading-none font-semibold tracking-tight text-foreground tabular-nums">
+          {value}
         </p>
       </CardContent>
+      <CardFooter className="border-t border-border/60 text-xs text-muted-foreground">
+        Prev:<span className="tabular-nums">{formatCurrency(previousValue, currency)}</span>
+      </CardFooter>
     </Card>
   )
 }
