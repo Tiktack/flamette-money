@@ -102,6 +102,7 @@ function FinanceWorkspace() {
         user={{
           name: currentUserQuery.data.name,
           email: currentUserQuery.data.email,
+          avatar: undefined,
         }}
         theme={theme}
         isLoggingOut={logoutMutation.isPending}

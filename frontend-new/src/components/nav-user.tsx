@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router"
+
 import {
   Avatar,
   AvatarFallback,
@@ -19,34 +21,54 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { UnfoldMoreIcon, SparklesIcon, CheckmarkBadgeIcon, CreditCardIcon, NotificationIcon, LogoutIcon } from "@hugeicons/core-free-icons"
+import {
+  LogoutIcon,
+  Moon02Icon,
+  Settings05Icon,
+  Sun03Icon,
+  UnfoldMoreIcon,
+} from "@hugeicons/core-free-icons"
+
+import { initials } from "@/lib/finance"
 
 export function NavUser({
   user,
+  theme,
+  isLoggingOut,
+  onToggleTheme,
+  onLogout,
 }: {
   user: {
     name: string
     email: string
-    avatar: string
+    avatar?: string
   }
+  theme: "light" | "dark"
+  isLoggingOut: boolean
+  onToggleTheme: () => void
+  onLogout: () => void
 }) {
   const { isMobile } = useSidebar()
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
+              <SidebarMenuButton
+                size="lg"
+                className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+              />
             }
           >
-            <Avatar>
+            <Avatar className="h-8 w-8 rounded-lg grayscale">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>CN</AvatarFallback>
+              <AvatarFallback className="rounded-lg">{initials(user.name)}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
+              <span className="truncate text-xs text-muted-foreground">{user.email}</span>
             </div>
             <HugeiconsIcon icon={UnfoldMoreIcon} strokeWidth={2} className="ml-auto size-4" />
           </DropdownMenuTrigger>
@@ -59,43 +81,32 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar>
+                  <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback>CN</AvatarFallback>
+                    <AvatarFallback className="rounded-lg">{initials(user.name)}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
-                Upgrade to Pro
+              <DropdownMenuItem render={<Link to="/settings" />}>
+                <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleTheme}>
+                <HugeiconsIcon icon={theme === "dark" ? Sun03Icon : Moon02Icon} strokeWidth={2} />
+                {theme === "dark" ? "Light theme" : "Dark theme"}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={CheckmarkBadgeIcon} strokeWidth={2} />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={CreditCardIcon} strokeWidth={2} />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={NotificationIcon} strokeWidth={2} />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={onLogout} disabled={isLoggingOut}>
               <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} />
-              Log out
+              {isLoggingOut ? "Logging out" : "Log out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

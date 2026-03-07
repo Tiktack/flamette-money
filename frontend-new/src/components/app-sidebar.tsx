@@ -6,18 +6,13 @@ import {
   ChartRingIcon,
   CommandIcon,
   CreditCardIcon,
-  LogoutIcon,
   MapsIcon,
-  Moon02Icon,
   PieChartIcon,
   SentIcon,
-  Settings05Icon,
-  Sun03Icon,
 } from "@hugeicons/core-free-icons"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { NavUser } from "@/components/nav-user"
 import { SidebarRail } from "@/components/ui/sidebar"
 import {
   Sidebar,
@@ -35,8 +30,6 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-import { initials } from "@/lib/finance"
-
 type SidebarChildItem = {
   title: string
   to: "/analytics/comparison" | "/analytics/portfolio" | "/analytics/categories"
@@ -44,7 +37,7 @@ type SidebarChildItem = {
 
 type SidebarNavItem = {
   title: string
-  to: "/analytics" | "/accounts" | "/categories" | "/trips" | "/transactions" | "/settings"
+  to: "/analytics" | "/accounts" | "/categories" | "/trips" | "/transactions"
   icon: typeof ChartRingIcon
   children?: SidebarChildItem[]
 }
@@ -53,6 +46,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user: {
     name: string
     email: string
+    avatar?: string
   }
   theme: "light" | "dark"
   isLoggingOut: boolean
@@ -75,7 +69,6 @@ const navigation: SidebarNavItem[] = [
   { title: "Categories", to: "/categories", icon: PieChartIcon },
   { title: "Trips", to: "/trips", icon: MapsIcon },
   { title: "Transactions", to: "/transactions", icon: SentIcon },
-  { title: "Settings", to: "/settings", icon: Settings05Icon },
 ]
 
 export function AppSidebar({
@@ -165,31 +158,13 @@ export function AppSidebar({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="rounded-2xl border border-sidebar-border/80 bg-sidebar-accent/40 p-3">
-          <div className="flex items-center gap-3">
-            <Avatar className="size-10 border border-sidebar-border bg-sidebar-primary/10">
-              <AvatarFallback>{initials(user.name)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</p>
-              <p className="truncate text-xs text-sidebar-foreground/70">{user.email}</p>
-            </div>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onToggleTheme}>
-              <HugeiconsIcon
-                icon={theme === "dark" ? Sun03Icon : Moon02Icon}
-                strokeWidth={2}
-                data-icon="inline-start"
-              />
-              {theme === "dark" ? "Light" : "Dark"}
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={onLogout} disabled={isLoggingOut}>
-              <HugeiconsIcon icon={LogoutIcon} strokeWidth={2} data-icon="inline-start" />
-              {isLoggingOut ? "Leaving" : "Logout"}
-            </Button>
-          </div>
-        </div>
+        <NavUser
+          user={user}
+          theme={theme}
+          isLoggingOut={isLoggingOut}
+          onToggleTheme={onToggleTheme}
+          onLogout={onLogout}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
