@@ -1383,6 +1383,12 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "currency": {
             "type": "string"
           },
@@ -1561,6 +1567,12 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "currency": {
             "type": "string"
           },
@@ -1601,6 +1613,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "currency": {
             "type": "string"
@@ -2121,6 +2139,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "currency": {
             "type": "string"
@@ -3512,6 +3536,12 @@
           "name": {
             "type": "string"
           },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "color": {
             "type": "string"
           },
@@ -3549,6 +3579,12 @@
           },
           "name": {
             "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "currency": {
             "type": "string"

@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { accountIconOptions, getAccountIconDefinition, resolveAccountIconName } from "@/lib/account-icons"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import {
@@ -61,16 +62,11 @@ const accountTypeMeta: Record<AccountType, { label: string }> = {
   CreditCard: { label: "Credit card" },
   Savings: { label: "Savings" },
 }
-const accountTypeDescriptions: Record<AccountType, string> = {
-  Cash: "Placeholder cash account description.",
-  DebitCard: "Placeholder everyday spending account.",
-  CreditCard: "Placeholder revolving credit account.",
-  Savings: "Placeholder reserve and goal account.",
-}
 const fallbackCurrencies = ["USD", "EUR", "GBP", "PLN", "CAD"]
 
 type AccountFormState = {
   name: string
+  description: string
   currency: string
   color: string
   icon: string
@@ -80,6 +76,7 @@ type AccountFormState = {
 
 const defaultAccountForm: AccountFormState = {
   name: "",
+  description: "",
   currency: "USD",
   color: "#B9A88A",
   icon: "Wallet01Icon",
@@ -166,6 +163,7 @@ function AccountsPage() {
     setEditAccount(account)
     setEditForm({
       name: account.name,
+      description: account.description ?? "",
       currency: account.currency,
       color: normalizeHexColor(account.color),
       icon: resolveAccountIconName(account.icon),
@@ -189,15 +187,18 @@ function AccountsPage() {
           const account = row.original
           const color = normalizeHexColor(account.color)
           const iconDefinition = getAccountIconDefinition(account.icon)
+          const description = account.description?.trim()
 
           return (
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white" style={{ backgroundColor: color }}>
                 <HugeiconsIcon icon={iconDefinition.icon} strokeWidth={2} className="size-5" />
               </div>
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{account.name}</p>
-                <p className="truncate text-sm text-muted-foreground">{accountTypeDescriptions[account.type]}</p>
+              <div className={description ? "min-w-0" : "flex min-h-10 min-w-0 items-center"}>
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{account.name}</p>
+                  {description ? <p className="truncate text-sm text-muted-foreground">{description}</p> : null}
+                </div>
               </div>
             </div>
           )
@@ -503,6 +504,16 @@ function AccountDialog({
           <Field>
             <FieldLabel htmlFor={`${title}-balance`}>Current balance</FieldLabel>
             <Input id={`${title}-balance`} type="number" value={value.currentBalance} onChange={(event) => onChange((state) => ({ ...state, currentBalance: Number(event.target.value) || 0 }))} />
+          </Field>
+          <Field className="md:col-span-2">
+            <FieldLabel htmlFor={`${title}-description`}>Description</FieldLabel>
+            <Textarea
+              id={`${title}-description`}
+              value={value.description}
+              onChange={(event) => onChange((state) => ({ ...state, description: event.target.value }))}
+              placeholder="Add a short note about how you use this account"
+              rows={3}
+            />
           </Field>
           <Field>
             <FieldLabel>Accent color</FieldLabel>

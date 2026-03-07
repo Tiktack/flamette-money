@@ -7,6 +7,7 @@ export type ClientOptions = {
 export type AccountListItemResponse = {
     id: string;
     name: string;
+    description?: null | string;
     currency: string;
     color: string;
     icon: string;
@@ -50,6 +51,7 @@ export type CategoryType = 'Income' | 'Expense';
 
 export type CreateAccountRequest = {
     name: string;
+    description?: null | string;
     currency: string;
     color: string;
     icon: string;
@@ -60,6 +62,7 @@ export type CreateAccountRequest = {
 export type CreateAccountResponse = {
     id: string;
     name: string;
+    description?: null | string;
     currency: string;
     color: string;
     icon: string;
@@ -161,6 +164,7 @@ export type CurrentUserResponse = {
 export type GetAccountResponse = {
     id: string;
     name: string;
+    description?: null | string;
     currency: string;
     color: string;
     icon: string;
@@ -417,6 +421,7 @@ export type TripListItemResponse = {
 
 export type UpdateAccountRequest = {
     name: string;
+    description?: null | string;
     color: string;
     icon: string;
     type: AccountType;
@@ -426,6 +431,7 @@ export type UpdateAccountRequest = {
 export type UpdateAccountResponse = {
     id: string;
     name: string;
+    description?: null | string;
     currency: string;
     color: string;
     icon: string;
