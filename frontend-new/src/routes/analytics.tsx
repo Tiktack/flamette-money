@@ -1,7 +1,5 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router"
 
-import { PageHeader } from "@/components/page-header"
-
 export const Route = createFileRoute("/analytics")({
   component: AnalyticsLayout,
 })
@@ -9,7 +7,6 @@ export const Route = createFileRoute("/analytics")({
 function AnalyticsLayout() {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Analytics" />
       <Outlet />
     </div>
   )

@@ -4,11 +4,14 @@ import { Outlet, createRootRoute } from "@tanstack/react-router"
 import { QueryClientProvider } from "@tanstack/react-query"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { TransactionEditorDialog } from "@/components/transaction-editor-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { queryClient } from "@/lib/api/queryClient"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import { useCurrentUser, useLogout } from "@/lib/api/hooks"
 import { initials } from "@/lib/finance"
 import { Toaster } from "sonner"
@@ -30,8 +33,22 @@ function RootApp() {
 
 function FinanceWorkspace() {
   const [theme, setTheme] = React.useState<"light" | "dark">("light")
+  const [newTransactionOpen, setNewTransactionOpen] = React.useState(false)
   const currentUserQuery = useCurrentUser()
   const logoutMutation = useLogout()
+
+  React.useEffect(() => {
+    const handlePageAction = (event: Event) => {
+      const customEvent = event as CustomEvent<PageActionType>
+
+      if (customEvent.detail === pageActionTypes.createTransaction) {
+        setNewTransactionOpen(true)
+      }
+    }
+
+    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
+    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
+  }, [])
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -106,15 +123,22 @@ function FinanceWorkspace() {
         }}
         theme={theme}
         isLoggingOut={logoutMutation.isPending}
+        onNewTransaction={() => setNewTransactionOpen(true)}
         onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         onLogout={() => logoutMutation.mutate()}
       />
       <SidebarInset className="bg-[radial-gradient(circle_at_top,_rgba(217,107,79,0.12),_transparent_34%),linear-gradient(180deg,_rgba(255,255,255,0.5),_transparent_28%)] dark:bg-[radial-gradient(circle_at_top,_rgba(217,107,79,0.14),_transparent_30%),linear-gradient(180deg,_rgba(20,20,20,0.6),_transparent_32%)]">
-        <div className="min-h-svh px-4 py-4 sm:px-6 sm:py-6">
+        <SiteHeader />
+        <div className="min-h-[calc(100svh-3.5rem)] px-4 py-4 sm:px-6 sm:py-6">
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
             <Outlet />
           </div>
         </div>
+        <TransactionEditorDialog
+          open={newTransactionOpen}
+          mode="new"
+          onOpenChange={setNewTransactionOpen}
+        />
       </SidebarInset>
     </SidebarProvider>
   )

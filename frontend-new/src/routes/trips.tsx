@@ -3,7 +3,6 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 
 import { EmptyState } from "@/components/empty-state"
-import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,6 +19,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCreateTrip, useSettings, useTrips, useUpdateTrip } from "@/lib/api/hooks"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { TripListItem } from "@/lib/api/types"
 import { formatCurrency, formatDateLabel, toNumber } from "@/lib/finance"
 
@@ -50,6 +50,19 @@ function TripsPage() {
   const [editTrip, setEditTrip] = React.useState<TripListItem | null>(null)
   const [createForm, setCreateForm] = React.useState<TripFormState>(defaultTripForm)
   const [editForm, setEditForm] = React.useState<TripFormState>(defaultTripForm)
+
+  React.useEffect(() => {
+    const handlePageAction = (event: Event) => {
+      const customEvent = event as CustomEvent<PageActionType>
+
+      if (customEvent.detail === pageActionTypes.createTrip) {
+        setCreateOpen(true)
+      }
+    }
+
+    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
+    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
+  }, [])
 
   const baseCurrency = settingsQuery.data?.baseCurrency ?? "USD"
   const trips = React.useMemo(
@@ -112,12 +125,6 @@ function TripsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Trips"
-        description="Track travel periods as separate contexts, complete with dates, cover images, and expense totals."
-        actions={<Button onClick={() => setCreateOpen(true)}>Add trip</Button>}
-      />
-
       <div className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Trips" value={String(trips.length)} helper="Travel periods recorded in the workspace" />
         <MetricCard label="Total spent" value={formatCurrency(totalSpent, baseCurrency)} helper="Combined trip expenses in your base currency" />

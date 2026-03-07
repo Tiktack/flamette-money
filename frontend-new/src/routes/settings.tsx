@@ -2,7 +2,6 @@ import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
 
-import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -117,8 +116,6 @@ function SettingsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
-      <PageHeader title="Settings" />
-
       <div className="flex flex-col gap-3">
         <SettingsSection
           title="Profile & preferences"

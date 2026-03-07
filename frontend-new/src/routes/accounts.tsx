@@ -4,7 +4,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Line, LineChart, ResponsiveContainer } from "recharts"
 
 import { EmptyState } from "@/components/empty-state"
-import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,6 +42,7 @@ import {
   useDeleteAccount,
   useUpdateAccount,
 } from "@/lib/api/hooks"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { AccountListItem, AccountType } from "@/lib/api/types"
 import { buildSeed, buildTrendSeries, formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
@@ -86,6 +86,19 @@ function AccountsPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<AccountListItem | null>(null)
   const [createForm, setCreateForm] = React.useState<AccountFormState>(defaultAccountForm)
   const [editForm, setEditForm] = React.useState<AccountFormState>(defaultAccountForm)
+
+  React.useEffect(() => {
+    const handlePageAction = (event: Event) => {
+      const customEvent = event as CustomEvent<PageActionType>
+
+      if (customEvent.detail === pageActionTypes.createAccount) {
+        setCreateOpen(true)
+      }
+    }
+
+    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
+    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
+  }, [])
 
   const currencyOptions = React.useMemo(() => {
     const values = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? fallbackCurrencies
@@ -156,12 +169,6 @@ function AccountsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Accounts"
-        description="Manage cash, cards, and savings buckets. Track balances and jump straight into the related ledger slice."
-        actions={<Button onClick={() => setCreateOpen(true)}>Create account</Button>}
-      />
-
       <div className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Accounts" value={String(accounts.length)} helper="Total money buckets connected to the workspace" />
         <MetricCard label="Currencies" value={String(new Set(accounts.map((account) => account.currency)).size)} helper="Distinct currencies tracked across accounts" />

@@ -3,7 +3,6 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 
 import { EmptyState } from "@/components/empty-state"
-import { PageHeader } from "@/components/page-header"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { TransactionEditorDialog } from "@/components/transaction-editor-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -156,19 +155,6 @@ function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Transactions"
-        description="Filter the ledger by account, category, type, amount, and date range, then create or refine transactions with the full editor."
-        actions={
-          <>
-            <Button variant={hasActiveFilters ? "default" : "outline"} onClick={() => setFilterOpen(true)}>
-              Filters
-            </Button>
-            <Button onClick={() => setEditor({ mode: "new" })}>New transaction</Button>
-          </>
-        }
-      />
-
       <div className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Results" value={String(transactions.length)} helper="Transactions matching the active filters" />
         <MetricCard label="Income" value={formatCurrency(incomeTotal, "USD")} helper="Gross income in the filtered result set" />
@@ -180,8 +166,11 @@ function TransactionsPage() {
       <Card className="border-border/60 bg-card/80 shadow-sm">
         <CardContent className="grid gap-4 p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="w-full max-w-lg">
+            <div className="flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:items-center">
               <Input placeholder="Search merchant, note, or location" value={searchText} onChange={(event) => setSearchText(event.target.value)} />
+              <Button variant={hasActiveFilters ? "default" : "outline"} onClick={() => setFilterOpen(true)}>
+                Filters
+              </Button>
             </div>
             {hasActiveFilters ? (
               <div className="flex flex-wrap gap-2">

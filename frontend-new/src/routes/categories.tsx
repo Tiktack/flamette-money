@@ -4,10 +4,8 @@ import { createFileRoute } from "@tanstack/react-router"
 import { Cell, Pie, PieChart } from "recharts"
 
 import { EmptyState } from "@/components/empty-state"
-import { PageHeader } from "@/components/page-header"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -32,6 +30,7 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCategories, useCategorySeriesReport, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/lib/api/hooks"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { CategoryHierarchy, CategoryType } from "@/lib/api/types"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
@@ -70,6 +69,19 @@ function CategoriesPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<CategoryHierarchy | null>(null)
   const [createForm, setCreateForm] = React.useState<CategoryFormState>(defaultCategoryForm)
   const [editForm, setEditForm] = React.useState<CategoryFormState>(defaultCategoryForm)
+
+  React.useEffect(() => {
+    const handlePageAction = (event: Event) => {
+      const customEvent = event as CustomEvent<PageActionType>
+
+      if (customEvent.detail === pageActionTypes.createCategory) {
+        setCreateOpen(true)
+      }
+    }
+
+    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
+    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
+  }, [])
 
   const categories = categoriesQuery.data ?? []
   const parentCategories = React.useMemo(() => categories.filter((category) => category.parentId === null), [categories])
@@ -135,7 +147,7 @@ function CategoriesPage() {
     [parentCategories, typeFilter],
   )
 
-  const openCreate = (parent?: CategoryHierarchy) => {
+  const openCreate = React.useCallback((parent?: CategoryHierarchy) => {
     setCreateForm({
       name: "",
       color: normalizeHexColor(parent?.color, "#D96B4F"),
@@ -144,7 +156,7 @@ function CategoriesPage() {
       parentId: parent?.id ?? null,
     })
     setCreateOpen(true)
-  }
+  }, [typeFilter])
 
   const openEdit = (category: CategoryHierarchy) => {
     setEditCategory(category)
@@ -202,12 +214,6 @@ function CategoriesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Categories"
-        description="Manage your income and expense taxonomy, then compare how each parent bucket performs inside the active date window."
-        actions={<Button onClick={() => openCreate()}>Create category</Button>}
-      />
-
       <div className="flex flex-wrap gap-2">
         {(["Expense", "Income"] as const).map((value) => (
           <Button key={value} variant={typeFilter === value ? "default" : "outline"} onClick={() => setTypeFilter(value)}>
@@ -451,7 +457,7 @@ function CategoryDialog({
           </Field>
           <Field>
             <FieldLabel>Icon token</FieldLabel>
-            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next }))}>
+            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next ?? state.icon }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Icon" />
               </SelectTrigger>
