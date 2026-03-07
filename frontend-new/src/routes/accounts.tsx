@@ -1,13 +1,16 @@
 import * as React from "react"
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { type ColumnDef, type Table as TanstackTable } from "@tanstack/react-table"
+import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, TransactionIcon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { Line, LineChart, ResponsiveContainer } from "recharts"
 
+import { DataTable } from "../components/data-table"
 import { EmptyState } from "@/components/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -26,14 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { accountIconOptions, getAccountIconDefinition, resolveAccountIconName } from "@/lib/account-icons"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import {
   useAccounts,
@@ -52,8 +55,19 @@ export const Route = createFileRoute("/accounts")({
 })
 
 const accountTypeOptions: AccountType[] = ["Cash", "DebitCard", "CreditCard", "Savings"]
+const accountTypeMeta: Record<AccountType, { label: string }> = {
+  Cash: { label: "Cash" },
+  DebitCard: { label: "Debit card" },
+  CreditCard: { label: "Credit card" },
+  Savings: { label: "Savings" },
+}
+const accountTypeDescriptions: Record<AccountType, string> = {
+  Cash: "Placeholder cash account description.",
+  DebitCard: "Placeholder everyday spending account.",
+  CreditCard: "Placeholder revolving credit account.",
+  Savings: "Placeholder reserve and goal account.",
+}
 const fallbackCurrencies = ["USD", "EUR", "GBP", "PLN", "CAD"]
-const iconOptions = ["IconWallet", "IconCard", "IconPigMoney", "IconCashBanknote"]
 
 type AccountFormState = {
   name: string
@@ -68,7 +82,7 @@ const defaultAccountForm: AccountFormState = {
   name: "",
   currency: "USD",
   color: "#B9A88A",
-  icon: "IconWallet",
+  icon: "Wallet01Icon",
   type: "Cash",
   currentBalance: 0,
 }
@@ -87,18 +101,23 @@ function AccountsPage() {
   const [createForm, setCreateForm] = React.useState<AccountFormState>(defaultAccountForm)
   const [editForm, setEditForm] = React.useState<AccountFormState>(defaultAccountForm)
 
+  const openCreate = React.useCallback(() => {
+    setCreateForm(defaultAccountForm)
+    setCreateOpen(true)
+  }, [])
+
   React.useEffect(() => {
     const handlePageAction = (event: Event) => {
       const customEvent = event as CustomEvent<PageActionType>
 
       if (customEvent.detail === pageActionTypes.createAccount) {
-        setCreateOpen(true)
+        openCreate()
       }
     }
 
     window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
     return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
-  }, [])
+  }, [openCreate])
 
   const currencyOptions = React.useMemo(() => {
     const values = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? fallbackCurrencies
@@ -106,13 +125,6 @@ function AccountsPage() {
   }, [appInfoQuery.data?.supportedCurrencies])
 
   const accounts = accountsQuery.data ?? []
-  const topAccount = React.useMemo(
-    () =>
-      [...accounts].sort(
-        (left, right) => toNumber(right.currentBalance) - toNumber(left.currentBalance),
-      )[0] ?? null,
-    [accounts],
-  )
 
   const handleCreate = async () => {
     try {
@@ -156,7 +168,7 @@ function AccountsPage() {
       name: account.name,
       currency: account.currency,
       color: normalizeHexColor(account.color),
-      icon: account.icon,
+      icon: resolveAccountIconName(account.icon),
       type: account.type,
       currentBalance: toNumber(account.currentBalance),
     })
@@ -167,99 +179,196 @@ function AccountsPage() {
     await navigate({ to: "/transactions" })
   }
 
+  const columns = React.useMemo<ColumnDef<AccountListItem>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Account",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const account = row.original
+          const color = normalizeHexColor(account.color)
+          const iconDefinition = getAccountIconDefinition(account.icon)
+
+          return (
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white" style={{ backgroundColor: color }}>
+                <HugeiconsIcon icon={iconDefinition.icon} strokeWidth={2} className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate font-medium text-foreground">{account.name}</p>
+                <p className="truncate text-sm text-muted-foreground">{accountTypeDescriptions[account.type]}</p>
+              </div>
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: "type",
+        header: "Type",
+        filterFn: "equalsString",
+        cell: ({ row }) => <Badge variant="outline">{accountTypeMeta[row.original.type].label}</Badge>,
+      },
+      {
+        accessorKey: "currency",
+        header: "Currency",
+        filterFn: "equalsString",
+        cell: ({ row }) => <Badge variant="secondary">{row.original.currency}</Badge>,
+      },
+      {
+        accessorFn: (row) => toNumber(row.currentBalance),
+        id: "balance",
+        header: () => <div className="text-right">Balance</div>,
+        cell: ({ row }) => {
+          const amount = toNumber(row.original.currentBalance)
+
+          return (
+            <div className={amount < 0 ? "text-right font-medium text-destructive" : "text-right font-medium text-foreground"}>
+              {formatCurrency(row.original.currentBalance, row.original.currency)}
+            </div>
+          )
+        },
+      },
+      {
+        id: "activity",
+        header: "Activity",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const color = normalizeHexColor(row.original.color)
+          const sparkline = buildTrendSeries(buildSeed(row.original.id))
+
+          return (
+            <div className="h-10 w-28">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sparkline}>
+                  <Line dataKey="value" dot={false} stroke={color} strokeWidth={2} type="monotone" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )
+        },
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        enableHiding: false,
+        header: () => <div className="text-right">Actions</div>,
+        cell: ({ row }) => {
+          const account = row.original
+
+          return (
+            <div className="flex justify-end gap-1">
+              <Button variant="ghost" size="icon-sm" onClick={() => openEdit(account)}>
+                <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
+                <span className="sr-only">Edit {account.name}</span>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground data-open:bg-muted" />}>
+                  <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} />
+                  <span className="sr-only">More actions</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={() => void openTransactions(account.id)}>
+                    <HugeiconsIcon icon={TransactionIcon} strokeWidth={2} className="text-muted-foreground" />
+                    <span>Show transactions</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(account)}>
+                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="text-destructive" />
+                    <span>Remove account</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )
+        },
+      },
+    ],
+    [openTransactions],
+  )
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Accounts" value={String(accounts.length)} helper="Total money buckets connected to the workspace" />
-        <MetricCard label="Currencies" value={String(new Set(accounts.map((account) => account.currency)).size)} helper="Distinct currencies tracked across accounts" />
-        <MetricCard label="Top balance" value={topAccount ? formatCurrency(topAccount.currentBalance, topAccount.currency) : "-"} helper={topAccount ? topAccount.name : "No accounts yet"} />
-      </div>
+      {accountsQuery.isPending ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-3">
+            <div className="h-9 w-[220px] animate-pulse rounded-lg bg-muted" />
+            <div className="h-9 w-[148px] animate-pulse rounded-lg bg-muted" />
+            <div className="h-9 w-[148px] animate-pulse rounded-lg bg-muted" />
+          </div>
+          <div className="h-[540px] animate-pulse rounded-[1.75rem] bg-muted" />
+        </div>
+      ) : accountsQuery.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load accounts</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(accountsQuery.error, "Try again in a moment.")}</AlertDescription>
+        </Alert>
+      ) : accounts.length === 0 ? (
+        <EmptyState
+          eyebrow="Accounts"
+          title="No accounts yet"
+          description="Create your first account to start recording balances, transfers, and transaction history."
+          action={<Button onClick={openCreate}>Create account</Button>}
+        />
+      ) : (
+        <DataTable
+          columns={columns}
+          data={accounts}
+          searchColumn="name"
+          searchPlaceholder="Search accounts"
+          emptyMessage="No accounts match the current filters."
+          filters={(table: TanstackTable<AccountListItem>) => {
+            const typeValue = (table.getColumn("type")?.getFilterValue() as string) ?? "all-types"
+            const currencyValue = (table.getColumn("currency")?.getFilterValue() as string) ?? "all-currencies"
+            const hasFilters = typeValue !== "all-types" || currencyValue !== "all-currencies"
 
-      <Card className="border-border/60 bg-card/80 shadow-sm">
-        <CardContent className="p-0">
-          {accountsQuery.isPending ? (
-            <div className="h-56 animate-pulse rounded-[1.75rem] bg-muted" />
-          ) : accountsQuery.isError ? (
-            <div className="p-6">
-              <Alert variant="destructive">
-                <AlertTitle>Unable to load accounts</AlertTitle>
-                <AlertDescription>{getApiErrorMessage(accountsQuery.error, "Try again in a moment.")}</AlertDescription>
-              </Alert>
-            </div>
-          ) : accounts.length === 0 ? (
-            <div className="p-6">
-              <EmptyState
-                eyebrow="Accounts"
-                title="No accounts yet"
-                description="Create your first account to start recording balances, transfers, and transaction history."
-                action={<Button onClick={() => setCreateOpen(true)}>Create account</Button>}
-              />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Currency</TableHead>
-                    <TableHead>Balance</TableHead>
-                    <TableHead>Activity</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {accounts.map((account) => {
-                    const color = normalizeHexColor(account.color)
-                    const sparkline = buildTrendSeries(buildSeed(account.id))
+            return (
+              <>
+                <Select value={typeValue} onValueChange={(value) => table.getColumn("type")?.setFilterValue(value === "all-types" ? undefined : value)}>
+                  <SelectTrigger size="sm" className="w-[148px]">
+                    <SelectValue placeholder="All types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all-types">All types</SelectItem>
+                      {accountTypeOptions.map((type) => (
+                        <SelectItem key={type} value={type}>{accountTypeMeta[type].label}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
 
-                    return (
-                      <TableRow key={account.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white" style={{ backgroundColor: color }}>
-                              {account.name.slice(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">{account.name}</p>
-                              <p className="text-sm text-muted-foreground">{account.type}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{account.currency}</Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{formatCurrency(account.currentBalance, account.currency)}</TableCell>
-                        <TableCell>
-                          <div className="h-10 w-28">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={sparkline}>
-                                <Line dataKey="value" dot={false} stroke={color} strokeWidth={2} type="monotone" />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openTransactions(account.id)}>
-                              Ledger
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => openEdit(account)}>
-                              Edit
-                            </Button>
-                            <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(account)}>
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <Select value={currencyValue} onValueChange={(value) => table.getColumn("currency")?.setFilterValue(value === "all-currencies" ? undefined : value)}>
+                  <SelectTrigger size="sm" className="w-[148px]">
+                    <SelectValue placeholder="All currencies" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all-currencies">All currencies</SelectItem>
+                      {currencyOptions.map((currency) => (
+                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+
+                {hasFilters ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      table.getColumn("type")?.setFilterValue(undefined)
+                      table.getColumn("currency")?.setFilterValue(undefined)
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                ) : null}
+              </>
+            )
+          }}
+        />
+      )}
 
       <AccountDialog
         open={createOpen}
@@ -271,7 +380,12 @@ function AccountsPage() {
         currencies={currencyOptions}
         pending={createAccount.isPending}
         error={createAccount.isError ? getApiErrorMessage(createAccount.error, "Unable to create account.") : null}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open)
+          if (!open) {
+            setCreateForm(defaultAccountForm)
+          }
+        }}
         onSubmit={handleCreate}
       />
 
@@ -342,6 +456,8 @@ function AccountDialog({
   onOpenChange: (open: boolean) => void
   onSubmit: () => void
 }) {
+  const selectedIcon = getAccountIconDefinition(value.icon)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -356,7 +472,7 @@ function AccountDialog({
           </Field>
           <Field>
             <FieldLabel>Currency</FieldLabel>
-            <Select value={value.currency} onValueChange={(next) => onChange((state) => ({ ...state, currency: next }))}>
+            <Select value={value.currency} onValueChange={(next) => onChange((state) => ({ ...state, currency: next ?? state.currency }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Currency" />
               </SelectTrigger>
@@ -393,15 +509,19 @@ function AccountDialog({
             <Input type="color" value={value.color} onChange={(event) => onChange((state) => ({ ...state, color: event.target.value }))} className="h-11 p-1" />
           </Field>
           <Field>
-            <FieldLabel>Icon token</FieldLabel>
-            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next }))}>
+            <FieldLabel>Account icon</FieldLabel>
+            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next ?? state.icon }))}>
               <SelectTrigger>
+                <HugeiconsIcon icon={selectedIcon.icon} strokeWidth={2} className="text-muted-foreground" />
                 <SelectValue placeholder="Icon" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {iconOptions.map((icon) => (
-                    <SelectItem key={icon} value={icon}>{icon}</SelectItem>
+                  {accountIconOptions.map((icon) => (
+                    <SelectItem key={icon.name} value={icon.name}>
+                      <HugeiconsIcon icon={icon.icon} strokeWidth={2} className="text-muted-foreground" />
+                      <span>{icon.label}</span>
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -423,14 +543,3 @@ function AccountDialog({
   )
 }
 
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="space-y-2 p-5">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-        <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
-      </CardContent>
-    </Card>
-  )
-}
