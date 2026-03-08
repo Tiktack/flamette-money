@@ -11,6 +11,7 @@ public sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.HasKey(account => account.Id);
         builder.Property(account => account.UserId).IsRequired();
         builder.Property(account => account.Name).HasMaxLength(200).IsRequired();
+        builder.Property(account => account.Description).HasMaxLength(500);
         builder.Property(account => account.Currency).HasMaxLength(3).IsRequired();
         builder.Property(account => account.Color).HasMaxLength(7).IsRequired();
         builder.Property(account => account.Icon).HasMaxLength(100).IsRequired();

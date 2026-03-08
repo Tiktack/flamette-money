@@ -9,11 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record UpdateAccountRequest(string Name, string Color, string Icon, AccountType Type, decimal CurrentBalance);
+public record UpdateAccountRequest(string Name, string? Description, string Color, string Icon, AccountType Type, decimal CurrentBalance);
 
 public record UpdateAccountResponse(
     Guid Id,
     string Name,
+    string? Description,
     string Currency,
     string Color,
     string Icon,
@@ -27,6 +28,9 @@ public sealed class UpdateAccountRequestValidator : AbstractValidator<UpdateAcco
         RuleFor(request => request.Name)
             .NotEmpty()
             .MaximumLength(200);
+
+        RuleFor(request => request.Description)
+            .MaximumLength(500);
 
         RuleFor(request => request.Color)
             .NotEmpty()
@@ -72,6 +76,7 @@ public sealed class UpdateAccountEndpoint : ICarterModule
         }
 
         account.Name = request.Name.Trim();
+        account.Description = NormalizeDescription(request.Description);
         account.Color = NormalizeColor(request.Color);
         account.Icon = NormalizeIcon(request.Icon);
         account.Type = request.Type;
@@ -82,6 +87,7 @@ public sealed class UpdateAccountEndpoint : ICarterModule
         return TypedResults.Ok(new UpdateAccountResponse(
             account.Id,
             account.Name,
+            account.Description,
             account.Currency,
             account.Color,
             account.Icon,
@@ -100,5 +106,15 @@ public sealed class UpdateAccountEndpoint : ICarterModule
     private static string NormalizeIcon(string icon)
     {
         return icon.Trim();
+    }
+
+    private static string? NormalizeDescription(string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return null;
+        }
+
+        return description.Trim();
     }
 }

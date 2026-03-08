@@ -151,6 +151,7 @@ internal static class FlametteBackupPorter
                 Id = item.Id,
                 UserId = userId,
                 Name = item.Name.Trim(),
+                Description = NullIfWhiteSpace(item.Description),
                 Currency = SupportedCurrencies.NormalizeOrDefault(item.Currency, user.BaseCurrency),
                 Color = string.IsNullOrWhiteSpace(item.Color) ? "#4C6EF5" : item.Color.Trim(),
                 Icon = string.IsNullOrWhiteSpace(item.Icon) ? "IconWallet" : item.Icon.Trim(),
@@ -385,18 +386,19 @@ internal static class FlametteBackupPorter
     private static void WriteAccountsSheet(XLWorkbook workbook, IReadOnlyList<Account> accounts)
     {
         var sheet = workbook.Worksheets.Add(AccountsSheet);
-        WriteHeaderRow(sheet, "Id", "Name", "Currency", "Color", "Icon", "Type", "CurrentBalance");
+        WriteHeaderRow(sheet, "Id", "Name", "Description", "Currency", "Color", "Icon", "Type", "CurrentBalance");
 
         var row = 2;
         foreach (var item in accounts)
         {
             sheet.Cell(row, 1).Value = item.Id.ToString();
             sheet.Cell(row, 2).Value = item.Name;
-            sheet.Cell(row, 3).Value = item.Currency;
-            sheet.Cell(row, 4).Value = item.Color;
-            sheet.Cell(row, 5).Value = item.Icon;
-            sheet.Cell(row, 6).Value = item.Type.ToString();
-            sheet.Cell(row, 7).Value = item.CurrentBalance.ToString(CultureInfo.InvariantCulture);
+            sheet.Cell(row, 3).Value = item.Description ?? string.Empty;
+            sheet.Cell(row, 4).Value = item.Currency;
+            sheet.Cell(row, 5).Value = item.Color;
+            sheet.Cell(row, 6).Value = item.Icon;
+            sheet.Cell(row, 7).Value = item.Type.ToString();
+            sheet.Cell(row, 8).Value = item.CurrentBalance.ToString(CultureInfo.InvariantCulture);
             row++;
         }
 
@@ -535,11 +537,12 @@ internal static class FlametteBackupPorter
     {
         var sheet = RequireSheet(workbook, AccountsSheet);
         var rows = new List<AccountRow>();
+        var hasDescriptionColumn = (sheet.LastColumnUsed()?.ColumnNumber() ?? 0) >= 8;
 
         var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
         for (var row = 2; row <= lastRow; row++)
         {
-            if (IsRowEmpty(sheet, row, 7))
+            if (IsRowEmpty(sheet, row, hasDescriptionColumn ? 8 : 7))
             {
                 continue;
             }
@@ -547,11 +550,12 @@ internal static class FlametteBackupPorter
             rows.Add(new AccountRow(
                 ParseGuid(GetCellText(sheet.Cell(row, 1)), $"Accounts[{row}].Id"),
                 GetCellText(sheet.Cell(row, 2)),
-                GetCellText(sheet.Cell(row, 3)),
-                GetCellText(sheet.Cell(row, 4)),
-                GetCellText(sheet.Cell(row, 5)),
-                ParseEnum<AccountType>(GetCellText(sheet.Cell(row, 6)), $"Accounts[{row}].Type"),
-                ParseDecimal(GetCellText(sheet.Cell(row, 7)), $"Accounts[{row}].CurrentBalance")));
+                hasDescriptionColumn ? NullIfWhiteSpace(GetCellText(sheet.Cell(row, 3))) : null,
+                GetCellText(sheet.Cell(row, hasDescriptionColumn ? 4 : 3)),
+                GetCellText(sheet.Cell(row, hasDescriptionColumn ? 5 : 4)),
+                GetCellText(sheet.Cell(row, hasDescriptionColumn ? 6 : 5)),
+                ParseEnum<AccountType>(GetCellText(sheet.Cell(row, hasDescriptionColumn ? 7 : 6)), $"Accounts[{row}].Type"),
+                ParseDecimal(GetCellText(sheet.Cell(row, hasDescriptionColumn ? 8 : 7)), $"Accounts[{row}].CurrentBalance")));
         }
 
         return rows;
@@ -793,11 +797,19 @@ internal static class FlametteBackupPorter
         throw new InvalidOperationException($"{field} has invalid enum value '{value}'.");
     }
 
+    private static string? NullIfWhiteSpace(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
+
     private sealed record SettingsRow(string Format, int Version, string BaseCurrency);
 
     private sealed record AccountRow(
         Guid Id,
         string Name,
+        string? Description,
         string Currency,
         string Color,
         string Icon,

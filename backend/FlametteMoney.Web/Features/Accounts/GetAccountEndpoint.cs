@@ -11,6 +11,7 @@ namespace FlametteMoney.Web.Features.Accounts;
 public record GetAccountResponse(
     Guid Id,
     string Name,
+    string? Description,
     string Currency,
     string Color,
     string Icon,
@@ -50,6 +51,7 @@ public sealed class GetAccountEndpoint : ICarterModule
         return TypedResults.Ok(new GetAccountResponse(
             account.Id,
             account.Name,
+            account.Description,
             account.Currency,
             account.Color,
             account.Icon,

@@ -1,5 +1,6 @@
 using Carter;
 using FlametteMoney.Web.Infrastructure.Auth;
+using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -11,6 +12,7 @@ namespace FlametteMoney.Web.Features.Accounts;
 public record AccountListItemResponse(
     Guid Id,
     string Name,
+    string? Description,
     string Currency,
     string Color,
     string Icon,
@@ -30,18 +32,26 @@ public sealed class ListAccountsEndpoint : ICarterModule
 
     private static async Task<Ok<List<AccountListItemResponse>>> Handle(
         [FromServices] ICurrentUserContext currentUserContext,
+        [FromServices] IExchangeRateService exchangeRateService,
         [FromServices] AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
         var userId = currentUserContext.GetScopedUserId();
+        var userBaseCurrency = await dbContext.Users
+            .AsNoTracking()
+            .Where(item => item.Id == userId)
+            .Select(item => item.BaseCurrency)
+            .FirstOrDefaultAsync(cancellationToken);
+        var baseCurrency = SupportedCurrencies.NormalizeOrDefault(userBaseCurrency, "USD");
+        var fxSnapshot = await exchangeRateService.GetRatesToBaseAsync(baseCurrency, cancellationToken);
 
         var accounts = await dbContext.Accounts
             .AsNoTracking()
             .ForUser(userId)
-            .OrderBy(account => account.Name)
             .Select(account => new AccountListItemResponse(
                 account.Id,
                 account.Name,
+                account.Description,
                 account.Currency,
                 account.Color,
                 account.Icon,
@@ -49,6 +59,16 @@ public sealed class ListAccountsEndpoint : ICarterModule
                 account.CurrentBalance))
             .ToListAsync(cancellationToken);
 
-        return TypedResults.Ok(accounts);
+        var orderedAccounts = accounts
+            .OrderByDescending(account =>
+            {
+                var currency = SupportedCurrencies.NormalizeOrDefault(account.Currency, baseCurrency);
+                var rate = fxSnapshot.RatesToBase[currency];
+                return account.CurrentBalance * rate;
+            })
+            .ThenBy(account => account.Name)
+            .ToList();
+
+        return TypedResults.Ok(orderedAccounts);
     }
 }

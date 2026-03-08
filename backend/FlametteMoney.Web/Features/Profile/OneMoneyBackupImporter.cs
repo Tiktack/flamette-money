@@ -107,6 +107,7 @@ internal static class OneMoneyBackupImporter
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 Name = accountName.Trim(),
+                Description = null,
                 Currency = NormalizeCurrencyCode(inferredCurrency) ?? DefaultCurrency,
                 Color = PickAccountColor(accountName),
                 Type = DefaultAccountType,

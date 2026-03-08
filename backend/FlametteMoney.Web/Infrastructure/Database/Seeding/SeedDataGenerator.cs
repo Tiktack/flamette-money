@@ -85,6 +85,7 @@ public sealed class SeedDataGenerator
             {
                 Id = Guid.NewGuid(),
                 Name = definition.Name,
+                Description = definition.Description,
                 Currency = definition.Currency,
                 Color = definition.Color,
                 Icon = definition.Icon,
@@ -301,11 +302,11 @@ public sealed class SeedDataGenerator
     {
         return
         [
-            new AccountDefinition("Cash PLN", "PLN", "#2F9E44", "IconCash", AccountType.Cash, 1200m),
-            new AccountDefinition("Cash EUR", "EUR", "#0B7285", "IconCash", AccountType.Cash, 400m),
-            new AccountDefinition("Card PLN", "PLN", "#1971C2", "IconCreditCard", AccountType.DebitCard, 3500m),
-            new AccountDefinition("Card EUR", "EUR", "#364FC7", "IconCreditCard", AccountType.DebitCard, 800m),
-            new AccountDefinition("Revolut Card", "EUR", "#7048E8", "IconWallet", AccountType.DebitCard, 1600m)
+            new AccountDefinition("Cash PLN", "Local cash for daily spending.", "PLN", "#2F9E44", "IconCash", AccountType.Cash, 1200m),
+            new AccountDefinition("Cash EUR", "Travel cash reserved in euros.", "EUR", "#0B7285", "IconCash", AccountType.Cash, 400m),
+            new AccountDefinition("Card PLN", "Primary debit card for domestic purchases.", "PLN", "#1971C2", "IconCreditCard", AccountType.DebitCard, 3500m),
+            new AccountDefinition("Card EUR", "Secondary debit card for euro expenses.", "EUR", "#364FC7", "IconCreditCard", AccountType.DebitCard, 800m),
+            new AccountDefinition("Revolut Card", "Flexible travel card with multi-currency balance.", "EUR", "#7048E8", "IconWallet", AccountType.DebitCard, 1600m)
         ];
     }
 
@@ -543,6 +544,7 @@ public sealed class SeedDataGenerator
 
     private sealed record AccountDefinition(
         string Name,
+        string? Description,
         string Currency,
         string Color,
         string Icon,

@@ -5,6 +5,7 @@ public sealed class Account : IUserOwnedEntity
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public string Currency { get; set; } = "USD";
     public string Color { get; set; } = "#4C6EF5";
     public string Icon { get; set; } = "IconWallet";

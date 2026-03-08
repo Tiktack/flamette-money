@@ -9,11 +9,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FlametteMoney.Web.Features.Accounts;
 
-public record CreateAccountRequest(string Name, string Currency, string Color, string Icon, AccountType Type, decimal CurrentBalance);
+public record CreateAccountRequest(string Name, string? Description, string Currency, string Color, string Icon, AccountType Type, decimal CurrentBalance);
 
 public record CreateAccountResponse(
     Guid Id,
     string Name,
+    string? Description,
     string Currency,
     string Color,
     string Icon,
@@ -27,6 +28,9 @@ public sealed class CreateAccountRequestValidator : AbstractValidator<CreateAcco
         RuleFor(request => request.Name)
             .NotEmpty()
             .MaximumLength(200);
+
+        RuleFor(request => request.Description)
+            .MaximumLength(500);
 
         RuleFor(request => request.Currency)
             .NotEmpty()
@@ -72,6 +76,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
+            Description = NormalizeDescription(request.Description),
             Currency = request.Currency.ToUpperInvariant(),
             Color = NormalizeColor(request.Color),
             Icon = NormalizeIcon(request.Icon),
@@ -85,6 +90,7 @@ public sealed class CreateAccountEndpoint : ICarterModule
         return TypedResults.Created($"/api/accounts/{account.Id}", new CreateAccountResponse(
             account.Id,
             account.Name,
+            account.Description,
             account.Currency,
             account.Color,
             account.Icon,
@@ -103,5 +109,15 @@ public sealed class CreateAccountEndpoint : ICarterModule
     private static string NormalizeIcon(string icon)
     {
         return icon.Trim();
+    }
+
+    private static string? NormalizeDescription(string? description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return null;
+        }
+
+        return description.Trim();
     }
 }

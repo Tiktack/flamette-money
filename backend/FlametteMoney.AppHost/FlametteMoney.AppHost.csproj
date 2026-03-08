@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Bun" Version="13.1.1" />
     <ProjectReference Include="..\FlametteMoney.Web\FlametteMoney.Web.csproj" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
   </ItemGroup>
 
 </Project>
