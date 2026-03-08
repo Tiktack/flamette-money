@@ -53,6 +53,8 @@ type DataTableProps<TData, TValue> = {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   searchColumn?: string
+  searchValue?: string
+  onSearchChange?: (value: string) => void
   searchPlaceholder?: string
   filters?: (table: ReactTable<TData>) => React.ReactNode
   action?: React.ReactNode
@@ -65,6 +67,8 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchColumn,
+  searchValue,
+  onSearchChange,
   searchPlaceholder = "Search",
   filters,
   action,
@@ -103,18 +107,27 @@ export function DataTable<TData, TValue>({
     (column) => typeof column.accessorFn !== "undefined" && column.getCanHide(),
   )
   const pageCount = Math.max(table.getPageCount(), 1)
+  const isControlledSearch = typeof onSearchChange === "function"
+  const showSearch = Boolean(searchColumn || isControlledSearch || searchValue !== undefined)
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      {searchColumn || filters || action ? (
+      {showSearch || filters || action ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-            {searchColumn ? (
+            {showSearch ? (
               <Input
-                value={(table.getColumn(searchColumn)?.getFilterValue() as string) ?? ""}
-                onChange={(event) => table.getColumn(searchColumn)?.setFilterValue(event.target.value)}
+                value={isControlledSearch ? (searchValue ?? "") : ((table.getColumn(searchColumn ?? "")?.getFilterValue() as string) ?? "")}
+                onChange={(event) => {
+                  if (isControlledSearch) {
+                    onSearchChange(event.target.value)
+                    return
+                  }
+
+                  table.getColumn(searchColumn ?? "")?.setFilterValue(event.target.value)
+                }}
                 placeholder={searchPlaceholder}
-                className="h-9 w-full sm:max-w-xs"
+                className="h-8 w-full text-sm sm:max-w-xs"
               />
             ) : null}
             {filters ? <div className="flex flex-wrap items-center gap-2">{filters(table)}</div> : null}
