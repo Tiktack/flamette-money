@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsPortfolioRouteImport } from './routes/analytics.portfolio'
 import { Route as AnalyticsComparisonRouteImport } from './routes/analytics.comparison'
 import { Route as AnalyticsCategoriesRouteImport } from './routes/analytics.categories'
+import { Route as AnalyticsCashflowRouteImport } from './routes/analytics.cashflow'
 
 const TripsRoute = TripsRouteImport.update({
   id: '/trips',
@@ -70,6 +71,11 @@ const AnalyticsCategoriesRoute = AnalyticsCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AnalyticsRoute,
 } as any)
+const AnalyticsCashflowRoute = AnalyticsCashflowRouteImport.update({
+  id: '/cashflow',
+  path: '/cashflow',
+  getParentRoute: () => AnalyticsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,8 +85,10 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
+  '/analytics/cashflow': typeof AnalyticsCashflowRoute
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
+  '/analytics/overview': typeof AnalyticsOverviewRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
 }
 export interface FileRoutesByTo {
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
+  '/analytics/cashflow': typeof AnalyticsCashflowRoute
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
@@ -104,6 +113,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
   '/trips': typeof TripsRoute
+  '/analytics/cashflow': typeof AnalyticsCashflowRoute
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
@@ -118,8 +128,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/trips'
+    | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
+    | '/analytics/overview'
     | '/analytics/portfolio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,8 +142,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/trips'
+    | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
+    | '/analytics/overview'
     | '/analytics/portfolio'
   id:
     | '__root__'
@@ -142,8 +156,10 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/trips'
+    | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
+    | '/analytics/overview'
     | '/analytics/portfolio'
   fileRoutesById: FileRoutesById
 }
@@ -215,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsPortfolioRouteImport
       parentRoute: typeof AnalyticsRoute
     }
+    '/analytics/overview': {
+      id: '/analytics/overview'
+      path: '/overview'
+      fullPath: '/analytics/overview'
+      preLoaderRoute: typeof AnalyticsOverviewRouteImport
+      parentRoute: typeof AnalyticsRoute
+    }
     '/analytics/comparison': {
       id: '/analytics/comparison'
       path: '/comparison'
@@ -229,18 +252,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsCategoriesRouteImport
       parentRoute: typeof AnalyticsRoute
     }
+    '/analytics/cashflow': {
+      id: '/analytics/cashflow'
+      path: '/cashflow'
+      fullPath: '/analytics/cashflow'
+      preLoaderRoute: typeof AnalyticsCashflowRouteImport
+      parentRoute: typeof AnalyticsRoute
+    }
   }
 }
 
 interface AnalyticsRouteChildren {
+  AnalyticsCashflowRoute: typeof AnalyticsCashflowRoute
   AnalyticsCategoriesRoute: typeof AnalyticsCategoriesRoute
   AnalyticsComparisonRoute: typeof AnalyticsComparisonRoute
+  AnalyticsOverviewRoute: typeof AnalyticsOverviewRoute
   AnalyticsPortfolioRoute: typeof AnalyticsPortfolioRoute
 }
 
 const AnalyticsRouteChildren: AnalyticsRouteChildren = {
+  AnalyticsCashflowRoute: AnalyticsCashflowRoute,
   AnalyticsCategoriesRoute: AnalyticsCategoriesRoute,
   AnalyticsComparisonRoute: AnalyticsComparisonRoute,
+  AnalyticsOverviewRoute: AnalyticsOverviewRoute,
   AnalyticsPortfolioRoute: AnalyticsPortfolioRoute,
 }
 
