@@ -59,6 +59,11 @@ export function AppSidebar({
         isActive: pathname.startsWith("/analytics"),
         items: [
           {
+            title: "Cashflow",
+            to: "/analytics/cashflow" as const,
+            isActive: pathname === "/analytics/cashflow",
+          },
+          {
             title: "Comparison",
             to: "/analytics/comparison" as const,
             isActive: pathname === "/analytics/comparison",

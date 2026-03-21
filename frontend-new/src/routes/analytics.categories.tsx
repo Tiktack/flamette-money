@@ -14,7 +14,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { Progress } from "@/components/ui/progress"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -28,7 +28,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCategorySeriesReport } from "@/lib/api/hooks"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { MetricCard } from "@/components/metric-card"
 
 export const Route = createFileRoute("/analytics/categories")({
   component: AnalyticsCategoriesPage,
@@ -59,11 +60,11 @@ function AnalyticsCategoriesPage() {
     }
 
     if (resolvedDateRange.start) {
-      value.StartDate = resolvedDateRange.start.toISOString()
+      value.StartDate = toApiDateString(resolvedDateRange.start)
     }
 
     if (resolvedDateRange.end) {
-      value.EndDate = resolvedDateRange.end.toISOString()
+      value.EndDate = toApiDateString(resolvedDateRange.end)
     }
 
     return value
@@ -236,7 +237,7 @@ function AnalyticsCategoriesPage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             {insightCards.map((item) => (
-              <MetricCard
+              <CategoryInsightCard
                 key={item.label}
                 label={item.label}
                 value={formatCurrency(item.value, report.baseCurrency)}
@@ -294,7 +295,7 @@ function AnalyticsCategoriesPage() {
   )
 }
 
-function MetricCard({
+function CategoryInsightCard({
   label,
   value,
   currentValue,
@@ -325,27 +326,16 @@ function MetricCard({
     : `${deltaPercent && deltaPercent > 0 ? "+" : ""}${deltaPercent?.toFixed(1) ?? "0.0"}%`
 
   return (
-    <Card
-      size="sm"
-      className="border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm"
-    >
-      <CardHeader className="px-4">
-        <CardTitle className="text-sm font-medium tracking-tight text-muted-foreground">{label}</CardTitle>
-        <CardAction>
-          <div className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium leading-none ${trendClassName}`}>
-            {trendIcon ? <HugeiconsIcon icon={trendIcon} strokeWidth={2} className="size-3.5" /> : null}
-            <span>{trendLabel}</span>
-          </div>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="px-4">
-        <p className="break-words text-[2rem] leading-none font-semibold tracking-tight text-foreground tabular-nums">
-          {value}
-        </p>
-      </CardContent>
-      <CardFooter className="border-t border-border/60 text-xs text-muted-foreground">
-        Prev:<span className="tabular-nums">{formatCurrency(previousValue, currency)}</span>
-      </CardFooter>
-    </Card>
+    <MetricCard
+      label={label}
+      value={value}
+      badge={
+        <div className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium leading-none ${trendClassName}`}>
+          {trendIcon ? <HugeiconsIcon icon={trendIcon} strokeWidth={2} className="size-3.5" /> : null}
+          <span>{trendLabel}</span>
+        </div>
+      }
+      footer={<><span>Prev</span><span className="tabular-nums">{formatCurrency(previousValue, currency)}</span></>}
+    />
   )
 }

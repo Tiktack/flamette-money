@@ -69,7 +69,7 @@ import {
   toNumber,
   transactionTone,
 } from "@/lib/finance"
-import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/transactions")({
@@ -135,10 +135,10 @@ function TransactionsPage() {
     } = {}
 
     if (resolvedDateRange.start) {
-      value.StartDate = resolvedDateRange.start.toISOString()
+      value.StartDate = toApiDateString(resolvedDateRange.start)
     }
     if (resolvedDateRange.end) {
-      value.EndDate = resolvedDateRange.end.toISOString()
+      value.EndDate = toApiDateString(resolvedDateRange.end)
     }
     if (filters.accountIds.length) {
       value.AccountIds = filters.accountIds

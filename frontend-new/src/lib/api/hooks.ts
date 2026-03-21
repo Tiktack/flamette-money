@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   accountsQueryOptions,
   appInfoQueryOptions,
+  cashflowSeriesQueryOptions,
   categoriesQueryOptions,
   categorySeriesQueryOptions,
   currentUserQueryOptions,
@@ -34,6 +35,7 @@ import {
   putApiTripsById,
 } from './generated/sdk.gen'
 import type {
+  GetApiReportsCashflowSeriesData,
   GetApiReportsCategorySeriesData,
   GetApiReportsMonthlyYoyData,
   GetApiReportsPortfolioBalanceSeriesData,
@@ -82,6 +84,7 @@ export function useLogout() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       await queryClient.invalidateQueries({ queryKey: ['transactions'] })
       await queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      await queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -100,6 +103,7 @@ export function useUpdateSettings() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
       await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() })
       await queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      await queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       await queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -115,6 +119,7 @@ export function useCreateAccount() {
       postApiAccounts({ body: request, throwOnError: true }).then((result) => result.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
@@ -130,6 +135,7 @@ export function useUpdateAccount() {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
@@ -143,6 +149,7 @@ export function useDeleteAccount() {
       deleteApiAccountsById({ path: { id }, throwOnError: true }).then(() => undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
     },
   })
@@ -192,6 +199,10 @@ export function useTransactionsSearch(query?: GetApiTransactionsSearchData['quer
   return useQuery(transactionsSearchQueryOptions(query))
 }
 
+export function useCashflowSeriesReport(query?: GetApiReportsCashflowSeriesData['query']) {
+  return useQuery(cashflowSeriesQueryOptions(query))
+}
+
 export function useCategorySeriesReport(query?: GetApiReportsCategorySeriesData['query']) {
   return useQuery(categorySeriesQueryOptions(query))
 }
@@ -216,6 +227,7 @@ export function useCreateTrip() {
       postApiTrips({ body: request, throwOnError: true }).then((result) => result.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
     },
@@ -230,6 +242,7 @@ export function useUpdateTrip() {
       putApiTripsById({ path: { id }, body: request, throwOnError: true }).then((result) => result.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
@@ -255,6 +268,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -275,6 +289,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -293,6 +308,7 @@ export function useDeleteTransaction() {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -324,6 +340,7 @@ export function useSeedDemo() {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -345,6 +362,7 @@ export function useImportBackup() {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
@@ -365,6 +383,7 @@ export function useResetData() {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
+      queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
       queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
       queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })

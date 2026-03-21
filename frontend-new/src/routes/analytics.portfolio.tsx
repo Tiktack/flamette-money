@@ -23,7 +23,7 @@ import { EmptyState } from "@/components/empty-state"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCurrentUser, usePortfolioBalanceSeriesReport } from "@/lib/api/hooks"
 import { formatCurrency, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
 export const Route = createFileRoute("/analytics/portfolio")({
   component: AnalyticsPortfolioPage,
@@ -48,11 +48,11 @@ function AnalyticsPortfolioPage() {
     }
 
     if (resolvedDateRange.start) {
-      value.StartDate = resolvedDateRange.start.toISOString()
+      value.StartDate = toApiDateString(resolvedDateRange.start)
     }
 
     if (resolvedDateRange.end) {
-      value.EndDate = resolvedDateRange.end.toISOString()
+      value.EndDate = toApiDateString(resolvedDateRange.end)
     }
 
     return value

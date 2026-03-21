@@ -22,6 +22,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, PlusSignCircleIcon } from "@hugeicons/core-free-icons"
 
 type AppRoute =
+  | "/analytics/cashflow"
   | "/analytics/comparison"
   | "/analytics/portfolio"
   | "/analytics/categories"

@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sidebar"
 
 type AnalyticsRoute =
+  | "/analytics/cashflow"
   | "/analytics/comparison"
   | "/analytics/portfolio"
   | "/analytics/categories"

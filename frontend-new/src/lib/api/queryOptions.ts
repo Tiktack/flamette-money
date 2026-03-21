@@ -3,6 +3,7 @@ import {
   getApiAccounts,
   getApiAppInfo,
   getApiAuthMe,
+  getApiReportsCashflowSeries,
   getApiCategories,
   getApiReportsCategorySeries,
   getApiReportsMonthlyYoy,
@@ -16,6 +17,7 @@ import {
 import type {
   AppInfoResponse,
   CurrentUserResponse,
+  GetApiReportsCashflowSeriesData,
   GetApiReportsCategorySeriesData,
   GetApiReportsMonthlyYoyData,
   GetApiReportsPortfolioBalanceSeriesData,
@@ -32,6 +34,8 @@ export const queryKeys = {
   transactionById: (id: string) => ['transactions', id] as const,
   transactionsSearch: (query?: GetApiTransactionsSearchData['query']) =>
     ['transactions-search', query ?? {}] as const,
+  reportsCashflowSeries: (query?: GetApiReportsCashflowSeriesData['query']) =>
+    ['reports-cashflow-series', query ?? {}] as const,
   reportsCategorySeries: (query?: GetApiReportsCategorySeriesData['query']) =>
     ['reports-category-series', query ?? {}] as const,
   reportsMonthlyYoy: (query?: GetApiReportsMonthlyYoyData['query']) =>
@@ -100,6 +104,17 @@ export const transactionsSearchQueryOptions = (query?: GetApiTransactionsSearchD
       ),
     placeholderData: keepPreviousData,
     select: (result: Awaited<ReturnType<typeof getApiTransactionsSearch>>) => result.data ?? [],
+  })
+
+export const cashflowSeriesQueryOptions = (query?: GetApiReportsCashflowSeriesData['query']) =>
+  queryOptions({
+    queryKey: queryKeys.reportsCashflowSeries(query),
+    queryFn: () =>
+      getApiReportsCashflowSeries(
+        query ? { query, throwOnError: true } : { throwOnError: true },
+      ),
+    placeholderData: keepPreviousData,
+    select: (result: Awaited<ReturnType<typeof getApiReportsCashflowSeries>>) => result.data,
   })
 
 export const categorySeriesQueryOptions = (query?: GetApiReportsCategorySeriesData['query']) =>

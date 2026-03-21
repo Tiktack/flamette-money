@@ -193,8 +193,8 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
             endDate = startDate.Value;
         }
 
-        var resolvedInterval = ResolveInterval(startDate.Value, endDate.Value, query.Interval);
-        var buckets = BuildBuckets(startDate.Value, endDate.Value, resolvedInterval);
+        var resolvedInterval = ReportSeriesHelpers.ResolveInterval(startDate.Value, endDate.Value, query.Interval);
+        var buckets = ReportSeriesHelpers.BuildBuckets(startDate.Value, endDate.Value, resolvedInterval);
 
         var bucketTotalsByCategory = new Dictionary<string, Dictionary<string, decimal>>();
         var totalsByCategory = new Dictionary<string, decimal>();
@@ -207,7 +207,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
                 continue;
             }
 
-            var amount = TryConvertAmount(
+            var amount = ReportSeriesHelpers.TryConvertAmount(
                 signedAmount,
                 transaction.Currency,
                 baseCurrency,
@@ -216,7 +216,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
             var categoryId = shouldGroupTripsAsCategory && transaction.TripId is Guid tripId
                 ? $"trip:{tripId:D}"
                 : ResolveTopLevelCategoryId(transaction.CategoryId, transaction.SubCategoryId, categoryById);
-            var bucketKey = ResolveBucketKey(startDate.Value, transaction.Date, resolvedInterval);
+            var bucketKey = ReportSeriesHelpers.ResolveBucketKey(startDate.Value, transaction.Date, resolvedInterval);
 
             if (!bucketTotalsByCategory.TryGetValue(bucketKey, out var bucketMap))
             {
@@ -348,7 +348,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
             .ToListAsync(cancellationToken);
 
         var previousFullTotal = Math.Round(previousTransactions
-            .Select(transaction => TryConvertAmount(
+            .Select(transaction => ReportSeriesHelpers.TryConvertAmount(
                 GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund),
                 transaction.Currency,
                 baseCurrency,
@@ -357,7 +357,7 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
 
         var previousTotal = Math.Round(previousTransactions
             .Where(transaction => transaction.Date >= previousTotalStart)
-            .Select(transaction => TryConvertAmount(
+            .Select(transaction => ReportSeriesHelpers.TryConvertAmount(
                 GetSignedAmount(query.Type, transaction.Type, transaction.Amount, transaction.IsRefund),
                 transaction.Currency,
                 baseCurrency,
@@ -410,23 +410,6 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
         return 0;
     }
 
-    private static decimal TryConvertAmount(
-        decimal amount,
-        string sourceCurrency,
-        string baseCurrency,
-        Dictionary<string, decimal> ratesToBase)
-    {
-        if (amount == 0)
-        {
-            return 0m;
-        }
-
-        var normalizedSource = sourceCurrency.Trim().ToUpperInvariant();
-        var rate = ratesToBase[normalizedSource];
-
-        return amount * rate;
-    }
-
     private static string ResolveTopLevelCategoryId(
         Guid? categoryId,
         Guid? subCategoryId,
@@ -450,104 +433,4 @@ public sealed class GetCategorySeriesReportEndpoint : ICarterModule
         return "uncategorized";
     }
 
-    private static ReportInterval ResolveInterval(DateTime startDate, DateTime endDate, ReportInterval requested)
-    {
-        if (requested != ReportInterval.Auto)
-        {
-            return requested;
-        }
-
-        var isSameMonth = startDate.Year == endDate.Year && startDate.Month == endDate.Month;
-        if (isSameMonth)
-        {
-            return ReportInterval.Day;
-        }
-
-        var monthSpan = ((endDate.Year - startDate.Year) * 12) + endDate.Month - startDate.Month;
-        if (monthSpan > 3)
-        {
-            return ReportInterval.Month;
-        }
-
-        var daySpan = (endDate.Date - startDate.Date).Days + 1;
-        if (daySpan > 31)
-        {
-            return ReportInterval.Week;
-        }
-
-        return ReportInterval.Day;
-    }
-
-    private static List<ReportBucketResponse> BuildBuckets(DateTime startDate, DateTime endDate, ReportInterval interval)
-    {
-        var buckets = new List<ReportBucketResponse>();
-
-        if (interval == ReportInterval.None)
-        {
-            buckets.Add(new ReportBucketResponse("all", "All"));
-            return buckets;
-        }
-
-        if (interval == ReportInterval.Day)
-        {
-            var singleMonth = startDate.Year == endDate.Year && startDate.Month == endDate.Month;
-            for (var cursor = startDate.Date; cursor <= endDate.Date; cursor = cursor.AddDays(1))
-            {
-                var key = cursor.ToString("yyyy-MM-dd");
-                var label = singleMonth ? cursor.Day.ToString() : cursor.ToString("MMM d");
-                buckets.Add(new ReportBucketResponse(key, label));
-            }
-
-            return buckets;
-        }
-
-        if (interval == ReportInterval.Week)
-        {
-            for (var cursor = startDate.Date; cursor <= endDate.Date; cursor = cursor.AddDays(7))
-            {
-                var key = cursor.ToString("yyyy-MM-dd");
-                var label = cursor.ToString("MMM d");
-                buckets.Add(new ReportBucketResponse(key, label));
-            }
-
-            return buckets;
-        }
-
-        // month
-        var monthCursor = new DateTime(startDate.Year, startDate.Month, 1);
-        var lastMonth = new DateTime(endDate.Year, endDate.Month, 1);
-        var showYear = monthCursor.Year != lastMonth.Year;
-
-        while (monthCursor <= lastMonth)
-        {
-            var key = monthCursor.ToString("yyyy-MM");
-            var label = showYear ? monthCursor.ToString("MMM yy") : monthCursor.ToString("MMM");
-            buckets.Add(new ReportBucketResponse(key, label));
-            monthCursor = monthCursor.AddMonths(1);
-        }
-
-        return buckets;
-    }
-
-    private static string ResolveBucketKey(DateTime startDate, DateTime transactionDate, ReportInterval interval)
-    {
-        if (interval == ReportInterval.None)
-        {
-            return "all";
-        }
-
-        if (interval == ReportInterval.Day)
-        {
-            return transactionDate.ToString("yyyy-MM-dd");
-        }
-
-        if (interval == ReportInterval.Week)
-        {
-            var dayOffset = (transactionDate.Date - startDate.Date).Days;
-            var weekOffset = (dayOffset / 7) * 7;
-            return startDate.AddDays(weekOffset).ToString("yyyy-MM-dd");
-        }
-
-        return transactionDate.ToString("yyyy-MM");
-    }
 }
