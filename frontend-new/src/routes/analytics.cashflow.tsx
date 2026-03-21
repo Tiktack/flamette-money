@@ -28,7 +28,7 @@ import {
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCashflowSeriesReport } from "@/lib/api/hooks"
 import { formatCurrency, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
 const POSITIVE_NET_COLOR = "#2f8f5b"
 const NEGATIVE_NET_COLOR = "#cb5a5a"
@@ -49,8 +49,8 @@ function AnalyticsCashflowPage() {
       Interval: "Auto" | "Day" | "Week" | "Month"
     } = { Interval: interval }
 
-    if (resolvedDateRange.start) value.StartDate = resolvedDateRange.start.toISOString()
-    if (resolvedDateRange.end) value.EndDate = resolvedDateRange.end.toISOString()
+    if (resolvedDateRange.start) value.StartDate = toApiDateString(resolvedDateRange.start)
+    if (resolvedDateRange.end) value.EndDate = toApiDateString(resolvedDateRange.end)
 
     return value
   }, [interval, resolvedDateRange.end, resolvedDateRange.start])

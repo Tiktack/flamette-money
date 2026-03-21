@@ -28,7 +28,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { useCategorySeriesReport } from "@/lib/api/hooks"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { MetricCard } from "@/components/metric-card"
 
 export const Route = createFileRoute("/analytics/categories")({
@@ -60,11 +60,11 @@ function AnalyticsCategoriesPage() {
     }
 
     if (resolvedDateRange.start) {
-      value.StartDate = resolvedDateRange.start.toISOString()
+      value.StartDate = toApiDateString(resolvedDateRange.start)
     }
 
     if (resolvedDateRange.end) {
-      value.EndDate = resolvedDateRange.end.toISOString()
+      value.EndDate = toApiDateString(resolvedDateRange.end)
     }
 
     return value

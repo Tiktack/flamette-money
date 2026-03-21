@@ -33,7 +33,7 @@ import { useCategories, useCategorySeriesReport, useCreateCategory, useDeleteCat
 import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { CategoryHierarchy, CategoryType } from "@/lib/api/types"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
 export const Route = createFileRoute("/categories")({
   component: CategoriesPage,
@@ -101,11 +101,11 @@ function CategoriesPage() {
       }
 
       if (resolvedDateRange.start) {
-        query.StartDate = resolvedDateRange.start.toISOString()
+        query.StartDate = toApiDateString(resolvedDateRange.start)
       }
 
       if (resolvedDateRange.end) {
-        query.EndDate = resolvedDateRange.end.toISOString()
+        query.EndDate = toApiDateString(resolvedDateRange.end)
       }
 
       return query

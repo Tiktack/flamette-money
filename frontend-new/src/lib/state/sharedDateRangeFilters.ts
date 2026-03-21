@@ -163,6 +163,17 @@ export const useSharedDateRangeFilters = create<SharedDateRangeState>((set) => (
     }),
 }))
 
+/**
+ * Formats a Date as a local ISO 8601 datetime string WITHOUT UTC conversion.
+ * Use this instead of .toISOString() when sending date filters to the API,
+ * otherwise JS shifts local midnight to the previous day in UTC.
+ * Example: 2026-01-01T00:00:00  (no Z / no offset)
+ */
+export function toApiDateString(date: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`
+}
+
 export function resolveSharedDateRange(state: SharedDateRangeState): { start: Date | null; end: Date | null } {
   if (state.preset === 'month') {
     const anchor = state.monthAnchor
