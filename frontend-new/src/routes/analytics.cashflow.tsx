@@ -1,7 +1,10 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { Bar, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, XAxis } from "recharts"
+import { AddMoneyCircleIcon, ChartDownIcon, ChartUpIcon, CreditCardIcon } from "@hugeicons/core-free-icons"
+import { Bar, CartesianGrid, Cell, ComposedChart, Label, Line, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart, ReferenceLine, XAxis } from "recharts"
+
+import { MetricCard } from "@/components/metric-card"
 
 import { EmptyState } from "@/components/empty-state"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
@@ -44,17 +47,10 @@ function AnalyticsCashflowPage() {
       StartDate?: string
       EndDate?: string
       Interval: "Auto" | "Day" | "Week" | "Month"
-    } = {
-      Interval: interval,
-    }
+    } = { Interval: interval }
 
-    if (resolvedDateRange.start) {
-      value.StartDate = resolvedDateRange.start.toISOString()
-    }
-
-    if (resolvedDateRange.end) {
-      value.EndDate = resolvedDateRange.end.toISOString()
-    }
+    if (resolvedDateRange.start) value.StartDate = resolvedDateRange.start.toISOString()
+    if (resolvedDateRange.end) value.EndDate = resolvedDateRange.end.toISOString()
 
     return value
   }, [interval, resolvedDateRange.end, resolvedDateRange.start])
@@ -62,107 +58,37 @@ function AnalyticsCashflowPage() {
   const reportQuery = useCashflowSeriesReport(query)
   const report = reportQuery.data
   const baseCurrency = report?.baseCurrency ?? "USD"
+  const summary = report?.summary
+
+  const income = toNumber(summary?.income.total)
+  const spending = toNumber(summary?.spending.total)
+  const net = toNumber(summary?.net.total)
+  const savingsRate = toNumber(summary?.savingsRate)
 
   const chartData = React.useMemo(
     () =>
       (report?.data ?? []).map((point) => {
-        const net = toNumber(point.net)
-
+        const netVal = toNumber(point.net)
         return {
           period: point.bucketLabel,
           income: toNumber(point.income),
           spending: toNumber(point.spending),
-          net,
-          netFill: net >= 0 ? POSITIVE_NET_COLOR : NEGATIVE_NET_COLOR,
+          net: netVal,
+          netFill: netVal >= 0 ? POSITIVE_NET_COLOR : NEGATIVE_NET_COLOR,
         }
       }),
     [report?.data],
   )
 
   const chartConfig: ChartConfig = {
-    net: {
-      label: "Net",
-      color: POSITIVE_NET_COLOR,
-    },
-    income: {
-      label: "Income",
-      color: "#2d7ff9",
-    },
-    spending: {
-      label: "Spending",
-      color: "#f08c44",
-    },
+    net: { label: "Net", color: POSITIVE_NET_COLOR },
+    income: { label: "Income", color: "#2d7ff9" },
+    spending: { label: "Spending", color: "#f08c44" },
   }
-
-  const summary = report?.summary
-
-  const metrics = React.useMemo(
-    () => [
-      {
-        label: "Income",
-        value: summary?.income.total,
-        previousValue: summary?.income.previousTotal,
-        helper: `${formatCurrency(summary?.income.averagePerDay, baseCurrency)} per day`,
-      },
-      {
-        label: "Spending",
-        value: summary?.spending.total,
-        previousValue: summary?.spending.previousTotal,
-        helper: `${formatCurrency(summary?.spending.averagePerDay, baseCurrency)} per day`,
-      },
-      {
-        label: "Net",
-        value: summary?.net.total,
-        previousValue: summary?.net.previousTotal,
-        helper: `${formatCurrency(summary?.net.averagePerDay, baseCurrency)} per day`,
-      },
-      {
-        label: "Savings rate",
-        value: `${formatPercent(summary?.savingsRate)}%`,
-        previousValue: summary?.previousSavingsRate,
-        helper: `Prev ${formatPercent(summary?.previousSavingsRate)}%`,
-      },
-    ],
-    [
-      baseCurrency,
-      summary?.income.averagePerDay,
-      summary?.income.previousTotal,
-      summary?.income.total,
-      summary?.net.averagePerDay,
-      summary?.net.previousTotal,
-      summary?.net.total,
-      summary?.previousSavingsRate,
-      summary?.savingsRate,
-      summary?.spending.averagePerDay,
-      summary?.spending.previousTotal,
-      summary?.spending.total,
-    ],
-  )
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0 flex-1">
-          <SharedDateRangeToolbar />
-        </div>
-        <div className="flex min-w-36 flex-col gap-2 xl:w-[140px]">
-          <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Interval</span>
-          <Select value={interval} onValueChange={(value) => setInterval((value as typeof interval) ?? "Auto")}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Interval" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <SharedDateRangeToolbar />
 
       {reportQuery.isError && chartData.length === 0 ? (
         <EmptyState
@@ -173,17 +99,11 @@ function AnalyticsCashflowPage() {
       ) : reportQuery.isPending ? (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-[130px] animate-pulse rounded-xl bg-muted" />
             ))}
           </div>
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
-            <div className="h-[430px] animate-pulse rounded-[1.75rem] bg-muted" />
-            <div className="grid gap-4">
-              <div className="h-[220px] animate-pulse rounded-[1.5rem] bg-muted" />
-              <div className="h-[220px] animate-pulse rounded-[1.5rem] bg-muted" />
-            </div>
-          </div>
+          <div className="h-[460px] animate-pulse rounded-xl bg-muted" />
         </>
       ) : chartData.length === 0 ? (
         <EmptyState
@@ -194,243 +114,175 @@ function AnalyticsCashflowPage() {
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <MetricCard
-                key={metric.label}
-                label={metric.label}
-                value={metric.label === "Savings rate" ? String(metric.value) : formatCurrency(metric.value, baseCurrency)}
-                previousValue={metric.previousValue}
-                helper={metric.helper}
-                currency={metric.label === "Savings rate" ? null : baseCurrency}
-                isPercent={metric.label === "Savings rate"}
-              />
-            ))}
+            <MetricCard
+              label="Income"
+              value={formatCurrency(income, baseCurrency)}
+              footer={`${formatCurrency(summary?.income.averagePerDay, baseCurrency)} / day`}
+              icon={AddMoneyCircleIcon}
+              iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
+              iconColorClassName="text-blue-600 dark:text-blue-400"
+            />
+            <MetricCard
+              label="Spending"
+              value={formatCurrency(spending, baseCurrency)}
+              footer={`${formatCurrency(summary?.spending.averagePerDay, baseCurrency)} / day`}
+              icon={CreditCardIcon}
+              iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
+              iconColorClassName="text-amber-600 dark:text-amber-400"
+            />
+            <MetricCard
+              label="Net"
+              value={formatCurrency(net, baseCurrency)}
+              footer={`${formatCurrency(summary?.net.averagePerDay, baseCurrency)} / day`}
+              icon={net >= 0 ? ChartUpIcon : ChartDownIcon}
+              iconBgClassName={net >= 0 ? "bg-emerald-500/10 dark:bg-emerald-500/15" : "bg-rose-500/10 dark:bg-rose-500/15"}
+              iconColorClassName={net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}
+            />
+            <SavingsRadialCard
+              savingsRate={savingsRate}
+              income={income}
+              spending={spending}
+              net={net}
+            />
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
-            <Card className="border-border/60 bg-card/80 shadow-sm">
-              <CardHeader className="gap-4">
+          <Card className="border-border/60 bg-card/80 shadow-sm">
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Spending vs income</CardTitle>
-                  <CardDescription>Lines track income and spending, while bars show the resulting profit or loss per period.</CardDescription>
+                  <CardTitle>Cashflow</CardTitle>
+                  <CardDescription>Bars show net profit or loss; lines track income and spending.</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer className="h-[380px] w-full" config={chartConfig}>
-                  <ComposedChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
-                    <CartesianGrid vertical={false} />
-                    <ReferenceLine stroke="hsl(var(--border))" strokeDasharray="4 4" y={0} />
-                    <XAxis axisLine={false} dataKey="period" tickLine={false} />
-                    <ChartTooltip
-                      content={(
-                        <ChartTooltipContent
-                          formatter={(value, name) => (
-                            <div className="flex min-w-[140px] items-center justify-between gap-3">
-                              <span className="text-muted-foreground">{formatSeriesLabel(name)}</span>
-                              <span className="font-mono font-medium text-foreground tabular-nums">
-                                {formatCurrency(value as number | string, baseCurrency)}
-                              </span>
-                            </div>
-                          )}
-                          indicator="line"
-                        />
-                      )}
-                    />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey="net" fill="var(--color-net)" radius={[7, 7, 0, 0]}>
-                      {chartData.map((entry) => (
-                        <Cell key={entry.period} fill={entry.netFill} />
+                <Select value={interval} onValueChange={(v) => setInterval((v as typeof interval) ?? "Auto")}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Auto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {(["Auto", "Day", "Week", "Month"] as const).map((v) => (
+                        <SelectItem key={v} value={v}>{v}</SelectItem>
                       ))}
-                    </Bar>
-                    <Line dataKey="income" dot={false} name="Income" stroke="var(--color-income)" strokeWidth={2.5} type="monotone" />
-                    <Line dataKey="spending" dot={false} name="Spending" stroke="var(--color-spending)" strokeWidth={2.5} type="monotone" />
-                  </ComposedChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4 self-start">
-              <ComparisonCard baseCurrency={baseCurrency} summary={summary} />
-              <HighlightsCard baseCurrency={baseCurrency} summary={summary} />
-            </div>
-          </div>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer className="h-[380px] w-full" config={chartConfig}>
+                <ComposedChart responsive data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
+                  <CartesianGrid vertical={false} />
+                  <ReferenceLine stroke="hsl(var(--border))" strokeDasharray="4 4" y={0} />
+                  <XAxis axisLine={false} dataKey="period" tickLine={false} />
+                  <ChartTooltip
+                    content={(
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <div className="flex min-w-[140px] items-center justify-between gap-3">
+                            <span className="text-muted-foreground">{formatSeriesLabel(name)}</span>
+                            <span className="font-mono font-medium text-foreground tabular-nums">
+                              {formatCurrency(value as number | string, baseCurrency)}
+                            </span>
+                          </div>
+                        )}
+                        indicator="line"
+                      />
+                    )}
+                  />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="net" fill="var(--color-net)" radius={[7, 7, 0, 0]}>
+                    {chartData.map((entry) => (
+                      <Cell key={entry.period} fill={entry.netFill} />
+                    ))}
+                  </Bar>
+                  <Line dataKey="income" dot={false} name="Income" stroke="var(--color-income)" strokeWidth={2.5} type="monotone" />
+                  <Line dataKey="spending" dot={false} name="Spending" stroke="var(--color-spending)" strokeWidth={2.5} type="monotone" />
+                </ComposedChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
   )
 }
 
-function MetricCard({
-  label,
-  value,
-  previousValue,
-  helper,
-  currency,
-  isPercent = false,
+/* ── Savings radial card ────────────────────────────────────── */
+
+function SavingsRadialCard({
+  savingsRate,
+  income,
+  spending,
+  net,
 }: {
-  label: string
-  value: string
-  previousValue: number | string | null | undefined
-  helper: string
-  currency: string | null
-  isPercent?: boolean
+  savingsRate: number
+  income: number
+  spending: number
+  net: number
 }) {
-  const delta = isPercent ? undefined : calculatePercentChange(value, previousValue, currency)
+  const isOverspent = net < 0
+  const displayPercent = isOverspent
+    ? income > 0 ? (spending / income) * 100 : 100
+    : Math.max(0, savingsRate)
+  const fillPercent = isOverspent ? 100 : Math.min(Math.max(0, savingsRate), 100)
 
-  return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="space-y-2 p-5">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-        <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
-        {!isPercent ? (
-          <p className="text-xs leading-5 text-muted-foreground">{delta}</p>
-        ) : null}
-      </CardContent>
-    </Card>
-  )
-}
-
-function ComparisonCard({
-  baseCurrency,
-  summary,
-}: {
-  baseCurrency: string
-  summary: NonNullable<ReturnType<typeof useCashflowSeriesReport>["data"]>["summary"] | undefined
-}) {
-  const rows = [
-    {
-      label: "Income",
-      current: summary?.income.total,
-      previous: summary?.income.previousTotal,
+  const chartData = [{ name: "rate", value: 1 }]
+  const chartConfig: ChartConfig = {
+    rate: {
+      label: isOverspent ? "Overspent" : "Savings rate",
+      color: isOverspent ? "hsl(0 72% 51%)" : "hsl(152 57% 38%)",
     },
-    {
-      label: "Spending",
-      current: summary?.spending.total,
-      previous: summary?.spending.previousTotal,
-    },
-    {
-      label: "Net",
-      current: summary?.net.total,
-      previous: summary?.net.previousTotal,
-    },
-  ]
-
-  return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardHeader className="px-5 pt-5 pb-2">
-        <CardTitle>Period comparison</CardTitle>
-        <CardDescription>Current range against the immediately preceding matched window.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 px-5 pb-5 pt-2">
-        {rows.map((row) => (
-          <div key={row.label} className="grid gap-1 border-b border-border/50 pb-3 last:border-b-0 last:pb-0">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-foreground">{row.label}</span>
-              <span className="text-xs text-muted-foreground">{formatDeltaText(row.current, row.previous)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-              <span>Current</span>
-              <span className="font-medium text-foreground">{formatCurrency(row.current, baseCurrency)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-              <span>Previous</span>
-              <span>{formatCurrency(row.previous, baseCurrency)}</span>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  )
-}
-
-function HighlightsCard({
-  baseCurrency,
-  summary,
-}: {
-  baseCurrency: string
-  summary: NonNullable<ReturnType<typeof useCashflowSeriesReport>["data"]>["summary"] | undefined
-}) {
-  return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardHeader className="px-5 pt-5 pb-2">
-        <CardTitle>Highlights</CardTitle>
-        <CardDescription>Quick reads on the shape of the selected cashflow window.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 px-5 pb-5 pt-2">
-        <HighlightRow
-          label="Best period"
-          value={summary?.bestBucket ? `${summary.bestBucket.bucketLabel} · ${formatCurrency(summary.bestBucket.net, baseCurrency)}` : "-"}
-        />
-        <HighlightRow
-          label="Worst period"
-          value={summary?.worstBucket ? `${summary.worstBucket.bucketLabel} · ${formatCurrency(summary.worstBucket.net, baseCurrency)}` : "-"}
-        />
-        <HighlightRow label="Positive buckets" value={String(toNumber(summary?.positiveBucketCount))} />
-        <HighlightRow label="Negative buckets" value={String(toNumber(summary?.negativeBucketCount))} />
-        <HighlightRow label="Tracked days" value={String(toNumber(summary?.dayCount))} />
-        <HighlightRow label="Bucket count" value={String(toNumber(summary?.bucketCount))} />
-      </CardContent>
-    </Card>
-  )
-}
-
-function HighlightRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium text-foreground">{value}</span>
-    </div>
-  )
-}
-
-function calculatePercentChange(
-  currentValue: string,
-  previousValue: number | string | null | undefined,
-  currency: string | null,
-) {
-  const current = toNumber(currency ? currentValue.replaceAll(/[^\d.-]/g, "") : currentValue)
-  const previous = toNumber(previousValue)
-
-  if (previous === 0) {
-    return `Prev ${currency ? formatCurrency(previousValue, currency) : previous}`
   }
 
-  const change = ((current - previous) / Math.abs(previous)) * 100
-  const direction = change >= 0 ? "+" : ""
+  // Encode the percentage into endAngle so we don't fight recharts' auto-domain.
+  // startAngle=90 is 12 o'clock; subtract clockwise degrees for fill%.
+  const radialEndAngle = 90 - (fillPercent / 100) * 360
 
-  return `Prev ${currency ? formatCurrency(previousValue, currency) : previous} · ${direction}${change.toFixed(1)}%`
+  return (
+    <Card
+      size="sm"
+      className="border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm"
+    >
+      <CardContent className="flex items-center justify-center px-4">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[110px]">
+          <RadialBarChart data={chartData} startAngle={90} endAngle={radialEndAngle} innerRadius={38} outerRadius={52}>
+            <PolarGrid
+              gridType="circle"
+              radialLines={false}
+              stroke="none"
+              className="first:fill-muted last:fill-background"
+              polarRadius={[52, 38]}
+            />
+            <RadialBar dataKey="value" cornerRadius={4} fill="var(--color-rate)" />
+            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
+              <Label
+                content={({ viewBox }) => {
+                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                    return (
+                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-lg font-bold">
+                          {displayPercent.toFixed(1)}%
+                        </tspan>
+                        <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 17} className="fill-muted-foreground text-[11px]">
+                          {isOverspent ? "overspent" : "saved"}
+                        </tspan>
+                      </text>
+                    )
+                  }
+                }}
+              />
+            </PolarRadiusAxis>
+          </RadialBarChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  )
 }
 
-function formatDeltaText(current: number | string | null | undefined, previous: number | string | null | undefined) {
-  const currentValue = toNumber(current)
-  const previousValue = toNumber(previous)
-
-  if (previousValue === 0) {
-    return currentValue === 0 ? "No change" : "No previous baseline"
-  }
-
-  const delta = ((currentValue - previousValue) / Math.abs(previousValue)) * 100
-  const prefix = delta >= 0 ? "+" : ""
-  return `${prefix}${delta.toFixed(1)}%`
-}
-
-function formatPercent(value: number | string | null | undefined) {
-  return toNumber(value).toFixed(1)
-}
+/* ── Helpers ─────────────────────────────────────────────────── */
 
 function formatSeriesLabel(name: string | number) {
-  if (name === "net") {
-    return "Net"
-  }
-
-  if (name === "income") {
-    return "Income"
-  }
-
-  if (name === "spending") {
-    return "Spending"
-  }
-
+  if (name === "net") return "Net"
+  if (name === "income") return "Income"
+  if (name === "spending") return "Spending"
   return String(name)
 }

@@ -88,7 +88,6 @@ export interface FileRoutesByFullPath {
   '/analytics/cashflow': typeof AnalyticsCashflowRoute
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
-  '/analytics/overview': typeof AnalyticsOverviewRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
 }
 export interface FileRoutesByTo {
@@ -131,7 +130,6 @@ export interface FileRouteTypes {
     | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
-    | '/analytics/overview'
     | '/analytics/portfolio'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -145,7 +143,6 @@ export interface FileRouteTypes {
     | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
-    | '/analytics/overview'
     | '/analytics/portfolio'
   id:
     | '__root__'
@@ -159,7 +156,6 @@ export interface FileRouteTypes {
     | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
-    | '/analytics/overview'
     | '/analytics/portfolio'
   fileRoutesById: FileRoutesById
 }
@@ -231,13 +227,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsPortfolioRouteImport
       parentRoute: typeof AnalyticsRoute
     }
-    '/analytics/overview': {
-      id: '/analytics/overview'
-      path: '/overview'
-      fullPath: '/analytics/overview'
-      preLoaderRoute: typeof AnalyticsOverviewRouteImport
-      parentRoute: typeof AnalyticsRoute
-    }
     '/analytics/comparison': {
       id: '/analytics/comparison'
       path: '/comparison'
@@ -266,7 +255,6 @@ interface AnalyticsRouteChildren {
   AnalyticsCashflowRoute: typeof AnalyticsCashflowRoute
   AnalyticsCategoriesRoute: typeof AnalyticsCategoriesRoute
   AnalyticsComparisonRoute: typeof AnalyticsComparisonRoute
-  AnalyticsOverviewRoute: typeof AnalyticsOverviewRoute
   AnalyticsPortfolioRoute: typeof AnalyticsPortfolioRoute
 }
 
@@ -274,7 +262,6 @@ const AnalyticsRouteChildren: AnalyticsRouteChildren = {
   AnalyticsCashflowRoute: AnalyticsCashflowRoute,
   AnalyticsCategoriesRoute: AnalyticsCategoriesRoute,
   AnalyticsComparisonRoute: AnalyticsComparisonRoute,
-  AnalyticsOverviewRoute: AnalyticsOverviewRoute,
   AnalyticsPortfolioRoute: AnalyticsPortfolioRoute,
 }
 
