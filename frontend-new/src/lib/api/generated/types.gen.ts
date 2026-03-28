@@ -186,6 +186,7 @@ export type CreateTransactionResponse = {
 
 export type CreateTripRequest = {
     name: string;
+    country: null | string;
     startDate: string;
     endDate: string;
     imageUrl: null | string;
@@ -194,6 +195,7 @@ export type CreateTripRequest = {
 export type CreateTripResponse = {
     id: string;
     name: string;
+    country: null | string;
     startDate: null | string;
     endDate: null | string;
     imageUrl: null | string;
@@ -459,6 +461,7 @@ export type TransactionType = 'Income' | 'Expense' | 'Transfer' | 'Refund';
 export type TripListItemResponse = {
     id: string;
     name: string;
+    country: null | string;
     startDate: null | string;
     endDate: null | string;
     imageUrl: null | string;
@@ -544,6 +547,7 @@ export type UpdateTransactionResponse = {
 
 export type UpdateTripRequest = {
     name: string;
+    country: null | string;
     startDate: string;
     endDate: string;
     imageUrl: null | string;
@@ -552,6 +556,7 @@ export type UpdateTripRequest = {
 export type UpdateTripResponse = {
     id: string;
     name: string;
+    country: null | string;
     startDate: null | string;
     endDate: null | string;
     imageUrl: null | string;

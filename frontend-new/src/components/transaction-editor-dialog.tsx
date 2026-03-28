@@ -50,6 +50,7 @@ type TransactionEditorDialogProps = {
   transactionId?: string
   onOpenChange: (open: boolean) => void
   presetCategoryId?: string
+  presetTripId?: string
   presetType?: TransactionType
 }
 
@@ -204,6 +205,7 @@ export function TransactionEditorDialog({
   transactionId,
   onOpenChange,
   presetCategoryId,
+  presetTripId,
   presetType,
 }: TransactionEditorDialogProps) {
   const accountsQuery = useAccounts()
@@ -284,9 +286,10 @@ export function TransactionEditorDialog({
         accountId: defaultAccount?.id ?? "",
         currency: defaultCurrency,
         currency2: defaultCurrency,
+        tripId: presetTripId ?? withPreset.tripId,
       })
     }
-  }, [accountsQuery.data, categories, mode, open, presetCategoryId, presetType, transactionQuery.data])
+  }, [accountsQuery.data, categories, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
 
   React.useEffect(() => {
     return () => {
