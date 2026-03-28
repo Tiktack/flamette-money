@@ -308,7 +308,7 @@ function TripCard({
   const txnCount = toNumber(trip.transactionCount)
 
   return (
-    <Card className="group overflow-hidden border-border/60 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+    <Card className="group overflow-hidden border-border/60 p-0 gap-0 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <div className="relative h-48 overflow-hidden">
         {trip.imageUrl ? (
           <img
@@ -338,7 +338,7 @@ function TripCard({
           </Badge>
           {txnCount > 0 ? (
             <Badge variant="outline" className="tabular-nums text-xs">
-              {txnCount} txn
+              {txnCount} transactions
             </Badge>
           ) : null}
         </div>
