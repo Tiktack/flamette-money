@@ -1,4 +1,5 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.AI;
 using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Auth;
 using FlametteMoney.Web.Infrastructure.Database;
@@ -31,6 +32,8 @@ builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
 builder.Services.Configure<ExchangeRateApiOptions>(builder.Configuration.GetSection(ExchangeRateApiOptions.SectionName));
 builder.Services.AddHttpClient("ExchangeRateApi");
 builder.Services.AddScoped<IExchangeRateService, ExchangeRateService>();
+builder.Services.Configure<OpenRouterOptions>(builder.Configuration.GetSection(OpenRouterOptions.SectionName));
+builder.Services.AddHttpClient<IVisionAiClient, OpenRouterVisionAiClient>();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);

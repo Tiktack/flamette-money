@@ -1,13 +1,11 @@
 using Carter;
+using FlametteMoney.Web.Infrastructure.AI;
 using FlametteMoney.Web.Infrastructure.Currency;
 using FlametteMoney.Web.Infrastructure.Database;
 using FlametteMoney.Web.Infrastructure.Database.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Mscc.GenerativeAI;
-using Mscc.GenerativeAI.Types;
-using System.Text.Json;
 
 namespace FlametteMoney.Web.Features.Receipts;
 
@@ -46,7 +44,7 @@ public sealed class ScanReceiptEndpoint : ICarterModule
         IFormFile file,
         [FromForm] Guid accountId,
         [FromServices] AppDbContext dbContext,
-        [FromServices] IConfiguration configuration,
+        [FromServices] IVisionAiClient visionAiClient,
         CancellationToken cancellationToken)
     {
         if (file is null || file.Length == 0)
@@ -58,12 +56,6 @@ public sealed class ScanReceiptEndpoint : ICarterModule
         if (!allowedTypes.Contains(file.ContentType.ToLowerInvariant()))
         {
             return TypedResults.BadRequest("Only JPEG, PNG, WebP, and HEIC images are supported.");
-        }
-
-        var apiKey = configuration["Gemini:ApiKey"];
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            return TypedResults.BadRequest("Gemini API key is not configured. Set Gemini:ApiKey in appsettings or user secrets.");
         }
 
         var account = await dbContext.Accounts.FirstOrDefaultAsync(a => a.Id == accountId, cancellationToken);
@@ -79,6 +71,7 @@ public sealed class ScanReceiptEndpoint : ICarterModule
             .ToListAsync(cancellationToken);
 
         var categoryList = BuildCategoryPromptList(categories);
+        var prompt = BuildPrompt(categoryList);
 
         byte[] imageBytes;
         using (var memoryStream = new MemoryStream())
@@ -87,41 +80,9 @@ public sealed class ScanReceiptEndpoint : ICarterModule
             imageBytes = memoryStream.ToArray();
         }
 
-        var prompt = BuildPrompt(categoryList);
-
         try
         {
-            var googleAi = new GoogleAI(apiKey);
-            var model = googleAi.GenerativeModel(model: Mscc.GenerativeAI.Types.Model.Gemini20Flash);
-
-            var base64Image = Convert.ToBase64String(imageBytes);
-            var request = new GenerateContentRequest(prompt)
-            {
-                GenerationConfig = new GenerationConfig
-                {
-                    Temperature = 0.1f,
-                    ResponseMimeType = "application/json"
-                }
-            };
-            await request.AddMedia(base64Image, file.ContentType);
-
-            var response = await model.GenerateContent(request);
-            var jsonText = response?.Text?.Trim();
-
-            if (string.IsNullOrWhiteSpace(jsonText))
-            {
-                return TypedResults.BadRequest("AI could not parse the receipt. Please try a clearer image.");
-            }
-
-            var aiResult = JsonSerializer.Deserialize<AiReceiptResult>(jsonText, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            if (aiResult is null)
-            {
-                return TypedResults.BadRequest("AI returned an invalid response. Please try again.");
-            }
+            var aiResult = await visionAiClient.CompleteAsync<AiReceiptResult>(prompt, imageBytes, file.ContentType, cancellationToken);
 
             var scanResponse = BuildDraftFromReceipt(aiResult, account, categories);
             return TypedResults.Ok(scanResponse);
