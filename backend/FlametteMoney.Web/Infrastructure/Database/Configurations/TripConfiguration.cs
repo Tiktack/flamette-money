@@ -11,6 +11,7 @@ public sealed class TripConfiguration : IEntityTypeConfiguration<Trip>
         builder.HasKey(trip => trip.Id);
         builder.Property(trip => trip.UserId).IsRequired();
         builder.Property(trip => trip.Name).HasMaxLength(200).IsRequired();
+        builder.Property(trip => trip.Country).HasMaxLength(2);
         builder.Property(trip => trip.ImageUrl).HasMaxLength(1000);
 
         builder.HasOne(trip => trip.User)

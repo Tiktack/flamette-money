@@ -12,6 +12,7 @@ namespace FlametteMoney.Web.Features.Trips;
 public sealed record TripListItemResponse(
     Guid Id,
     string Name,
+    string? Country,
     DateTime? StartDate,
     DateTime? EndDate,
     string? ImageUrl,
@@ -54,6 +55,7 @@ public sealed class ListTripsEndpoint : ICarterModule
             {
                 trip.Id,
                 trip.Name,
+                trip.Country,
                 trip.StartDate,
                 trip.EndDate,
                 trip.ImageUrl,
@@ -94,6 +96,7 @@ public sealed class ListTripsEndpoint : ICarterModule
             .Select(trip => new TripListItemResponse(
                 trip.Id,
                 trip.Name,
+                trip.Country,
                 trip.StartDate,
                 trip.EndDate,
                 trip.ImageUrl,

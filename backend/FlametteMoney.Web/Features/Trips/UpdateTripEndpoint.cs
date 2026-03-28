@@ -10,6 +10,7 @@ namespace FlametteMoney.Web.Features.Trips;
 
 public sealed record UpdateTripRequest(
     string Name,
+    string? Country,
     DateTime StartDate,
     DateTime EndDate,
     string? ImageUrl);
@@ -17,6 +18,7 @@ public sealed record UpdateTripRequest(
 public sealed record UpdateTripResponse(
     Guid Id,
     string Name,
+    string? Country,
     DateTime? StartDate,
     DateTime? EndDate,
     string? ImageUrl);
@@ -28,6 +30,11 @@ public sealed class UpdateTripRequestValidator : AbstractValidator<UpdateTripReq
         RuleFor(request => request.Name)
             .NotEmpty()
             .MaximumLength(200);
+
+        RuleFor(request => request.Country)
+            .Length(2)
+            .When(request => !string.IsNullOrWhiteSpace(request.Country))
+            .WithMessage("Country must be a 2-letter ISO code.");
 
         RuleFor(request => request.ImageUrl)
             .MaximumLength(1000)
@@ -79,6 +86,7 @@ public sealed class UpdateTripEndpoint : ICarterModule
         }
 
         trip.Name = request.Name.Trim();
+        trip.Country = request.Country?.Trim().ToUpperInvariant();
         trip.StartDate = request.StartDate;
         trip.EndDate = request.EndDate;
         trip.ImageUrl = request.ImageUrl?.Trim();
@@ -88,6 +96,7 @@ public sealed class UpdateTripEndpoint : ICarterModule
         return TypedResults.Ok(new UpdateTripResponse(
             trip.Id,
             trip.Name,
+            trip.Country,
             trip.StartDate,
             trip.EndDate,
             trip.ImageUrl));

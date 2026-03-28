@@ -136,6 +136,7 @@ public sealed class SeedDataGenerator
                 StartDate = generatedTrip.StartDate,
                 EndDate = generatedTrip.EndDate,
                 ImageUrl = generatedTrip.ImageUrl,
+                Country = generatedTrip.Country,
             };
 
             dbContext.Trips.Add(trip);
@@ -497,14 +498,14 @@ public sealed class SeedDataGenerator
 
         var allDefinitions = new[]
         {
-            new TripSeedDefinition("Paris, France", new DateTime(2022, 6, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2022, 6, 19, 0, 0, 0, DateTimeKind.Utc), FranceImageUrl),
-            new TripSeedDefinition("Berlin, Germany", new DateTime(2022, 10, 3, 0, 0, 0, DateTimeKind.Utc), new DateTime(2022, 10, 9, 0, 0, 0, DateTimeKind.Utc), GermanyImageUrl),
-            new TripSeedDefinition("London, United Kingdom", new DateTime(2023, 3, 15, 0, 0, 0, DateTimeKind.Utc), new DateTime(2023, 3, 20, 0, 0, 0, DateTimeKind.Utc), UkImageUrl),
-            new TripSeedDefinition("Lisbon, Portugal", new DateTime(2023, 8, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2023, 8, 16, 0, 0, 0, DateTimeKind.Utc), PortugalImageUrl),
-            new TripSeedDefinition("Nice, France", new DateTime(2024, 5, 20, 0, 0, 0, DateTimeKind.Utc), new DateTime(2024, 5, 28, 0, 0, 0, DateTimeKind.Utc), FranceImageUrl),
-            new TripSeedDefinition("Munich, Germany", new DateTime(2024, 9, 20, 0, 0, 0, DateTimeKind.Utc), new DateTime(2024, 9, 26, 0, 0, 0, DateTimeKind.Utc), GermanyImageUrl),
-            new TripSeedDefinition("Edinburgh, United Kingdom", new DateTime(2025, 4, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2025, 4, 15, 0, 0, 0, DateTimeKind.Utc), UkImageUrl),
-            new TripSeedDefinition("Porto, Portugal", new DateTime(2025, 7, 2, 0, 0, 0, DateTimeKind.Utc), new DateTime(2025, 7, 12, 0, 0, 0, DateTimeKind.Utc), PortugalImageUrl),
+            new TripSeedDefinition("Paris, France", new DateTime(2022, 6, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2022, 6, 19, 0, 0, 0, DateTimeKind.Utc), FranceImageUrl, "FR"),
+            new TripSeedDefinition("Berlin, Germany", new DateTime(2022, 10, 3, 0, 0, 0, DateTimeKind.Utc), new DateTime(2022, 10, 9, 0, 0, 0, DateTimeKind.Utc), GermanyImageUrl, "DE"),
+            new TripSeedDefinition("London, United Kingdom", new DateTime(2023, 3, 15, 0, 0, 0, DateTimeKind.Utc), new DateTime(2023, 3, 20, 0, 0, 0, DateTimeKind.Utc), UkImageUrl, "GB"),
+            new TripSeedDefinition("Lisbon, Portugal", new DateTime(2023, 8, 5, 0, 0, 0, DateTimeKind.Utc), new DateTime(2023, 8, 16, 0, 0, 0, DateTimeKind.Utc), PortugalImageUrl, "PT"),
+            new TripSeedDefinition("Nice, France", new DateTime(2024, 5, 20, 0, 0, 0, DateTimeKind.Utc), new DateTime(2024, 5, 28, 0, 0, 0, DateTimeKind.Utc), FranceImageUrl, "FR"),
+            new TripSeedDefinition("Munich, Germany", new DateTime(2024, 9, 20, 0, 0, 0, DateTimeKind.Utc), new DateTime(2024, 9, 26, 0, 0, 0, DateTimeKind.Utc), GermanyImageUrl, "DE"),
+            new TripSeedDefinition("Edinburgh, United Kingdom", new DateTime(2025, 4, 10, 0, 0, 0, DateTimeKind.Utc), new DateTime(2025, 4, 15, 0, 0, 0, DateTimeKind.Utc), UkImageUrl, "GB"),
+            new TripSeedDefinition("Porto, Portugal", new DateTime(2025, 7, 2, 0, 0, 0, DateTimeKind.Utc), new DateTime(2025, 7, 12, 0, 0, 0, DateTimeKind.Utc), PortugalImageUrl, "PT"),
         };
 
         return allDefinitions
@@ -557,5 +558,6 @@ public sealed class SeedDataGenerator
         string Name,
         DateTime StartDate,
         DateTime EndDate,
-        string? ImageUrl);
+        string? ImageUrl,
+        string? Country);
 }

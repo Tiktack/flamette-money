@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { type ColumnDef } from "@tanstack/react-table"
 import {
   AddMoneyCircleIcon,
+  Airplane01Icon,
   Delete02Icon,
   Edit01Icon,
   FilterIcon,
@@ -54,6 +55,7 @@ import {
   useCategories,
   useDeleteTransaction,
   useTransactionsSearch,
+  useTrips,
 } from "@/lib/api/hooks"
 import type {
   AccountType,
@@ -87,6 +89,7 @@ const accountTypeMeta: Record<AccountType, { label: string }> = {
 function TransactionsPage() {
   const accountsQuery = useAccounts()
   const categoriesQuery = useCategories()
+  const tripsQuery = useTrips()
   const deleteTransaction = useDeleteTransaction()
   const filters = useTransactionsFilters()
   const dateFilters = useSharedDateRangeFilters()
@@ -128,6 +131,7 @@ function TransactionsPage() {
       EndDate?: string
       AccountIds?: string[]
       CategoryIds?: string[]
+      TripIds?: string[]
       Types?: TransactionType[]
       SearchText?: string
       MinAmount?: number
@@ -146,6 +150,9 @@ function TransactionsPage() {
     if (filters.categoryIds.length) {
       value.CategoryIds = filters.categoryIds
     }
+    if (filters.tripIds.length) {
+      value.TripIds = filters.tripIds
+    }
     if (filters.transactionTypes.length) {
       value.Types = filters.transactionTypes as TransactionType[]
     }
@@ -154,7 +161,7 @@ function TransactionsPage() {
     }
 
     return value
-  }, [filters.accountIds, filters.categoryIds, filters.transactionTypes, resolvedDateRange.end, resolvedDateRange.start, searchText])
+  }, [filters.accountIds, filters.categoryIds, filters.tripIds, filters.transactionTypes, resolvedDateRange.end, resolvedDateRange.start, searchText])
 
   const query = React.useMemo(() => {
     const value: typeof baseQuery & {
@@ -180,6 +187,7 @@ function TransactionsPage() {
   const hasActiveFilters =
     filters.accountIds.length > 0 ||
     filters.categoryIds.length > 0 ||
+    filters.tripIds.length > 0 ||
     filters.transactionTypes.length > 0 ||
     filters.amountMin != null ||
     filters.amountMax != null ||
@@ -218,6 +226,20 @@ function TransactionsPage() {
 
     for (const transaction of supportingTransactions) {
       counts.set(transaction.type, (counts.get(transaction.type) ?? 0) + 1)
+    }
+
+    return counts
+  }, [supportingTransactions])
+
+  const tripCounts = React.useMemo(() => {
+    const counts = new Map<string, number>()
+
+    for (const transaction of supportingTransactions) {
+      if (!transaction.tripId) {
+        continue
+      }
+
+      counts.set(transaction.tripId, (counts.get(transaction.tripId) ?? 0) + 1)
     }
 
     return counts
@@ -266,6 +288,18 @@ function TransactionsPage() {
         group: category.type,
       })),
     [categories, categoryCounts],
+  )
+
+  const tripFacetOptions = React.useMemo<FacetedFilterOption[]>(
+    () =>
+      (tripsQuery.data ?? []).map((trip) => ({
+        label: trip.name,
+        value: trip.id,
+        count: tripCounts.get(trip.id) ?? 0,
+        icon: Airplane01Icon,
+        color: "#2563eb",
+      })),
+    [tripCounts, tripsQuery.data],
   )
 
   const transactionTypeFacetOptions = React.useMemo<FacetedFilterOption[]>(
@@ -542,6 +576,15 @@ function TransactionsPage() {
                 selectedValues={filters.transactionTypes}
                 onSelectedValuesChange={filters.setTransactionTypes}
                 emptyMessage="No transaction types found."
+              />
+
+              <DataTableFacetedFilter
+                title="Trips"
+                icon={Airplane01Icon}
+                options={tripFacetOptions}
+                selectedValues={filters.tripIds}
+                onSelectedValuesChange={filters.setTripIds}
+                emptyMessage="No trips found."
               />
 
               <DataTableRangeFilter

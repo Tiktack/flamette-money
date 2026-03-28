@@ -10,6 +10,7 @@ namespace FlametteMoney.Web.Features.Trips;
 
 public sealed record CreateTripRequest(
     string Name,
+    string? Country,
     DateTime StartDate,
     DateTime EndDate,
     string? ImageUrl);
@@ -17,6 +18,7 @@ public sealed record CreateTripRequest(
 public sealed record CreateTripResponse(
     Guid Id,
     string Name,
+    string? Country,
     DateTime? StartDate,
     DateTime? EndDate,
     string? ImageUrl);
@@ -28,6 +30,11 @@ public sealed class CreateTripRequestValidator : AbstractValidator<CreateTripReq
         RuleFor(request => request.Name)
             .NotEmpty()
             .MaximumLength(200);
+
+        RuleFor(request => request.Country)
+            .Length(2)
+            .When(request => !string.IsNullOrWhiteSpace(request.Country))
+            .WithMessage("Country must be a 2-letter ISO code.");
 
         RuleFor(request => request.ImageUrl)
             .MaximumLength(1000)
@@ -74,6 +81,7 @@ public sealed class CreateTripEndpoint : ICarterModule
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
+            Country = request.Country?.Trim().ToUpperInvariant(),
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             ImageUrl = request.ImageUrl?.Trim(),
@@ -85,6 +93,7 @@ public sealed class CreateTripEndpoint : ICarterModule
         return TypedResults.Created($"/api/trips/{trip.Id}", new CreateTripResponse(
             trip.Id,
             trip.Name,
+            trip.Country,
             trip.StartDate,
             trip.EndDate,
             trip.ImageUrl));
