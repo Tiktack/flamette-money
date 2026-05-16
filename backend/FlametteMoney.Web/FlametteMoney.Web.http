@@ -1,6 +1,0 @@
-@FlametteMoney.Web_HostAddress = http://localhost:5224
-
-GET {{FlametteMoney.Web_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
