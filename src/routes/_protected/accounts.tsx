@@ -6,7 +6,7 @@ import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, TransactionIcon }
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Line, LineChart, ResponsiveContainer } from "recharts"
 
-import { DataTable } from "../components/data-table"
+import { DataTable } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -51,7 +51,7 @@ import type { AccountListItem, AccountType } from "@/lib/api/types"
 import { buildSeed, buildTrendSeries, formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
-export const Route = createFileRoute("/accounts")({
+export const Route = createFileRoute("/_protected/accounts")({
   component: AccountsPage,
 })
 

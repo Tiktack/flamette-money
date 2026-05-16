@@ -35,7 +35,7 @@ import type { CategoryHierarchy, CategoryType } from "@/lib/api/types"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
-export const Route = createFileRoute("/categories")({
+export const Route = createFileRoute("/_protected/categories")({
   component: CategoriesPage,
 })
 

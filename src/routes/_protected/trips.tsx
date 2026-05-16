@@ -39,7 +39,7 @@ import type { TripListItem } from "@/lib/api/types"
 import { formatCurrency, formatDateLabel, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
-export const Route = createFileRoute("/trips")({
+export const Route = createFileRoute("/_protected/trips")({
   component: TripsPage,
 })
 
