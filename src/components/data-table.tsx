@@ -77,8 +77,11 @@ export function DataTable<TData, TValue>({
   className,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  )
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: pageSizeOptions[0] ?? 10,
@@ -103,12 +106,17 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  const toggleableColumns = table.getAllColumns().filter(
-    (column) => typeof column.accessorFn !== "undefined" && column.getCanHide(),
-  )
+  const toggleableColumns = table
+    .getAllColumns()
+    .filter(
+      (column) =>
+        typeof column.accessorFn !== "undefined" && column.getCanHide()
+    )
   const pageCount = Math.max(table.getPageCount(), 1)
   const isControlledSearch = typeof onSearchChange === "function"
-  const showSearch = Boolean(searchColumn || isControlledSearch || searchValue !== undefined)
+  const showSearch = Boolean(
+    searchColumn || isControlledSearch || searchValue !== undefined
+  )
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
@@ -117,29 +125,51 @@ export function DataTable<TData, TValue>({
           <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
             {showSearch ? (
               <Input
-                value={isControlledSearch ? (searchValue ?? "") : ((table.getColumn(searchColumn ?? "")?.getFilterValue() as string) ?? "")}
+                value={
+                  isControlledSearch
+                    ? (searchValue ?? "")
+                    : ((table
+                        .getColumn(searchColumn ?? "")
+                        ?.getFilterValue() as string) ?? "")
+                }
                 onChange={(event) => {
                   if (isControlledSearch) {
                     onSearchChange(event.target.value)
                     return
                   }
 
-                  table.getColumn(searchColumn ?? "")?.setFilterValue(event.target.value)
+                  table
+                    .getColumn(searchColumn ?? "")
+                    ?.setFilterValue(event.target.value)
                 }}
                 placeholder={searchPlaceholder}
                 className="h-8 w-full text-sm sm:max-w-xs"
               />
             ) : null}
-            {filters ? <div className="flex flex-wrap items-center gap-2">{filters(table)}</div> : null}
+            {filters ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {filters(table)}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
             {toggleableColumns.length > 0 ? (
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
-                  <HugeiconsIcon icon={LeftToRightListBulletIcon} strokeWidth={2} data-icon="inline-start" />
+                <DropdownMenuTrigger
+                  render={<Button variant="outline" size="sm" />}
+                >
+                  <HugeiconsIcon
+                    icon={LeftToRightListBulletIcon}
+                    strokeWidth={2}
+                    data-icon="inline-start"
+                  />
                   Columns
-                  <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} data-icon="inline-end" />
+                  <HugeiconsIcon
+                    icon={ArrowDown01Icon}
+                    strokeWidth={2}
+                    data-icon="inline-end"
+                  />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   {toggleableColumns.map((column) => (
@@ -147,7 +177,9 @@ export function DataTable<TData, TValue>({
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -168,7 +200,12 @@ export function DataTable<TData, TValue>({
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -179,13 +216,21 @@ export function DataTable<TData, TValue>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={table.getAllLeafColumns().length} className="h-28 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={table.getAllLeafColumns().length}
+                    className="h-28 text-center text-muted-foreground"
+                  >
                     {emptyMessage}
                   </TableCell>
                 </TableRow>
@@ -200,7 +245,10 @@ export function DataTable<TData, TValue>({
           <Label htmlFor="rows-per-page" className="hidden sm:inline">
             Rows per page
           </Label>
-          <Select value={`${table.getState().pagination.pageSize}`} onValueChange={(value) => table.setPageSize(Number(value))}>
+          <Select
+            value={`${table.getState().pagination.pageSize}`}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
             <SelectTrigger size="sm" className="w-20" id="rows-per-page">
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
@@ -221,19 +269,41 @@ export function DataTable<TData, TValue>({
             Page {table.getState().pagination.pageIndex + 1} of {pageCount}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon-sm" className="hidden sm:inline-flex" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="hidden sm:inline-flex"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <span className="sr-only">Go to first page</span>
               <HugeiconsIcon icon={ArrowLeftDoubleIcon} strokeWidth={2} />
             </Button>
-            <Button variant="outline" size="icon-sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <span className="sr-only">Go to previous page</span>
               <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
             </Button>
-            <Button variant="outline" size="icon-sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <span className="sr-only">Go to next page</span>
               <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
             </Button>
-            <Button variant="outline" size="icon-sm" className="hidden sm:inline-flex" onClick={() => table.setPageIndex(pageCount - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="hidden sm:inline-flex"
+              onClick={() => table.setPageIndex(pageCount - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <span className="sr-only">Go to last page</span>
               <HugeiconsIcon icon={ArrowRightDoubleIcon} strokeWidth={2} />
             </Button>

@@ -48,7 +48,9 @@ export function AppSidebar({
   onLogout,
   ...props
 }: AppSidebarProps) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
 
   const navMainItems = React.useMemo(
     () => [
@@ -105,7 +107,7 @@ export function AppSidebar({
         isActive: pathname.startsWith("/transactions"),
       },
     ],
-    [pathname],
+    [pathname]
   )
 
   return (
@@ -117,7 +119,11 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:p-1.5!"
               render={<Link to="/analytics/comparison" />}
             >
-              <HugeiconsIcon icon={CommandIcon} strokeWidth={2} className="size-5!" />
+              <HugeiconsIcon
+                icon={CommandIcon}
+                strokeWidth={2}
+                className="size-5!"
+              />
               <span className="text-base font-semibold">Flamette Money</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

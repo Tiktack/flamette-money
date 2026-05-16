@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { handleExportBackupRequest, toBackupErrorResponse } from "@/lib/api/profile-backup.server"
+import {
+  handleExportBackupRequest,
+  toBackupErrorResponse,
+} from "@/features/profile-backup/server/service.server"
 
 export const Route = createFileRoute("/api/profile/export-backup")({
   server: {

@@ -3,7 +3,14 @@ import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
-import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export type MetricCardIcon = Parameters<typeof HugeiconsIcon>[0]["icon"]
 
@@ -35,7 +42,7 @@ export function MetricCard({
       size="sm"
       className={cn(
         "border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm",
-        className,
+        className
       )}
     >
       <CardHeader>
@@ -44,7 +51,7 @@ export function MetricCard({
             <span
               className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-md",
-                iconBgClassName,
+                iconBgClassName
               )}
             >
               <HugeiconsIcon
@@ -59,7 +66,7 @@ export function MetricCard({
         {badge !== undefined && <CardAction>{badge}</CardAction>}
       </CardHeader>
       <CardContent>
-        <p className="break-words text-[2rem] leading-none font-semibold tracking-tight text-foreground tabular-nums">
+        <p className="text-[2rem] leading-none font-semibold tracking-tight break-words text-foreground tabular-nums">
           {value}
         </p>
       </CardContent>

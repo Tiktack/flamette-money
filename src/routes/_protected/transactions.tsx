@@ -22,8 +22,8 @@ import {
   DataTableRangeFilter,
   type FacetedFilterOption,
 } from "@/components/data-table-faceted-filter"
+import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-editor-dialog"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
-import { TransactionEditorDialog } from "@/components/transaction-editor-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -49,20 +49,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getAccountIconDefinition } from "@/lib/account-icons"
-import { getApiErrorMessage } from "@/lib/api/errors"
+import { useAccounts } from "@/features/accounts/hooks"
+import { useCategories } from "@/features/categories/hooks"
+import { getApiErrorMessage } from "@/features/shared/errors"
 import {
-  useAccounts,
-  useCategories,
   useDeleteTransaction,
   useTransactionsSearch,
-  useTrips,
-} from "@/lib/api/hooks"
+} from "@/features/transactions/hooks"
+import { useTrips } from "@/features/trips/hooks"
+import type { AccountType } from "@/features/accounts/types"
+import type { CategoryHierarchy } from "@/features/categories/types"
 import type {
-  AccountType,
-  CategoryHierarchy,
   TransactionListItem,
   TransactionType,
-} from "@/lib/api/types"
+} from "@/features/transactions/types"
 import {
   formatCurrency,
   formatDateLabel,
@@ -71,14 +71,23 @@ import {
   toNumber,
   transactionTone,
 } from "@/lib/finance"
-import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import {
+  resolveSharedDateRange,
+  toApiDateString,
+  useSharedDateRangeFilters,
+} from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/_protected/transactions")({
   component: TransactionsPage,
 })
 
-const transactionTypeOptions: TransactionType[] = ["Expense", "Income", "Transfer", "Refund"]
+const transactionTypeOptions: TransactionType[] = [
+  "Expense",
+  "Income",
+  "Transfer",
+  "Refund",
+]
 const accountTypeMeta: Record<AccountType, { label: string }> = {
   Cash: { label: "Cash" },
   DebitCard: { label: "Debit card" },
@@ -94,10 +103,17 @@ function TransactionsPage() {
   const filters = useTransactionsFilters()
   const dateFilters = useSharedDateRangeFilters()
   const [searchText, setSearchText] = React.useState("")
-  const [editor, setEditor] = React.useState<{ mode: "new" | "edit"; id?: string } | null>(null)
-  const [deleteTarget, setDeleteTarget] = React.useState<TransactionListItem | null>(null)
+  const [editor, setEditor] = React.useState<{
+    mode: "new" | "edit"
+    id?: string
+  } | null>(null)
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<TransactionListItem | null>(null)
 
-  const categories = categoriesQuery.data ?? []
+  const categories = React.useMemo(
+    () => categoriesQuery.data ?? [],
+    [categoriesQuery.data]
+  )
   const categoryMap = React.useMemo(() => {
     const map = new Map<string, CategoryHierarchy>()
     for (const category of categories) {
@@ -110,7 +126,16 @@ function TransactionsPage() {
   }, [categories])
 
   const accountMap = React.useMemo(() => {
-    const map = new Map<string, { name: string; currency: string; color: string; icon: string; type: AccountType }>()
+    const map = new Map<
+      string,
+      {
+        name: string
+        currency: string
+        color: string
+        icon: string
+        type: AccountType
+      }
+    >()
     for (const account of accountsQuery.data ?? []) {
       map.set(account.id, {
         name: account.name,
@@ -123,7 +148,10 @@ function TransactionsPage() {
     return map
   }, [accountsQuery.data])
 
-  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+  const resolvedDateRange = React.useMemo(
+    () => resolveSharedDateRange(dateFilters),
+    [dateFilters]
+  )
 
   const baseQuery = React.useMemo(() => {
     const value: {
@@ -161,7 +189,15 @@ function TransactionsPage() {
     }
 
     return value
-  }, [filters.accountIds, filters.categoryIds, filters.tripIds, filters.transactionTypes, resolvedDateRange.end, resolvedDateRange.start, searchText])
+  }, [
+    filters.accountIds,
+    filters.categoryIds,
+    filters.tripIds,
+    filters.transactionTypes,
+    resolvedDateRange.end,
+    resolvedDateRange.start,
+    searchText,
+  ])
 
   const query = React.useMemo(() => {
     const value: typeof baseQuery & {
@@ -181,8 +217,14 @@ function TransactionsPage() {
 
   const supportingTransactionsQuery = useTransactionsSearch(baseQuery)
   const transactionsQuery = useTransactionsSearch(query)
-  const transactions = transactionsQuery.data ?? []
-  const supportingTransactions = supportingTransactionsQuery.data ?? transactions
+  const transactions = React.useMemo(
+    () => transactionsQuery.data ?? [],
+    [transactionsQuery.data]
+  )
+  const supportingTransactions = React.useMemo(
+    () => supportingTransactionsQuery.data ?? transactions,
+    [supportingTransactionsQuery.data, transactions]
+  )
 
   const hasActiveFilters =
     filters.accountIds.length > 0 ||
@@ -197,10 +239,16 @@ function TransactionsPage() {
     const counts = new Map<string, number>()
 
     for (const transaction of supportingTransactions) {
-      counts.set(transaction.accountId, (counts.get(transaction.accountId) ?? 0) + 1)
+      counts.set(
+        transaction.accountId,
+        (counts.get(transaction.accountId) ?? 0) + 1
+      )
 
       if (transaction.targetAccountId) {
-        counts.set(transaction.targetAccountId, (counts.get(transaction.targetAccountId) ?? 0) + 1)
+        counts.set(
+          transaction.targetAccountId,
+          (counts.get(transaction.targetAccountId) ?? 0) + 1
+        )
       }
     }
 
@@ -215,7 +263,10 @@ function TransactionsPage() {
         continue
       }
 
-      counts.set(transaction.categoryId, (counts.get(transaction.categoryId) ?? 0) + 1)
+      counts.set(
+        transaction.categoryId,
+        (counts.get(transaction.categoryId) ?? 0) + 1
+      )
     }
 
     return counts
@@ -258,10 +309,7 @@ function TransactionsPage() {
   const amountRangeValue = React.useMemo<[number, number]>(() => {
     const nextMax = maxAvailableAmount
 
-    return [
-      filters.amountMin ?? 0,
-      filters.amountMax ?? nextMax,
-    ]
+    return [filters.amountMin ?? 0, filters.amountMax ?? nextMax]
   }, [filters.amountMax, filters.amountMin, maxAvailableAmount])
 
   const accountFacetOptions = React.useMemo<FacetedFilterOption[]>(
@@ -274,7 +322,7 @@ function TransactionsPage() {
         color: normalizeHexColor(account.color),
         group: accountTypeMeta[account.type].label,
       })),
-    [accountCounts, accountsQuery.data],
+    [accountCounts, accountsQuery.data]
   )
 
   const categoryFacetOptions = React.useMemo<FacetedFilterOption[]>(
@@ -287,7 +335,7 @@ function TransactionsPage() {
         color: normalizeHexColor(category.color, "#D96B4F"),
         group: category.type,
       })),
-    [categories, categoryCounts],
+    [categories, categoryCounts]
   )
 
   const tripFacetOptions = React.useMemo<FacetedFilterOption[]>(
@@ -299,7 +347,7 @@ function TransactionsPage() {
         icon: Airplane01Icon,
         color: "#2563eb",
       })),
-    [tripCounts, tripsQuery.data],
+    [tripCounts, tripsQuery.data]
   )
 
   const transactionTypeFacetOptions = React.useMemo<FacetedFilterOption[]>(
@@ -325,28 +373,39 @@ function TransactionsPage() {
                 ? "#2563eb"
                 : "#dc2626",
       })),
-    [transactionTypeCounts],
+    [transactionTypeCounts]
   )
 
   const resultCurrencies = React.useMemo(() => {
     const values = new Set<string>()
 
     for (const transaction of transactions) {
-      const currency = transaction.currency ?? accountMap.get(transaction.accountId)?.currency ?? "USD"
+      const currency =
+        transaction.currency ??
+        accountMap.get(transaction.accountId)?.currency ??
+        "USD"
       values.add(currency.toUpperCase())
     }
 
     return Array.from(values)
   }, [accountMap, transactions])
 
-  const summaryCurrency = resultCurrencies.length === 1 ? resultCurrencies[0] : null
-  const incomeTotal = transactions.filter((transaction) => transaction.type === "Income").reduce((sum, transaction) => sum + toNumber(transaction.amount), 0)
-  const expenseTotal = transactions.filter((transaction) => transaction.type === "Expense").reduce((sum, transaction) => sum + toNumber(transaction.amount), 0)
+  const summaryCurrency =
+    resultCurrencies.length === 1 ? resultCurrencies[0] : null
+  const incomeTotal = transactions
+    .filter((transaction) => transaction.type === "Income")
+    .reduce((sum, transaction) => sum + toNumber(transaction.amount), 0)
+  const expenseTotal = transactions
+    .filter((transaction) => transaction.type === "Expense")
+    .reduce((sum, transaction) => sum + toNumber(transaction.amount), 0)
   const formatAmountRangeLabel = React.useCallback(
-    (value: number) => summaryCurrency
-      ? formatCurrency(value, summaryCurrency)
-      : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value),
-    [summaryCurrency],
+    (value: number) =>
+      summaryCurrency
+        ? formatCurrency(value, summaryCurrency)
+        : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
+            value
+          ),
+    [summaryCurrency]
   )
 
   const columns = React.useMemo<ColumnDef<TransactionListItem>[]>(
@@ -362,12 +421,23 @@ function TransactionsPage() {
 
           return (
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white" style={{ backgroundColor: account?.color ?? "#B9A88A" }}>
-                <HugeiconsIcon icon={iconDefinition.icon} strokeWidth={2} className="size-5" />
+              <div
+                className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white"
+                style={{ backgroundColor: account?.color ?? "#B9A88A" }}
+              >
+                <HugeiconsIcon
+                  icon={iconDefinition.icon}
+                  strokeWidth={2}
+                  className="size-5"
+                />
               </div>
               <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{account?.name ?? "Account"}</p>
-                <p className="truncate text-sm text-muted-foreground">{transaction.type}</p>
+                <p className="truncate font-medium text-foreground">
+                  {account?.name ?? "Account"}
+                </p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {transaction.type}
+                </p>
               </div>
             </div>
           )
@@ -377,7 +447,9 @@ function TransactionsPage() {
         accessorKey: "categoryId",
         header: "Category",
         cell: ({ row }) => (
-          <span className="text-sm text-foreground">{getCategoryLabel(row.original, categoryMap)}</span>
+          <span className="text-sm text-foreground">
+            {getCategoryLabel(row.original, categoryMap)}
+          </span>
         ),
       },
       {
@@ -390,8 +462,13 @@ function TransactionsPage() {
           const account = accountMap.get(transaction.accountId)
 
           return (
-            <div className={`text-right font-medium ${transactionTone(transaction.type, transaction.isRefund)}`}>
-              {formatCurrency(transaction.amount, transaction.currency ?? account?.currency ?? "USD")}
+            <div
+              className={`text-right font-medium ${transactionTone(transaction.type, transaction.isRefund)}`}
+            >
+              {formatCurrency(
+                transaction.amount,
+                transaction.currency ?? account?.currency ?? "USD"
+              )}
             </div>
           )
         },
@@ -402,7 +479,11 @@ function TransactionsPage() {
         header: "Details",
         cell: ({ row }) => {
           const transaction = row.original
-          const summary = transaction.note || transaction.merchantName || transaction.location || "-"
+          const summary =
+            transaction.note ||
+            transaction.merchantName ||
+            transaction.location ||
+            "-"
           const secondary = [transaction.merchantName, transaction.location]
             .filter((value) => value && value !== summary)
             .join(" • ")
@@ -410,7 +491,11 @@ function TransactionsPage() {
           return (
             <div className="max-w-[320px] min-w-0">
               <p className="truncate text-foreground">{summary}</p>
-              {secondary ? <p className="truncate text-sm text-muted-foreground">{secondary}</p> : null}
+              {secondary ? (
+                <p className="truncate text-sm text-muted-foreground">
+                  {secondary}
+                </p>
+              ) : null}
             </div>
           )
         },
@@ -424,9 +509,13 @@ function TransactionsPage() {
 
           return (
             <div>
-              <p className="text-foreground">{formatDateLabel(transaction.date)}</p>
+              <p className="text-foreground">
+                {formatDateLabel(transaction.date)}
+              </p>
               {itemCount > 0 ? (
-                <p className="text-sm text-muted-foreground">{itemCount} items</p>
+                <p className="text-sm text-muted-foreground">
+                  {itemCount} items
+                </p>
               ) : null}
             </div>
           )
@@ -442,23 +531,53 @@ function TransactionsPage() {
 
           return (
             <div className="flex justify-end gap-1">
-              <Button variant="ghost" size="icon-sm" onClick={() => setEditor({ mode: "edit", id: transaction.id })}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setEditor({ mode: "edit", id: transaction.id })}
+              >
                 <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
                 <span className="sr-only">Edit transaction</span>
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground data-open:bg-muted" />}>
-                  <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} />
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground data-open:bg-muted"
+                    />
+                  }
+                >
+                  <HugeiconsIcon
+                    icon={MoreHorizontalCircle01Icon}
+                    strokeWidth={2}
+                  />
                   <span className="sr-only">More actions</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(transaction)}>
-                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="text-destructive" />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setDeleteTarget(transaction)}
+                  >
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      strokeWidth={2}
+                      className="text-destructive"
+                    />
                     <span>Delete transaction</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setEditor({ mode: "edit", id: transaction.id })}>
-                    <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="text-muted-foreground" />
+                  <DropdownMenuItem
+                    onClick={() =>
+                      setEditor({ mode: "edit", id: transaction.id })
+                    }
+                  >
+                    <HugeiconsIcon
+                      icon={Edit01Icon}
+                      strokeWidth={2}
+                      className="text-muted-foreground"
+                    />
                     <span>Edit transaction</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -468,7 +587,7 @@ function TransactionsPage() {
         },
       },
     ],
-    [accountMap, categoryMap],
+    [accountMap, categoryMap]
   )
 
   const resetAllFilters = () => {
@@ -481,7 +600,9 @@ function TransactionsPage() {
     const normalizedMax = Math.max(nextMin, nextMax)
 
     filters.setAmountMin(nextMin <= 0 ? null : nextMin)
-    filters.setAmountMax(normalizedMax >= maxAvailableAmount ? null : normalizedMax)
+    filters.setAmountMax(
+      normalizedMax >= maxAvailableAmount ? null : normalizedMax
+    )
   }
 
   const handleDelete = async () => {
@@ -508,16 +629,36 @@ function TransactionsPage() {
           </>
         ) : (
           <>
-            <MetricCard label="Results" value={String(transactions.length)} helper="Transactions matching the active filters" />
+            <MetricCard
+              label="Results"
+              value={String(transactions.length)}
+              helper="Transactions matching the active filters"
+            />
             <MetricCard
               label="Income"
-              value={summaryCurrency ? formatCurrency(incomeTotal, summaryCurrency) : "Mixed"}
-              helper={summaryCurrency ? "Gross income in the filtered result set" : `${resultCurrencies.length || 0} currencies in the filtered result set`}
+              value={
+                summaryCurrency
+                  ? formatCurrency(incomeTotal, summaryCurrency)
+                  : "Mixed"
+              }
+              helper={
+                summaryCurrency
+                  ? "Gross income in the filtered result set"
+                  : `${resultCurrencies.length || 0} currencies in the filtered result set`
+              }
             />
             <MetricCard
               label="Expense"
-              value={summaryCurrency ? formatCurrency(expenseTotal, summaryCurrency) : "Mixed"}
-              helper={summaryCurrency ? "Gross expense in the filtered result set" : `${resultCurrencies.length || 0} currencies in the filtered result set`}
+              value={
+                summaryCurrency
+                  ? formatCurrency(expenseTotal, summaryCurrency)
+                  : "Mixed"
+              }
+              helper={
+                summaryCurrency
+                  ? "Gross expense in the filtered result set"
+                  : `${resultCurrencies.length || 0} currencies in the filtered result set`
+              }
             />
           </>
         )}
@@ -538,7 +679,12 @@ function TransactionsPage() {
       ) : transactionsQuery.isError ? (
         <Alert variant="destructive">
           <AlertTitle>Unable to load transactions</AlertTitle>
-          <AlertDescription>{getApiErrorMessage(transactionsQuery.error, "Try another filter combination.")}</AlertDescription>
+          <AlertDescription>
+            {getApiErrorMessage(
+              transactionsQuery.error,
+              "Try another filter combination."
+            )}
+          </AlertDescription>
         </Alert>
       ) : (
         <DataTable
@@ -607,42 +753,78 @@ function TransactionsPage() {
         />
       )}
 
-      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete transaction</DialogTitle>
-            <DialogDescription>This permanently removes the transaction and updates the related balances on the backend.</DialogDescription>
+            <DialogDescription>
+              This permanently removes the transaction and updates the related
+              balances on the backend.
+            </DialogDescription>
           </DialogHeader>
           {deleteTransaction.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Delete failed</AlertTitle>
-              <AlertDescription>{getApiErrorMessage(deleteTransaction.error, "Unable to delete transaction.")}</AlertDescription>
+              <AlertDescription>
+                {getApiErrorMessage(
+                  deleteTransaction.error,
+                  "Unable to delete transaction."
+                )}
+              </AlertDescription>
             </Alert>
           ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteTransaction.isPending}>{deleteTransaction.isPending ? "Deleting" : "Delete"}</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteTransaction.isPending}
+            >
+              {deleteTransaction.isPending ? "Deleting" : "Delete"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <TransactionEditorDialog open={Boolean(editor)} mode={editor?.mode ?? "new"} transactionId={editor?.id} onOpenChange={(open) => !open && setEditor(null)} />
+      <LazyTransactionEditorDialog
+        open={Boolean(editor)}
+        mode={editor?.mode ?? "new"}
+        transactionId={editor?.id}
+        onOpenChange={(open) => !open && setEditor(null)}
+      />
     </div>
   )
 }
 
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+function MetricCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string
+  value: string
+  helper: string
+}) {
   return (
     <Card
       size="sm"
       className="border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm"
     >
       <CardHeader className="px-4 pb-1">
-        <CardTitle className="text-sm font-medium tracking-tight text-muted-foreground">{label}</CardTitle>
-        <CardDescription className="text-xs leading-5">{helper}</CardDescription>
+        <CardTitle className="text-sm font-medium tracking-tight text-muted-foreground">
+          {label}
+        </CardTitle>
+        <CardDescription className="text-xs leading-5">
+          {helper}
+        </CardDescription>
       </CardHeader>
       <CardContent className="px-4 pt-0">
-        <p className="break-words text-[2rem] leading-none font-semibold tracking-tight text-foreground tabular-nums">
+        <p className="text-[2rem] leading-none font-semibold tracking-tight break-words text-foreground tabular-nums">
           {value}
         </p>
       </CardContent>

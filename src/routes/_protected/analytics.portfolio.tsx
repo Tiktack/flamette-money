@@ -11,7 +11,13 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { formatCompactNumber, computeNiceDomainTicks } from "@/lib/chart-utils"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -21,21 +27,31 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
-import { getApiErrorMessage } from "@/lib/api/errors"
-import { useCurrentUser, usePortfolioBalanceSeriesReport } from "@/lib/api/hooks"
+import { useCurrentUser } from "@/features/app/hooks"
+import { usePortfolioBalanceSeriesReport } from "@/features/reports/hooks"
+import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import {
+  resolveSharedDateRange,
+  toApiDateString,
+  useSharedDateRangeFilters,
+} from "@/lib/state/sharedDateRangeFilters"
 
 export const Route = createFileRoute("/_protected/analytics/portfolio")({
   component: AnalyticsPortfolioPage,
 })
 
 function AnalyticsPortfolioPage() {
-  const [interval, setInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
+  const [interval, setInterval] = React.useState<
+    "Auto" | "Day" | "Week" | "Month"
+  >("Auto")
   const currentUserQuery = useCurrentUser()
   const baseCurrency = currentUserQuery.data?.baseCurrency ?? "USD"
   const dateFilters = useSharedDateRangeFilters()
-  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+  const resolvedDateRange = React.useMemo(
+    () => resolveSharedDateRange(dateFilters),
+    [dateFilters]
+  )
 
   const query = React.useMemo(() => {
     const value: {
@@ -67,12 +83,17 @@ function AnalyticsPortfolioPage() {
         period: point.bucketLabel,
         balance: toNumber(point.totalBalance),
       })),
-    [reportQuery.data?.points],
+    [reportQuery.data?.points]
   )
 
   const yAxisConfig = React.useMemo(() => {
-    const values = chartData.map((d) => d.balance).filter((v) => typeof v === "number" && isFinite(v))
-    const { domain, ticks } = computeNiceDomainTicks(values, { tickCount: 4, paddingFraction: 0.08 })
+    const values = chartData
+      .map((d) => d.balance)
+      .filter((v) => typeof v === "number" && isFinite(v))
+    const { domain, ticks } = computeNiceDomainTicks(values, {
+      tickCount: 4,
+      paddingFraction: 0.08,
+    })
     return { domain, ticks }
   }, [chartData])
 
@@ -93,21 +114,32 @@ function AnalyticsPortfolioPage() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <CardTitle>Portfolio balance trend</CardTitle>
-                <CardDescription>Track total balances over time in your selected base currency.</CardDescription>
+                <CardDescription>
+                  Track total balances over time in your selected base currency.
+                </CardDescription>
               </div>
               <div className="flex min-w-36 flex-col gap-2">
-                <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Interval</span>
-                <Select value={interval} onValueChange={(value) => setInterval((value as typeof interval) ?? "Auto")}>
+                <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+                  Interval
+                </span>
+                <Select
+                  value={interval}
+                  onValueChange={(value) =>
+                    setInterval((value as typeof interval) ?? "Auto")
+                  }
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Interval" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {value}
-                        </SelectItem>
-                      ))}
+                      {(["Auto", "Day", "Week", "Month"] as const).map(
+                        (value) => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                          </SelectItem>
+                        )
+                      )}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -121,7 +153,10 @@ function AnalyticsPortfolioPage() {
               <EmptyState
                 eyebrow="Report"
                 title="Unable to load the balance report"
-                description={getApiErrorMessage(reportQuery.error, "Try a different range or interval.")}
+                description={getApiErrorMessage(
+                  reportQuery.error,
+                  "Try a different range or interval."
+                )}
               />
             ) : chartData.length === 0 ? (
               <EmptyState
@@ -131,35 +166,87 @@ function AnalyticsPortfolioPage() {
               />
             ) : (
               <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-                  <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis axisLine={false} dataKey="period" tickLine={false} />
-                    <YAxis axisLine={false} tickLine={false} domain={yAxisConfig.domain} ticks={yAxisConfig.ticks} tickFormatter={(v) => formatCompactNumber(Number(v ?? 0))} />
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                    <Area dataKey="balance" fill="var(--color-balance)" fillOpacity={0.18} stroke="var(--color-balance)" type="linear" />
-                  </AreaChart>
-                </ChartContainer>
+                <AreaChart
+                  data={chartData}
+                  margin={{ left: 8, right: 8, top: 12 }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis axisLine={false} dataKey="period" tickLine={false} />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    domain={yAxisConfig.domain}
+                    ticks={yAxisConfig.ticks}
+                    tickFormatter={(v) => formatCompactNumber(Number(v ?? 0))}
+                  />
+                  <ChartTooltip
+                    content={<ChartTooltipContent indicator="line" />}
+                  />
+                  <Area
+                    dataKey="balance"
+                    fill="var(--color-balance)"
+                    fillOpacity={0.18}
+                    stroke="var(--color-balance)"
+                    type="linear"
+                  />
+                </AreaChart>
+              </ChartContainer>
             )}
           </CardContent>
         </Card>
 
         <div className="grid gap-4 self-start">
-          <SummaryCard label="Base currency" value={resolvedBaseCurrency} helper="Applied to the entire time series" />
-          <SummaryCard label="Start balance" value={formatCurrency(reportQuery.data?.summary.startBalance, resolvedBaseCurrency)} helper="Balance at the beginning of the selected range" />
-          <SummaryCard label="End balance" value={formatCurrency(reportQuery.data?.summary.endBalance, resolvedBaseCurrency)} helper="Latest known portfolio balance in range" />
-          <SummaryCard label="Delta" value={formatCurrency(reportQuery.data?.summary.delta, resolvedBaseCurrency)} helper={`${toNumber(reportQuery.data?.summary.deltaPercent).toFixed(2)}% change across the selected period`} />
+          <SummaryCard
+            label="Base currency"
+            value={resolvedBaseCurrency}
+            helper="Applied to the entire time series"
+          />
+          <SummaryCard
+            label="Start balance"
+            value={formatCurrency(
+              reportQuery.data?.summary.startBalance,
+              resolvedBaseCurrency
+            )}
+            helper="Balance at the beginning of the selected range"
+          />
+          <SummaryCard
+            label="End balance"
+            value={formatCurrency(
+              reportQuery.data?.summary.endBalance,
+              resolvedBaseCurrency
+            )}
+            helper="Latest known portfolio balance in range"
+          />
+          <SummaryCard
+            label="Delta"
+            value={formatCurrency(
+              reportQuery.data?.summary.delta,
+              resolvedBaseCurrency
+            )}
+            helper={`${toNumber(reportQuery.data?.summary.deltaPercent).toFixed(2)}% change across the selected period`}
+          />
         </div>
       </div>
     </div>
   )
 }
 
-function SummaryCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+function SummaryCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string
+  value: string
+  helper: string
+}) {
   return (
     <Card className="border-border/60 bg-card/80 shadow-sm">
       <CardContent className="space-y-2 p-5">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+        <p className="text-2xl font-semibold tracking-tight text-foreground">
+          {value}
+        </p>
         <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
       </CardContent>
     </Card>

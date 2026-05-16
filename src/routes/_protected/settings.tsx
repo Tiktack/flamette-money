@@ -24,19 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { getApiErrorMessage } from "@/lib/api/errors"
-import { cn } from "@/lib/utils"
+import { useAppInfo, useCurrentUser } from "@/features/app/hooks"
+import { useSeedDemo } from "@/features/demo-seed/hooks"
+import type { BackupImportType } from "@/features/profile-backup/types"
+import { getApiErrorMessage } from "@/features/shared/errors"
 import {
-  type BackupImportType,
-  useAppInfo,
-  useCurrentUser,
   useExportBackup,
   useImportBackup,
   useResetData,
-  useSeedDemo,
   useSettings,
   useUpdateSettings,
-} from "@/lib/api/hooks"
+} from "@/features/settings/hooks"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_protected/settings")({
   component: SettingsPage,
@@ -55,19 +54,26 @@ function SettingsPage() {
   const [years, setYears] = React.useState(3)
   const [seedValue, setSeedValue] = React.useState("")
   const [downloadAfterSeed, setDownloadAfterSeed] = React.useState(true)
-  const [importType, setImportType] = React.useState<BackupImportType>("flamette")
+  const [importType, setImportType] =
+    React.useState<BackupImportType>("flamette")
   const [backupFile, setBackupFile] = React.useState<File | null>(null)
   const [resetOpen, setResetOpen] = React.useState(false)
 
   React.useEffect(() => {
-    const currency = settingsQuery.data?.baseCurrency ?? currentUserQuery.data?.baseCurrency
+    const currency =
+      settingsQuery.data?.baseCurrency ?? currentUserQuery.data?.baseCurrency
     if (currency) {
       setBaseCurrency(currency)
     }
   }, [currentUserQuery.data?.baseCurrency, settingsQuery.data?.baseCurrency])
 
-  const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
-  const importFileAccept = importType === "flamette" ? ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : ".csv,text/csv"
+  const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) =>
+    item.code.toUpperCase()
+  ) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
+  const importFileAccept =
+    importType === "flamette"
+      ? ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      : ".csv,text/csv"
 
   const handleSaveSettings = async () => {
     try {
@@ -117,17 +123,19 @@ function SettingsPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
       <div className="flex flex-col gap-3">
-        <SettingsSection
-          title="Profile & preferences"
-        >
+        <SettingsSection title="Profile & preferences">
           <SettingsRow
             title="Profile"
             description="Signed-in account used for this workspace."
           >
             <div className="space-y-1 text-sm md:text-right">
-              <p className="font-medium text-foreground">{currentUserQuery.data?.name ?? "User"}</p>
+              <p className="font-medium text-foreground">
+                {currentUserQuery.data?.name ?? "User"}
+              </p>
               {currentUserQuery.data?.email ? (
-                <p className="text-muted-foreground">{currentUserQuery.data.email}</p>
+                <p className="text-muted-foreground">
+                  {currentUserQuery.data.email}
+                </p>
               ) : null}
             </div>
           </SettingsRow>
@@ -154,7 +162,9 @@ function SettingsPage() {
                   <SelectContent>
                     <SelectGroup>
                       {currencyOptions.map((currency) => (
-                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
@@ -164,19 +174,29 @@ function SettingsPage() {
               {updateSettings.isError ? (
                 <Alert variant="destructive">
                   <AlertTitle>Save failed</AlertTitle>
-                  <AlertDescription>{getApiErrorMessage(updateSettings.error, "Unable to save settings.")}</AlertDescription>
+                  <AlertDescription>
+                    {getApiErrorMessage(
+                      updateSettings.error,
+                      "Unable to save settings."
+                    )}
+                  </AlertDescription>
                 </Alert>
               ) : null}
 
               {updateSettings.isSuccess ? (
                 <Alert>
                   <AlertTitle>Settings saved</AlertTitle>
-                  <AlertDescription>Your base currency preference has been updated.</AlertDescription>
+                  <AlertDescription>
+                    Your base currency preference has been updated.
+                  </AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="flex justify-start md:justify-end">
-                <Button onClick={handleSaveSettings} disabled={updateSettings.isPending}>
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={updateSettings.isPending}
+                >
                   {updateSettings.isPending ? "Saving" : "Save changes"}
                 </Button>
               </div>
@@ -184,9 +204,7 @@ function SettingsPage() {
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection
-          title="Backups & import"
-        >
+        <SettingsSection title="Backups & import">
           <SettingsRow
             title="Export backup"
             description="Download a complete Flamette backup as an XLSX file."
@@ -210,14 +228,23 @@ function SettingsPage() {
             <div className="flex w-full flex-col gap-4 md:ml-auto md:max-w-md">
               <Field>
                 <FieldLabel>Backup type</FieldLabel>
-                <Select value={importType} onValueChange={(value) => setImportType((value as BackupImportType) ?? "flamette")}>
+                <Select
+                  value={importType}
+                  onValueChange={(value) =>
+                    setImportType((value as BackupImportType) ?? "flamette")
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Backup type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="flamette">Flamette backup (.xlsx)</SelectItem>
-                      <SelectItem value="one-money">1Money backup (.csv)</SelectItem>
+                      <SelectItem value="flamette">
+                        Flamette backup (.xlsx)
+                      </SelectItem>
+                      <SelectItem value="one-money">
+                        1Money backup (.csv)
+                      </SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -228,29 +255,39 @@ function SettingsPage() {
                 <Input
                   type="file"
                   accept={importFileAccept}
-                  onChange={(event) => setBackupFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) =>
+                    setBackupFile(event.target.files?.[0] ?? null)
+                  }
                 />
               </Field>
 
               {importBackup.isError ? (
                 <Alert variant="destructive">
                   <AlertTitle>Import failed</AlertTitle>
-                  <AlertDescription>{getApiErrorMessage(importBackup.error, "Unable to import the selected backup.")}</AlertDescription>
+                  <AlertDescription>
+                    {getApiErrorMessage(
+                      importBackup.error,
+                      "Unable to import the selected backup."
+                    )}
+                  </AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="flex justify-start md:justify-end">
-                <Button onClick={handleImport} disabled={!backupFile || importBackup.isPending}>
-                  {importBackup.isPending ? "Importing" : "Import selected backup"}
+                <Button
+                  onClick={handleImport}
+                  disabled={!backupFile || importBackup.isPending}
+                >
+                  {importBackup.isPending
+                    ? "Importing"
+                    : "Import selected backup"}
                 </Button>
               </div>
             </div>
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection
-          title="Sample data"
-        >
+        <SettingsSection title="Sample data">
           <SettingsRow
             title="Generate history"
             description="Create synthetic transactions for a chosen span and optional seed value."
@@ -264,7 +301,9 @@ function SettingsPage() {
                     min={1}
                     max={20}
                     value={years}
-                    onChange={(event) => setYears(Number(event.target.value) || 1)}
+                    onChange={(event) =>
+                      setYears(Number(event.target.value) || 1)
+                    }
                   />
                 </Field>
 
@@ -282,12 +321,20 @@ function SettingsPage() {
               {seedDemo.isError ? (
                 <Alert variant="destructive">
                   <AlertTitle>Seeding failed</AlertTitle>
-                  <AlertDescription>{getApiErrorMessage(seedDemo.error, "Unable to seed demo data.")}</AlertDescription>
+                  <AlertDescription>
+                    {getApiErrorMessage(
+                      seedDemo.error,
+                      "Unable to seed demo data."
+                    )}
+                  </AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="flex justify-start md:justify-end">
-                <Button onClick={handleSeed} disabled={seedDemo.isPending || exportBackup.isPending}>
+                <Button
+                  onClick={handleSeed}
+                  disabled={seedDemo.isPending || exportBackup.isPending}
+                >
                   {seedDemo.isPending ? "Seeding" : "Generate demo data"}
                 </Button>
               </div>
@@ -300,16 +347,16 @@ function SettingsPage() {
             last
           >
             <label className="flex items-center gap-3 text-sm text-muted-foreground md:ml-auto">
-              <Switch checked={downloadAfterSeed} onCheckedChange={setDownloadAfterSeed} />
+              <Switch
+                checked={downloadAfterSeed}
+                onCheckedChange={setDownloadAfterSeed}
+              />
               <span>Download after seeding</span>
             </label>
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection
-          title="Danger zone"
-          tone="danger"
-        >
+        <SettingsSection title="Danger zone" tone="danger">
           <SettingsRow
             title="Reset workspace"
             description="Permanently remove transactions, accounts, categories, trips, and item lines."
@@ -319,12 +366,20 @@ function SettingsPage() {
               {resetData.isError ? (
                 <Alert variant="destructive">
                   <AlertTitle>Reset failed</AlertTitle>
-                  <AlertDescription>{getApiErrorMessage(resetData.error, "Unable to reset data.")}</AlertDescription>
+                  <AlertDescription>
+                    {getApiErrorMessage(
+                      resetData.error,
+                      "Unable to reset data."
+                    )}
+                  </AlertDescription>
                 </Alert>
               ) : null}
 
               <div className="flex justify-start md:justify-end">
-                <Button variant="destructive" onClick={() => setResetOpen(true)}>
+                <Button
+                  variant="destructive"
+                  onClick={() => setResetOpen(true)}
+                >
                   Reset all data
                 </Button>
               </div>
@@ -337,11 +392,22 @@ function SettingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reset all data</DialogTitle>
-            <DialogDescription>This permanently deletes transactions, accounts, categories, trips, and item lines while keeping core settings.</DialogDescription>
+            <DialogDescription>
+              This permanently deletes transactions, accounts, categories,
+              trips, and item lines while keeping core settings.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResetOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleReset} disabled={resetData.isPending}>{resetData.isPending ? "Resetting" : "Reset data"}</Button>
+            <Button variant="outline" onClick={() => setResetOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReset}
+              disabled={resetData.isPending}
+            >
+              {resetData.isPending ? "Resetting" : "Reset data"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -382,13 +448,20 @@ type SettingsRowProps = {
   last?: boolean
 }
 
-function SettingsRow({ title, description, children, last = false }: SettingsRowProps) {
+function SettingsRow({
+  title,
+  description,
+  children,
+  last = false,
+}: SettingsRowProps) {
   return (
     <div className={cn("px-5 py-4", !last && "border-b border-border/60")}>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
         <div className="max-w-xl space-y-0.5">
           <h2 className="text-sm font-medium text-foreground">{title}</h2>
-          <p className="text-sm leading-5 text-muted-foreground">{description}</p>
+          <p className="text-sm leading-5 text-muted-foreground">
+            {description}
+          </p>
         </div>
         <div className="w-full md:max-w-md md:flex-shrink-0">{children}</div>
       </div>

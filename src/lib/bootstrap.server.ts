@@ -14,14 +14,18 @@ export async function ensureUserBootstrap(userId: string) {
     return
   }
 
-  const idMap = new Map(categorySeeds.map((category) => [category.id, crypto.randomUUID()]))
+  const idMap = new Map(
+    categorySeeds.map((category) => [category.id, crypto.randomUUID()])
+  )
 
   await db.insert(categories).values(
     categorySeeds.map((category) => ({
       ...category,
       id: idMap.get(category.id) ?? crypto.randomUUID(),
-      parentId: category.parentId ? (idMap.get(category.parentId) ?? null) : null,
+      parentId: category.parentId
+        ? (idMap.get(category.parentId) ?? null)
+        : null,
       userId,
-    })),
+    }))
   )
 }

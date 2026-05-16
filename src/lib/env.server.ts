@@ -21,8 +21,11 @@ export function getBetterAuthSecret() {
 }
 
 export function getDatabasePath() {
-  const databaseUrl = trimOrUndefined(process.env.DATABASE_URL) ?? DEFAULT_DATABASE_URL
-  const rawPath = databaseUrl.startsWith("file:") ? databaseUrl.slice(5) : databaseUrl
+  const databaseUrl =
+    trimOrUndefined(process.env.DATABASE_URL) ?? DEFAULT_DATABASE_URL
+  const rawPath = databaseUrl.startsWith("file:")
+    ? databaseUrl.slice(5)
+    : databaseUrl
   const absolutePath = resolve(process.cwd(), rawPath)
 
   mkdirSync(dirname(absolutePath), { recursive: true })

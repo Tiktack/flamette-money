@@ -19,7 +19,10 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon, PlusSignCircleIcon } from "@hugeicons/core-free-icons"
+import {
+  ArrowRight01Icon,
+  PlusSignCircleIcon,
+} from "@hugeicons/core-free-icons"
 
 type AppRoute =
   | "/analytics/cashflow"
@@ -100,7 +103,9 @@ export function NavMain({
               {item.items?.length ? (
                 <>
                   <CollapsibleTrigger
-                    render={<SidebarMenuAction className="aria-expanded:rotate-90" />}
+                    render={
+                      <SidebarMenuAction className="aria-expanded:rotate-90" />
+                    }
                   >
                     <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
                     <span className="sr-only">Toggle {item.title}</span>

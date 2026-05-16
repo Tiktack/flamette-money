@@ -35,29 +35,29 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { getApiErrorMessage } from "@/lib/api/errors"
+import { useAccounts } from "@/features/accounts/hooks"
+import { useAppInfo } from "@/features/app/hooks"
+import { useCategories } from "@/features/categories/hooks"
+import { useScanReceipt } from "@/features/receipt-scan/hooks"
+import { getApiErrorMessage } from "@/features/shared/errors"
 import {
-  useAccounts,
-  useAppInfo,
-  useCategories,
   useCreateTransaction,
-  useScanReceipt,
   useTransaction,
   useTransactionsSearch,
-  useTrips,
   useUpdateTransaction,
-} from "@/lib/api/hooks"
+} from "@/features/transactions/hooks"
+import { useTrips } from "@/features/trips/hooks"
+import type { CategoryHierarchy } from "@/features/categories/types"
+import type { ReceiptScanResult } from "@/features/receipt-scan/types"
 import type {
-  CategoryHierarchy,
-  ReceiptScanResult,
   TransactionCreateRequest,
   TransactionDetail,
   TransactionType,
   TransactionUpdateRequest,
-} from "@/lib/api/types"
+} from "@/features/transactions/types"
 import { formatDateInput, normalizeHexColor, toNumber } from "@/lib/finance"
 
-type TransactionEditorDialogProps = {
+export type TransactionEditorDialogProps = {
   open: boolean
   mode: "new" | "edit"
   transactionId?: string
@@ -130,14 +130,22 @@ function buildDefaultState(type: TransactionType): TransactionFormState {
   }
 }
 
-function fillFromTransaction(transaction: TransactionDetail): TransactionFormState {
+function fillFromTransaction(
+  transaction: TransactionDetail
+): TransactionFormState {
   return {
-    date: transaction.date ? transaction.date.slice(0, 10) : formatDateInput(new Date()),
+    date: transaction.date
+      ? transaction.date.slice(0, 10)
+      : formatDateInput(new Date()),
     type: transaction.type,
     amount: toNumber(transaction.amount),
     amount2: transaction.amount2 == null ? "" : toNumber(transaction.amount2),
     currency: (transaction.currency ?? "USD").toUpperCase(),
-    currency2: (transaction.currency2 ?? transaction.currency ?? "USD").toUpperCase(),
+    currency2: (
+      transaction.currency2 ??
+      transaction.currency ??
+      "USD"
+    ).toUpperCase(),
     accountId: transaction.accountId,
     tripId: transaction.tripId,
     categoryId: transaction.categoryId,
@@ -159,7 +167,11 @@ function fillFromTransaction(transaction: TransactionDetail): TransactionFormSta
   }
 }
 
-function applyPresetCategory(state: TransactionFormState, presetCategoryId: string, categories: CategoryHierarchy[]): TransactionFormState {
+function applyPresetCategory(
+  state: TransactionFormState,
+  presetCategoryId: string,
+  categories: CategoryHierarchy[]
+): TransactionFormState {
   const map = buildCategoryMap(categories)
   const category = map.get(presetCategoryId)
   if (!category) {
@@ -183,28 +195,45 @@ function applyPresetCategory(state: TransactionFormState, presetCategoryId: stri
   }
 }
 
-function applyReceiptScanToForm(state: TransactionFormState, scanResult: ReceiptScanResult): TransactionFormState {
+function applyReceiptScanToForm(
+  state: TransactionFormState,
+  scanResult: ReceiptScanResult
+): TransactionFormState {
   const parsedDate = scanResult.date ? new Date(scanResult.date) : null
-  const items: TransactionItemFormState[] = (scanResult.items ?? []).map((item) => ({
-    name: item.name ?? "",
-    quantity: toNumber(item.quantity) || 1,
-    unit: item.unit ?? "",
-    unitPrice: toNumber(item.unitPrice),
-    promotionAmount: toNumber(item.promotionAmount),
-    categoryId: item.categoryId,
-    subCategoryId: item.subCategoryId,
-  }))
+  const items: TransactionItemFormState[] = (scanResult.items ?? []).map(
+    (item) => ({
+      name: item.name ?? "",
+      quantity: toNumber(item.quantity) || 1,
+      unit: item.unit ?? "",
+      unitPrice: toNumber(item.unitPrice),
+      promotionAmount: toNumber(item.promotionAmount),
+      categoryId: item.categoryId,
+      subCategoryId: item.subCategoryId,
+    })
+  )
 
-  const firstCategorized = items.find((item) => item.categoryId || item.subCategoryId)
+  const firstCategorized = items.find(
+    (item) => item.categoryId || item.subCategoryId
+  )
 
   return {
     ...state,
     type: "Expense",
-    date: parsedDate && !Number.isNaN(parsedDate.getTime()) ? formatDateInput(parsedDate) : state.date,
-    amount: toNumber(scanResult.amount) > 0 ? toNumber(scanResult.amount) : state.amount,
+    date:
+      parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? formatDateInput(parsedDate)
+        : state.date,
+    amount:
+      toNumber(scanResult.amount) > 0
+        ? toNumber(scanResult.amount)
+        : state.amount,
     amount2: "",
-    currency: scanResult.currency ? scanResult.currency.toUpperCase() : state.currency,
-    currency2: scanResult.currency ? scanResult.currency.toUpperCase() : state.currency2,
+    currency: scanResult.currency
+      ? scanResult.currency.toUpperCase()
+      : state.currency,
+    currency2: scanResult.currency
+      ? scanResult.currency.toUpperCase()
+      : state.currency2,
     merchantName: scanResult.merchant?.trim() || state.merchantName,
     categoryId: firstCategorized?.categoryId ?? state.categoryId,
     subCategoryId: firstCategorized?.subCategoryId ?? state.subCategoryId,
@@ -250,12 +279,17 @@ function ReceiptDropZone({
         <div className="relative">
           <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
           <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10">
-            <HugeiconsIcon icon={Loading03Icon} className="size-8 animate-spin text-primary" />
+            <HugeiconsIcon
+              icon={Loading03Icon}
+              className="size-8 animate-spin text-primary"
+            />
           </div>
         </div>
         <div className="text-center">
           <p className="font-medium text-foreground">Analyzing receipt...</p>
-          <p className="text-sm text-muted-foreground">AI is extracting items, amounts, and categories</p>
+          <p className="text-sm text-muted-foreground">
+            AI is extracting items, amounts, and categories
+          </p>
         </div>
       </div>
     )
@@ -272,24 +306,38 @@ function ReceiptDropZone({
           />
           <div className="flex flex-1 flex-col gap-1.5">
             <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={Tick01Icon} className="size-4 text-emerald-500" />
-              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Scan complete</span>
+              <HugeiconsIcon
+                icon={Tick01Icon}
+                className="size-4 text-emerald-500"
+              />
+              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                Scan complete
+              </span>
             </div>
             {scanResult.merchant ? (
-              <p className="text-base font-semibold text-foreground">{scanResult.merchant}</p>
+              <p className="text-base font-semibold text-foreground">
+                {scanResult.merchant}
+              </p>
             ) : null}
             <div className="flex flex-wrap gap-2">
               {scanResult.date ? (
-                <Badge variant="secondary">{new Date(scanResult.date).toLocaleDateString()}</Badge>
+                <Badge variant="secondary">
+                  {new Date(scanResult.date).toLocaleDateString()}
+                </Badge>
               ) : null}
               {toNumber(scanResult.amount) > 0 ? (
                 <Badge variant="secondary">
-                  {toNumber(scanResult.amount).toFixed(2)} {scanResult.currency?.toUpperCase()}
+                  {toNumber(scanResult.amount).toFixed(2)}{" "}
+                  {scanResult.currency?.toUpperCase()}
                 </Badge>
               ) : null}
-              <Badge variant="outline">{scanResult.items?.length ?? 0} items</Badge>
+              <Badge variant="outline">
+                {scanResult.items?.length ?? 0} items
+              </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">Draft applied to form below. Review and adjust before saving.</p>
+            <p className="text-xs text-muted-foreground">
+              Draft applied to form below. Review and adjust before saving.
+            </p>
           </div>
         </div>
         <Button
@@ -318,14 +366,16 @@ function ReceiptDropZone({
       {!accountId ? (
         <Alert>
           <AlertTitle>Select an account first</AlertTitle>
-          <AlertDescription>Choose the account this expense will be charged to before scanning.</AlertDescription>
+          <AlertDescription>
+            Choose the account this expense will be charged to before scanning.
+          </AlertDescription>
         </Alert>
       ) : (
         <button
           type="button"
           className={`group relative flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed transition-all ${
             dragOver
-              ? "border-primary bg-primary/5 scale-[1.01]"
+              ? "scale-[1.01] border-primary bg-primary/5"
               : "border-border/60 bg-muted/20 hover:border-primary/40 hover:bg-muted/40"
           }`}
           onDragOver={(event) => {
@@ -338,10 +388,15 @@ function ReceiptDropZone({
         >
           <div
             className={`flex size-14 items-center justify-center rounded-2xl transition-colors ${
-              dragOver ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+              dragOver
+                ? "bg-primary/15 text-primary"
+                : "bg-muted/60 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
             }`}
           >
-            <HugeiconsIcon icon={dragOver ? CloudUploadIcon : ImageUploadIcon} className="size-7" />
+            <HugeiconsIcon
+              icon={dragOver ? CloudUploadIcon : ImageUploadIcon}
+              className="size-7"
+            />
           </div>
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">
@@ -392,7 +447,13 @@ function TransactionFormFields({
   accountsData: { id: string; name: string; currency: string; color: string }[]
   currencyOptions: string[]
   tripsData: { id: string; name: string }[]
-  recentTransactions: { id: string; date: string; accountId: string; amount: number | string; type: string }[]
+  recentTransactions: {
+    id: string
+    date: string
+    accountId: string
+    amount: number | string
+    type: string
+  }[]
   allowedParents: CategoryHierarchy[]
 }) {
   const requiresTarget = form.type === "Transfer"
@@ -400,8 +461,12 @@ function TransactionFormFields({
   const showCategoryFields = form.type !== "Transfer"
 
   const selectedParent = React.useMemo(
-    () => (form.categoryId ? categories.find((category) => category.id === form.categoryId) ?? null : null),
-    [categories, form.categoryId],
+    () =>
+      form.categoryId
+        ? (categories.find((category) => category.id === form.categoryId) ??
+          null)
+        : null,
+    [categories, form.categoryId]
   )
 
   return (
@@ -416,16 +481,29 @@ function TransactionFormFields({
             variant={form.type === type ? "default" : "outline"}
             onClick={() =>
               setForm((state) => {
-                const nextCategory = state.categoryId ? categoryMap.get(state.categoryId) : null
-                const allowsExistingCategory = nextCategory && nextCategory.type === (type === "Income" ? "Income" : "Expense")
+                const nextCategory = state.categoryId
+                  ? categoryMap.get(state.categoryId)
+                  : null
+                const allowsExistingCategory =
+                  nextCategory &&
+                  nextCategory.type ===
+                    (type === "Income" ? "Income" : "Expense")
                 return {
                   ...state,
                   type,
                   tripId: type === "Expense" ? state.tripId : null,
-                  categoryId: type === "Transfer" || !allowsExistingCategory ? null : state.categoryId,
-                  subCategoryId: type === "Transfer" || !allowsExistingCategory ? null : state.subCategoryId,
-                  targetAccountId: type === "Transfer" ? state.targetAccountId : null,
-                  originalTransactionId: type === "Refund" ? state.originalTransactionId : "",
+                  categoryId:
+                    type === "Transfer" || !allowsExistingCategory
+                      ? null
+                      : state.categoryId,
+                  subCategoryId:
+                    type === "Transfer" || !allowsExistingCategory
+                      ? null
+                      : state.subCategoryId,
+                  targetAccountId:
+                    type === "Transfer" ? state.targetAccountId : null,
+                  originalTransactionId:
+                    type === "Refund" ? state.originalTransactionId : "",
                   amount2: type === "Transfer" ? state.amount2 : "",
                 }
               })
@@ -440,11 +518,19 @@ function TransactionFormFields({
       <FieldGroup className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Field>
           <FieldLabel>Date</FieldLabel>
-          <Input type="date" value={form.date} onChange={(event) => setForm((state) => ({ ...state, date: event.target.value }))} />
+          <Input
+            type="date"
+            value={form.date}
+            onChange={(event) =>
+              setForm((state) => ({ ...state, date: event.target.value }))
+            }
+          />
         </Field>
 
         <Field>
-          <FieldLabel>{requiresTarget ? "Source account" : "Account"}</FieldLabel>
+          <FieldLabel>
+            {requiresTarget ? "Source account" : "Account"}
+          </FieldLabel>
           <Select
             value={form.accountId}
             onValueChange={(value) => {
@@ -452,8 +538,12 @@ function TransactionFormFields({
               setForm((state) => ({
                 ...state,
                 accountId: nextAccountId,
-                currency: accountMap.get(nextAccountId)?.currency ?? state.currency,
-                currency2: requiresTarget ? state.currency2 : accountMap.get(nextAccountId)?.currency ?? state.currency2,
+                currency:
+                  accountMap.get(nextAccountId)?.currency ?? state.currency,
+                currency2: requiresTarget
+                  ? state.currency2
+                  : (accountMap.get(nextAccountId)?.currency ??
+                    state.currency2),
               }))
             }}
           >
@@ -463,7 +553,9 @@ function TransactionFormFields({
             <SelectContent>
               <SelectGroup>
                 {accountsData.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
@@ -478,20 +570,36 @@ function TransactionFormFields({
             step="0.01"
             placeholder="0.00"
             value={form.amount}
-            onChange={(event) => setForm((state) => ({ ...state, amount: event.target.value === "" ? "" : Number(event.target.value) }))}
+            onChange={(event) =>
+              setForm((state) => ({
+                ...state,
+                amount:
+                  event.target.value === "" ? "" : Number(event.target.value),
+              }))
+            }
           />
         </Field>
 
         <Field>
           <FieldLabel>Currency</FieldLabel>
-          <Select value={form.currency} onValueChange={(value) => setForm((state) => ({ ...state, currency: value ?? state.currency }))}>
+          <Select
+            value={form.currency}
+            onValueChange={(value) =>
+              setForm((state) => ({
+                ...state,
+                currency: value ?? state.currency,
+              }))
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Currency" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 {currencyOptions.map((currency) => (
-                  <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                  <SelectItem key={currency} value={currency}>
+                    {currency}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
@@ -511,7 +619,10 @@ function TransactionFormFields({
                 setForm((state) => ({
                   ...state,
                   targetAccountId: nextTargetAccountId,
-                  currency2: (nextTargetAccountId ? accountMap.get(nextTargetAccountId)?.currency : undefined) ?? state.currency2,
+                  currency2:
+                    (nextTargetAccountId
+                      ? accountMap.get(nextTargetAccountId)?.currency
+                      : undefined) ?? state.currency2,
                 }))
               }}
             >
@@ -520,27 +631,54 @@ function TransactionFormFields({
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  {accountsData.filter((account) => account.id !== form.accountId).map((account) => (
-                    <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
-                  ))}
+                  {accountsData
+                    .filter((account) => account.id !== form.accountId)
+                    .map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name}
+                      </SelectItem>
+                    ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
           <Field>
             <FieldLabel>Target amount</FieldLabel>
-            <Input type="number" min={0} step="0.01" placeholder="Same as source" value={form.amount2} onChange={(event) => setForm((state) => ({ ...state, amount2: event.target.value === "" ? "" : Number(event.target.value) }))} />
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="Same as source"
+              value={form.amount2}
+              onChange={(event) =>
+                setForm((state) => ({
+                  ...state,
+                  amount2:
+                    event.target.value === "" ? "" : Number(event.target.value),
+                }))
+              }
+            />
           </Field>
           <Field>
             <FieldLabel>Target currency</FieldLabel>
-            <Select value={form.currency2} onValueChange={(value) => setForm((state) => ({ ...state, currency2: value ?? state.currency2 }))}>
+            <Select
+              value={form.currency2}
+              onValueChange={(value) =>
+                setForm((state) => ({
+                  ...state,
+                  currency2: value ?? state.currency2,
+                }))
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Target currency" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {currencyOptions.map((currency) => (
-                    <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -554,14 +692,25 @@ function TransactionFormFields({
         <FieldGroup className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel>Category</FieldLabel>
-            <Select value={form.categoryId ?? ""} onValueChange={(value) => setForm((state) => ({ ...state, categoryId: value, subCategoryId: null }))}>
+            <Select
+              value={form.categoryId ?? ""}
+              onValueChange={(value) =>
+                setForm((state) => ({
+                  ...state,
+                  categoryId: value,
+                  subCategoryId: null,
+                }))
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {allowedParents.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -571,7 +720,15 @@ function TransactionFormFields({
           {form.type === "Expense" ? (
             <Field>
               <FieldLabel>Trip</FieldLabel>
-              <Select value={form.tripId ?? "none"} onValueChange={(value) => setForm((state) => ({ ...state, tripId: value === "none" ? null : value }))}>
+              <Select
+                value={form.tripId ?? "none"}
+                onValueChange={(value) =>
+                  setForm((state) => ({
+                    ...state,
+                    tripId: value === "none" ? null : value,
+                  }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Trip" />
                 </SelectTrigger>
@@ -579,7 +736,9 @@ function TransactionFormFields({
                   <SelectGroup>
                     <SelectItem value="none">No trip</SelectItem>
                     {tripsData.map((trip) => (
-                      <SelectItem key={trip.id} value={trip.id}>{trip.name}</SelectItem>
+                      <SelectItem key={trip.id} value={trip.id}>
+                        {trip.name}
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -596,8 +755,20 @@ function TransactionFormFields({
                     key={subcategory.id}
                     type="button"
                     size="sm"
-                    variant={form.subCategoryId === subcategory.id ? "default" : "outline"}
-                    onClick={() => setForm((state) => ({ ...state, subCategoryId: state.subCategoryId === subcategory.id ? null : subcategory.id }))}
+                    variant={
+                      form.subCategoryId === subcategory.id
+                        ? "default"
+                        : "outline"
+                    }
+                    onClick={() =>
+                      setForm((state) => ({
+                        ...state,
+                        subCategoryId:
+                          state.subCategoryId === subcategory.id
+                            ? null
+                            : subcategory.id,
+                      }))
+                    }
                   >
                     {subcategory.name}
                   </Button>
@@ -612,7 +783,15 @@ function TransactionFormFields({
       {requiresOriginal ? (
         <Field>
           <FieldLabel>Original transaction</FieldLabel>
-          <Select value={form.originalTransactionId || ""} onValueChange={(value) => setForm((state) => ({ ...state, originalTransactionId: value ?? "" }))}>
+          <Select
+            value={form.originalTransactionId || ""}
+            onValueChange={(value) =>
+              setForm((state) => ({
+                ...state,
+                originalTransactionId: value ?? "",
+              }))
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select original transaction" />
             </SelectTrigger>
@@ -623,7 +802,9 @@ function TransactionFormFields({
                   .slice(0, 100)
                   .map((transaction) => (
                     <SelectItem key={transaction.id} value={transaction.id}>
-                      {transaction.date.slice(0, 10)} · {accountMap.get(transaction.accountId)?.name ?? "Account"} · {toNumber(transaction.amount).toFixed(2)}
+                      {transaction.date.slice(0, 10)} ·{" "}
+                      {accountMap.get(transaction.accountId)?.name ?? "Account"}{" "}
+                      · {toNumber(transaction.amount).toFixed(2)}
                     </SelectItem>
                   ))}
               </SelectGroup>
@@ -636,15 +817,37 @@ function TransactionFormFields({
       <FieldGroup className="grid gap-4 sm:grid-cols-2">
         <Field>
           <FieldLabel>Merchant</FieldLabel>
-          <Input placeholder="Store or payee name" value={form.merchantName} onChange={(event) => setForm((state) => ({ ...state, merchantName: event.target.value }))} />
+          <Input
+            placeholder="Store or payee name"
+            value={form.merchantName}
+            onChange={(event) =>
+              setForm((state) => ({
+                ...state,
+                merchantName: event.target.value,
+              }))
+            }
+          />
         </Field>
         <Field>
           <FieldLabel>Location</FieldLabel>
-          <Input placeholder="City or address" value={form.location} onChange={(event) => setForm((state) => ({ ...state, location: event.target.value }))} />
+          <Input
+            placeholder="City or address"
+            value={form.location}
+            onChange={(event) =>
+              setForm((state) => ({ ...state, location: event.target.value }))
+            }
+          />
         </Field>
         <Field className="sm:col-span-2">
           <FieldLabel>Note</FieldLabel>
-          <Textarea rows={2} value={form.note} onChange={(event) => setForm((state) => ({ ...state, note: event.target.value }))} placeholder="Optional notes about this transaction" />
+          <Textarea
+            rows={2}
+            value={form.note}
+            onChange={(event) =>
+              setForm((state) => ({ ...state, note: event.target.value }))
+            }
+            placeholder="Optional notes about this transaction"
+          />
         </Field>
       </FieldGroup>
 
@@ -654,7 +857,9 @@ function TransactionFormFields({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">Line items</p>
-            <p className="text-xs text-muted-foreground">Optional itemized breakdown for receipt-style transactions.</p>
+            <p className="text-xs text-muted-foreground">
+              Optional itemized breakdown for receipt-style transactions.
+            </p>
           </div>
           <Button
             type="button"
@@ -682,61 +887,174 @@ function TransactionFormFields({
           </Button>
         </div>
         {form.items.length === 0 ? (
-          <p className="py-2 text-center text-xs text-muted-foreground">No itemized lines yet.</p>
+          <p className="py-2 text-center text-xs text-muted-foreground">
+            No itemized lines yet.
+          </p>
         ) : (
           <div className="grid gap-3">
             {form.items.map((item, index) => {
-              const itemParent = item.categoryId ? categories.find((category) => category.id === item.categoryId) ?? null : null
-              const itemFinal = (item.unitPrice * item.quantity) - item.promotionAmount
+              const itemParent = item.categoryId
+                ? (categories.find(
+                    (category) => category.id === item.categoryId
+                  ) ?? null)
+                : null
+              const itemFinal =
+                item.unitPrice * item.quantity - item.promotionAmount
 
               return (
-                <div key={`${index}-${item.name}`} className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                <div
+                  key={`${index}-${item.name}`}
+                  className="rounded-xl border border-border/60 bg-muted/15 p-3"
+                >
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="flex size-6 items-center justify-center rounded-md bg-muted text-xs font-medium text-muted-foreground">{index + 1}</span>
-                      <span className="text-sm font-medium">{item.name || "Untitled item"}</span>
+                      <span className="flex size-6 items-center justify-center rounded-md bg-muted text-xs font-medium text-muted-foreground">
+                        {index + 1}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {item.name || "Untitled item"}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {itemFinal > 0 ? <Badge variant="secondary">{itemFinal.toFixed(2)}</Badge> : null}
+                      {itemFinal > 0 ? (
+                        <Badge variant="secondary">
+                          {itemFinal.toFixed(2)}
+                        </Badge>
+                      ) : null}
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => setForm((state) => ({ ...state, items: state.items.filter((_, itemIndex) => itemIndex !== index) }))}
+                        onClick={() =>
+                          setForm((state) => ({
+                            ...state,
+                            items: state.items.filter(
+                              (_, itemIndex) => itemIndex !== index
+                            ),
+                          }))
+                        }
                       >
-                        <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+                        <HugeiconsIcon
+                          icon={Cancel01Icon}
+                          className="size-3.5"
+                        />
                       </Button>
                     </div>
                   </div>
                   <FieldGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <Field className="lg:col-span-2">
                       <FieldLabel>Name</FieldLabel>
-                      <Input value={item.name} onChange={(event) => setForm((state) => ({ ...state, items: state.items.map((entry, i) => i === index ? { ...entry, name: event.target.value } : entry) }))} />
+                      <Input
+                        value={item.name}
+                        onChange={(event) =>
+                          setForm((state) => ({
+                            ...state,
+                            items: state.items.map((entry, i) =>
+                              i === index
+                                ? { ...entry, name: event.target.value }
+                                : entry
+                            ),
+                          }))
+                        }
+                      />
                     </Field>
                     <Field>
                       <FieldLabel>Qty</FieldLabel>
-                      <Input type="number" min={0} step="0.01" value={item.quantity} onChange={(event) => setForm((state) => ({ ...state, items: state.items.map((entry, i) => i === index ? { ...entry, quantity: Number(event.target.value) || 0 } : entry) }))} />
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.quantity}
+                        onChange={(event) =>
+                          setForm((state) => ({
+                            ...state,
+                            items: state.items.map((entry, i) =>
+                              i === index
+                                ? {
+                                    ...entry,
+                                    quantity: Number(event.target.value) || 0,
+                                  }
+                                : entry
+                            ),
+                          }))
+                        }
+                      />
                     </Field>
                     <Field>
                       <FieldLabel>Unit price</FieldLabel>
-                      <Input type="number" min={0} step="0.01" value={item.unitPrice} onChange={(event) => setForm((state) => ({ ...state, items: state.items.map((entry, i) => i === index ? { ...entry, unitPrice: Number(event.target.value) || 0 } : entry) }))} />
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(event) =>
+                          setForm((state) => ({
+                            ...state,
+                            items: state.items.map((entry, i) =>
+                              i === index
+                                ? {
+                                    ...entry,
+                                    unitPrice: Number(event.target.value) || 0,
+                                  }
+                                : entry
+                            ),
+                          }))
+                        }
+                      />
                     </Field>
                     <Field>
                       <FieldLabel>Discount</FieldLabel>
-                      <Input type="number" min={0} step="0.01" value={item.promotionAmount} onChange={(event) => setForm((state) => ({ ...state, items: state.items.map((entry, i) => i === index ? { ...entry, promotionAmount: Number(event.target.value) || 0 } : entry) }))} />
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={item.promotionAmount}
+                        onChange={(event) =>
+                          setForm((state) => ({
+                            ...state,
+                            items: state.items.map((entry, i) =>
+                              i === index
+                                ? {
+                                    ...entry,
+                                    promotionAmount:
+                                      Number(event.target.value) || 0,
+                                  }
+                                : entry
+                            ),
+                          }))
+                        }
+                      />
                     </Field>
                   </FieldGroup>
                   <FieldGroup className="mt-3 grid gap-3 sm:grid-cols-2">
                     <Field>
                       <FieldLabel>Category</FieldLabel>
-                      <Select value={item.categoryId ?? ""} onValueChange={(value) => setForm((state) => ({ ...state, items: state.items.map((entry, i) => i === index ? { ...entry, categoryId: value, subCategoryId: null } : entry) }))}>
+                      <Select
+                        value={item.categoryId ?? ""}
+                        onValueChange={(value) =>
+                          setForm((state) => ({
+                            ...state,
+                            items: state.items.map((entry, i) =>
+                              i === index
+                                ? {
+                                    ...entry,
+                                    categoryId: value,
+                                    subCategoryId: null,
+                                  }
+                                : entry
+                            ),
+                          }))
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
                             {allowedParents.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
                             ))}
                           </SelectGroup>
                         </SelectContent>
@@ -751,8 +1069,28 @@ function TransactionFormFields({
                               key={subcategory.id}
                               type="button"
                               size="sm"
-                              variant={item.subCategoryId === subcategory.id ? "default" : "outline"}
-                              onClick={() => setForm((state) => ({ ...state, items: state.items.map((entry, i) => i === index ? { ...entry, subCategoryId: entry.subCategoryId === subcategory.id ? null : subcategory.id } : entry) }))}
+                              variant={
+                                item.subCategoryId === subcategory.id
+                                  ? "default"
+                                  : "outline"
+                              }
+                              onClick={() =>
+                                setForm((state) => ({
+                                  ...state,
+                                  items: state.items.map((entry, i) =>
+                                    i === index
+                                      ? {
+                                          ...entry,
+                                          subCategoryId:
+                                            entry.subCategoryId ===
+                                            subcategory.id
+                                              ? null
+                                              : subcategory.id,
+                                        }
+                                      : entry
+                                  ),
+                                }))
+                              }
                             >
                               {subcategory.name}
                             </Button>
@@ -787,21 +1125,38 @@ export function TransactionEditorDialog({
   const categoriesQuery = useCategories()
   const tripsQuery = useTrips()
   const recentTransactionsQuery = useTransactionsSearch()
-  const transactionQuery = useTransaction(mode === "edit" ? transactionId : undefined)
+  const transactionQuery = useTransaction(
+    mode === "edit" ? transactionId : undefined
+  )
   const createTransaction = useCreateTransaction()
   const updateTransaction = useUpdateTransaction()
   const scanReceipt = useScanReceipt()
-  const [form, setForm] = React.useState<TransactionFormState>(() => buildDefaultState(presetType ?? defaultType))
+  const [form, setForm] = React.useState<TransactionFormState>(() =>
+    buildDefaultState(presetType ?? defaultType)
+  )
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [scanPreview, setScanPreview] = React.useState<string | null>(null)
-  const [scanResult, setScanResult] = React.useState<ReceiptScanResult | null>(null)
+  const [scanResult, setScanResult] = React.useState<ReceiptScanResult | null>(
+    null
+  )
   const [scanError, setScanError] = React.useState<string | null>(null)
-  const [activeTab, setActiveTab] = React.useState<string | number | null>("manual")
+  const [activeTab, setActiveTab] = React.useState<string | number | null>(
+    "manual"
+  )
 
-  const categories = categoriesQuery.data ?? []
-  const categoryMap = React.useMemo(() => buildCategoryMap(categories), [categories])
+  const categories = React.useMemo(
+    () => categoriesQuery.data ?? [],
+    [categoriesQuery.data]
+  )
+  const categoryMap = React.useMemo(
+    () => buildCategoryMap(categories),
+    [categories]
+  )
   const accountMap = React.useMemo(() => {
-    const map = new Map<string, { name: string; currency: string; color: string }>()
+    const map = new Map<
+      string,
+      { name: string; currency: string; color: string }
+    >()
     for (const account of accountsQuery.data ?? []) {
       map.set(account.id, {
         name: account.name,
@@ -826,7 +1181,9 @@ export function TransactionEditorDialog({
   const allowedParents = React.useMemo(() => {
     if (form.type === "Transfer") return []
     const allowedType = form.type === "Income" ? "Income" : "Expense"
-    return categories.filter((category) => category.type === allowedType && category.parentId === null)
+    return categories.filter(
+      (category) => category.type === allowedType && category.parentId === null
+    )
   }, [categories, form.type])
 
   React.useEffect(() => {
@@ -847,9 +1204,12 @@ export function TransactionEditorDialog({
 
     if (mode === "new") {
       const baseState = buildDefaultState(presetType ?? defaultType)
-      const withPreset: TransactionFormState = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
+      const withPreset: TransactionFormState = presetCategoryId
+        ? applyPresetCategory(baseState, presetCategoryId, categories)
+        : baseState
       const defaultAccount = accountsQuery.data?.[0]
-      const defaultCurrency = defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
+      const defaultCurrency =
+        defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
       const nextForm: TransactionFormState = {
         ...withPreset,
         accountId: defaultAccount?.id ?? "",
@@ -859,7 +1219,16 @@ export function TransactionEditorDialog({
       }
       setForm(nextForm)
     }
-  }, [accountsQuery.data, categories, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
+  }, [
+    accountsQuery.data,
+    categories,
+    mode,
+    open,
+    presetCategoryId,
+    presetTripId,
+    presetType,
+    transactionQuery.data,
+  ])
 
   React.useEffect(() => {
     return () => {
@@ -884,7 +1253,10 @@ export function TransactionEditorDialog({
     }
 
     try {
-      const result = await scanReceipt.mutateAsync({ file, accountId: form.accountId })
+      const result = await scanReceipt.mutateAsync({
+        file,
+        accountId: form.accountId,
+      })
       setScanResult(result)
       setForm((state) => applyReceiptScanToForm(state, result))
     } catch (error) {
@@ -928,15 +1300,27 @@ export function TransactionEditorDialog({
       date: new Date(`${form.date}T00:00:00`).toISOString(),
       type: form.type,
       amount: toNumber(form.amount),
-      amount2: requiresTarget ? (form.amount2 === "" ? toNumber(form.amount) : toNumber(form.amount2)) : form.amount2 === "" ? null : toNumber(form.amount2),
+      amount2: requiresTarget
+        ? form.amount2 === ""
+          ? toNumber(form.amount)
+          : toNumber(form.amount2)
+        : form.amount2 === ""
+          ? null
+          : toNumber(form.amount2),
       currency: form.currency ? form.currency.toUpperCase() : null,
-      currency2: requiresTarget ? (form.currency2 || form.currency).toUpperCase() : form.currency2 ? form.currency2.toUpperCase() : null,
+      currency2: requiresTarget
+        ? (form.currency2 || form.currency).toUpperCase()
+        : form.currency2
+          ? form.currency2.toUpperCase()
+          : null,
       accountId: form.accountId,
       tripId: form.type === "Expense" ? form.tripId : null,
       categoryId: showCategoryFields ? form.categoryId : null,
       subCategoryId: showCategoryFields ? form.subCategoryId : null,
       targetAccountId: requiresTarget ? form.targetAccountId : null,
-      originalTransactionId: requiresOriginal ? form.originalTransactionId : null,
+      originalTransactionId: requiresOriginal
+        ? form.originalTransactionId
+        : null,
       note: form.note.trim() || null,
       merchantName: form.merchantName.trim() || null,
       location: form.location.trim() || null,
@@ -972,7 +1356,10 @@ export function TransactionEditorDialog({
     color: normalizeHexColor(a.color),
   }))
 
-  const tripsData = (tripsQuery.data ?? []).map((t) => ({ id: t.id, name: t.name }))
+  const tripsData = (tripsQuery.data ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+  }))
 
   const recentTransactions = (recentTransactionsQuery.data ?? []).map((t) => ({
     id: t.id,
@@ -1024,7 +1411,12 @@ export function TransactionEditorDialog({
           ) : transactionQuery.isError && mode === "edit" ? (
             <Alert variant="destructive">
               <AlertTitle>Unable to load transaction</AlertTitle>
-              <AlertDescription>{getApiErrorMessage(transactionQuery.error, "Try reopening the editor.")}</AlertDescription>
+              <AlertDescription>
+                {getApiErrorMessage(
+                  transactionQuery.error,
+                  "Try reopening the editor."
+                )}
+              </AlertDescription>
             </Alert>
           ) : mode === "new" ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1039,9 +1431,7 @@ export function TransactionEditorDialog({
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="manual">
-                {formFields}
-              </TabsContent>
+              <TabsContent value="manual">{formFields}</TabsContent>
 
               <TabsContent value="scan">
                 <div className="grid gap-6">
@@ -1056,8 +1446,12 @@ export function TransactionEditorDialog({
                           setForm((state) => ({
                             ...state,
                             accountId: nextAccountId,
-                            currency: accountMap.get(nextAccountId)?.currency ?? state.currency,
-                            currency2: accountMap.get(nextAccountId)?.currency ?? state.currency2,
+                            currency:
+                              accountMap.get(nextAccountId)?.currency ??
+                              state.currency,
+                            currency2:
+                              accountMap.get(nextAccountId)?.currency ??
+                              state.currency2,
                           }))
                         }}
                       >
@@ -1067,7 +1461,9 @@ export function TransactionEditorDialog({
                         <SelectContent>
                           <SelectGroup>
                             {accountsData.map((account) => (
-                              <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+                              <SelectItem key={account.id} value={account.id}>
+                                {account.name}
+                              </SelectItem>
                             ))}
                           </SelectGroup>
                         </SelectContent>
@@ -1090,9 +1486,12 @@ export function TransactionEditorDialog({
                     <>
                       <Separator />
                       <div className="grid gap-1">
-                        <h3 className="text-sm font-medium text-foreground">Review & adjust</h3>
+                        <h3 className="text-sm font-medium text-foreground">
+                          Review & adjust
+                        </h3>
                         <p className="text-xs text-muted-foreground">
-                          The scanned data has been filled in below. Make any corrections before saving.
+                          The scanned data has been filled in below. Make any
+                          corrections before saving.
                         </p>
                       </div>
                       {formFields}
@@ -1114,9 +1513,20 @@ export function TransactionEditorDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createTransaction.isPending || updateTransaction.isPending}>
-            {createTransaction.isPending || updateTransaction.isPending ? "Saving..." : mode === "edit" ? "Save changes" : "Create transaction"}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={
+              createTransaction.isPending || updateTransaction.isPending
+            }
+          >
+            {createTransaction.isPending || updateTransaction.isPending
+              ? "Saving..."
+              : mode === "edit"
+                ? "Save changes"
+                : "Create transaction"}
           </Button>
         </DialogFooter>
       </DialogContent>

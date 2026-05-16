@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "endOfLine": "lf",
+  "printWidth": 80,
+  "semi": false,
+  "singleQuote": false,
+  "sortTailwindcss": {
+    "functions": ["cn", "cva"],
+    "stylesheet": "./src/styles.css"
+  },
+  "tabWidth": 2,
+  "trailingComma": "es5"
+}

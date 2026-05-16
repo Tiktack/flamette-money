@@ -65,9 +65,16 @@ export function DataTableFacetedFilter({
   maxVisibleBadges = 2,
   icon,
 }: DataTableFacetedFilterProps) {
-  const selectedSet = React.useMemo(() => new Set(selectedValues), [selectedValues])
+  const selectedSet = React.useMemo(
+    () => new Set(selectedValues),
+    [selectedValues]
+  )
   const groupedOptions = React.useMemo(() => {
-    const nextGroups: Array<{ key: string; label?: string; options: FacetedFilterOption[] }> = []
+    const nextGroups: Array<{
+      key: string
+      label?: string
+      options: FacetedFilterOption[]
+    }> = []
     const indexByKey = new Map<string, number>()
 
     for (const option of options) {
@@ -92,7 +99,7 @@ export function DataTableFacetedFilter({
 
   const selectedOptions = React.useMemo(
     () => options.filter((option) => selectedSet.has(option.value)),
-    [options, selectedSet],
+    [options, selectedSet]
   )
 
   const toggleValue = (value: string) => {
@@ -109,23 +116,43 @@ export function DataTableFacetedFilter({
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="outline" size="sm" className="h-8 border-dashed bg-background" />}>
-        {icon ? <HugeiconsIcon icon={icon} strokeWidth={2} data-icon="inline-start" /> : null}
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 border-dashed bg-background"
+          />
+        }
+      >
+        {icon ? (
+          <HugeiconsIcon icon={icon} strokeWidth={2} data-icon="inline-start" />
+        ) : null}
         <span>{title}</span>
         {selectedOptions.length > 0 ? (
           <>
             <Separator orientation="vertical" className="mx-1 h-4" />
-            <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+            <Badge
+              variant="secondary"
+              className="rounded-sm px-1 font-normal lg:hidden"
+            >
               {selectedOptions.length}
             </Badge>
             <div className="hidden items-center gap-1 lg:flex">
               {selectedOptions.length > maxVisibleBadges ? (
-                <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                <Badge
+                  variant="secondary"
+                  className="rounded-sm px-1 font-normal"
+                >
                   {selectedOptions.length} selected
                 </Badge>
               ) : (
                 selectedOptions.map((option) => (
-                  <Badge key={option.value} variant="secondary" className="rounded-sm px-1 font-normal">
+                  <Badge
+                    key={option.value}
+                    variant="secondary"
+                    className="rounded-sm px-1 font-normal"
+                  >
                     {option.label}
                   </Badge>
                 ))
@@ -146,16 +173,23 @@ export function DataTableFacetedFilter({
                     const isSelected = selectedSet.has(option.value)
 
                     return (
-                      <CommandItem key={option.value} onSelect={() => toggleValue(option.value)}>
+                      <CommandItem
+                        key={option.value}
+                        onSelect={() => toggleValue(option.value)}
+                      >
                         <div
                           className={cn(
                             "flex size-4 items-center justify-center rounded-[4px] border",
                             isSelected
                               ? "border-primary bg-primary text-primary-foreground"
-                              : "border-input [&_svg]:invisible",
+                              : "border-input [&_svg]:invisible"
                           )}
                         >
-                          <HugeiconsIcon icon={Tick02Icon} strokeWidth={2} className="size-3.5 text-primary-foreground" />
+                          <HugeiconsIcon
+                            icon={Tick02Icon}
+                            strokeWidth={2}
+                            className="size-3.5 text-primary-foreground"
+                          />
                         </div>
                         {option.icon ? (
                           <HugeiconsIcon
@@ -175,14 +209,19 @@ export function DataTableFacetedFilter({
                     )
                   })}
                 </CommandGroup>
-                {groupIndex < groupedOptions.length - 1 ? <CommandSeparator /> : null}
+                {groupIndex < groupedOptions.length - 1 ? (
+                  <CommandSeparator />
+                ) : null}
               </React.Fragment>
             ))}
             {selectedOptions.length > 0 ? (
               <>
                 <CommandSeparator />
                 <CommandGroup>
-                  <CommandItem className="justify-center text-center" onSelect={() => onSelectedValuesChange([])}>
+                  <CommandItem
+                    className="justify-center text-center"
+                    onSelect={() => onSelectedValuesChange([])}
+                  >
                     Clear filters
                   </CommandItem>
                 </CommandGroup>
@@ -201,7 +240,10 @@ export function DataTableRangeFilter({
   max,
   value,
   onValueChange,
-  formatValue = (nextValue) => new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(nextValue),
+  formatValue = (nextValue) =>
+    new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
+      nextValue
+    ),
   icon,
 }: DataTableRangeFilterProps) {
   const clampedMax = Math.max(min, max)
@@ -212,22 +254,37 @@ export function DataTableRangeFilter({
   const updateRange = React.useCallback(
     (nextMin: number, nextMax: number) => {
       const normalizedMin = Math.max(min, Math.min(nextMin, clampedMax))
-      const normalizedMax = Math.max(normalizedMin, Math.min(nextMax, clampedMax))
+      const normalizedMax = Math.max(
+        normalizedMin,
+        Math.min(nextMax, clampedMax)
+      )
       onValueChange([
         Number(normalizedMin.toFixed(2)),
         Number(normalizedMax.toFixed(2)),
       ])
     },
-    [clampedMax, min, onValueChange],
+    [clampedMax, min, onValueChange]
   )
-  const step = clampedMax <= 100 ? 1 : Math.max(1, Number((clampedMax / 100).toFixed(2)))
+  const step =
+    clampedMax <= 100 ? 1 : Math.max(1, Number((clampedMax / 100).toFixed(2)))
   const isFiltered = currentValue[0] > min || currentValue[1] < clampedMax
   const rangeLabel = `${formatValue(currentValue[0])} - ${formatValue(currentValue[1])}`
 
   return (
     <Popover>
-      <PopoverTrigger render={<Button variant="outline" size="sm" className="h-8 border-dashed bg-background" disabled={clampedMax <= min} />}>
-        {icon ? <HugeiconsIcon icon={icon} strokeWidth={2} data-icon="inline-start" /> : null}
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 border-dashed bg-background"
+            disabled={clampedMax <= min}
+          />
+        }
+      >
+        {icon ? (
+          <HugeiconsIcon icon={icon} strokeWidth={2} data-icon="inline-start" />
+        ) : null}
         <span>{title}</span>
         {isFiltered ? (
           <>
@@ -250,14 +307,17 @@ export function DataTableRangeFilter({
             step={step}
             value={currentValue}
             onValueChange={(nextValue) => {
-              const [nextMin = min, nextMax = clampedMax] = nextValue as number[]
+              const [nextMin = min, nextMax = clampedMax] =
+                nextValue as number[]
               updateRange(nextMin, nextMax)
             }}
             disabled={clampedMax <= min}
           />
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Min</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Min
+              </span>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -276,7 +336,9 @@ export function DataTableRangeFilter({
               />
             </div>
             <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Max</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                Max
+              </span>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -300,7 +362,11 @@ export function DataTableRangeFilter({
             <span>{formatValue(clampedMax)}</span>
           </div>
           {isFiltered ? (
-            <Button variant="ghost" size="sm" onClick={() => onValueChange([min, clampedMax])}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onValueChange([min, clampedMax])}
+            >
               Reset range
             </Button>
           ) : null}

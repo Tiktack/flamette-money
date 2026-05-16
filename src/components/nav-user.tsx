@@ -2,11 +2,7 @@
 
 import { Link } from "@tanstack/react-router"
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +59,9 @@ export function NavUser({
           >
             <Avatar className="size-8 rounded-lg grayscale">
               <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">{initials(user.name)}</AvatarFallback>
+              <AvatarFallback className="rounded-lg">
+                {initials(user.name)}
+              </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{user.name}</span>
@@ -71,7 +69,11 @@ export function NavUser({
                 {user.email}
               </span>
             </div>
-            <HugeiconsIcon icon={MoreVerticalCircle01Icon} strokeWidth={2} className="ml-auto size-4" />
+            <HugeiconsIcon
+              icon={MoreVerticalCircle01Icon}
+              strokeWidth={2}
+              className="ml-auto size-4"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="min-w-56"
@@ -84,7 +86,9 @@ export function NavUser({
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="size-8">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">{initials(user.name)}</AvatarFallback>
+                    <AvatarFallback className="rounded-lg">
+                      {initials(user.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
@@ -102,7 +106,10 @@ export function NavUser({
                 Settings
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleTheme}>
-                <HugeiconsIcon icon={theme === "dark" ? Sun03Icon : Moon02Icon} strokeWidth={2} />
+                <HugeiconsIcon
+                  icon={theme === "dark" ? Sun03Icon : Moon02Icon}
+                  strokeWidth={2}
+                />
                 {theme === "dark" ? "Light theme" : "Dark theme"}
               </DropdownMenuItem>
             </DropdownMenuGroup>

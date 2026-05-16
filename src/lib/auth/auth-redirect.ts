@@ -1,7 +1,9 @@
 const defaultAuthRedirect = "/analytics/comparison"
 
 function isSafeAuthRedirect(path: string) {
-  return path.startsWith("/") && path !== "/sign-in" && !path.startsWith("/sign-in?")
+  return (
+    path.startsWith("/") && path !== "/sign-in" && !path.startsWith("/sign-in?")
+  )
 }
 
 export function getAuthRedirect(redirectTo?: string) {

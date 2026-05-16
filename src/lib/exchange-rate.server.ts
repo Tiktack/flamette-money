@@ -14,7 +14,10 @@ const fallbackUsdRates: Record<string, number> = {
   PLN: 0.26,
 }
 
-const cache = new Map<string, { expiresAt: number; snapshot: ExchangeRateSnapshot }>()
+const cache = new Map<
+  string,
+  { expiresAt: number; snapshot: ExchangeRateSnapshot }
+>()
 
 function buildFallbackSnapshot(baseCurrency: string): ExchangeRateSnapshot {
   const normalizedBase = normalizeCurrencyOrDefault(baseCurrency, "USD")
@@ -25,7 +28,8 @@ function buildFallbackSnapshot(baseCurrency: string): ExchangeRateSnapshot {
 
   for (const currency of supportedCurrencies) {
     const currencyToUsd = fallbackUsdRates[currency]
-    ratesToBase[currency] = currency === normalizedBase ? 1 : currencyToUsd / baseToUsd
+    ratesToBase[currency] =
+      currency === normalizedBase ? 1 : currencyToUsd / baseToUsd
   }
 
   return {
@@ -45,8 +49,12 @@ export async function getRatesToBase(baseCurrency: string) {
   }
 
   const apiKey = process.env.EXCHANGE_RATE_API_KEY?.trim()
-  const cacheHours = Number.parseInt(process.env.EXCHANGE_RATE_CACHE_HOURS ?? "5", 10)
-  const ttl = Math.max(1, Number.isNaN(cacheHours) ? 5 : cacheHours) * 60 * 60 * 1000
+  const cacheHours = Number.parseInt(
+    process.env.EXCHANGE_RATE_CACHE_HOURS ?? "5",
+    10
+  )
+  const ttl =
+    Math.max(1, Number.isNaN(cacheHours) ? 5 : cacheHours) * 60 * 60 * 1000
 
   if (!apiKey) {
     const snapshot = buildFallbackSnapshot(normalizedBase)
@@ -57,7 +65,7 @@ export async function getRatesToBase(baseCurrency: string) {
   try {
     const response = await fetch(
       `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${normalizedBase}`,
-      { method: "GET" },
+      { method: "GET" }
     )
 
     if (!response.ok) {
@@ -84,7 +92,8 @@ export async function getRatesToBase(baseCurrency: string) {
         continue
       }
 
-      ratesToBase[currency] = currency === normalizedBase ? 1 : 1 / conversionRate
+      ratesToBase[currency] =
+        currency === normalizedBase ? 1 : 1 / conversionRate
     }
 
     const snapshot = {

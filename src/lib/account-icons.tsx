@@ -29,7 +29,11 @@ export type AccountIconDefinition = {
 export const accountIconOptions: AccountIconDefinition[] = [
   { name: "Wallet01Icon", label: "Wallet", icon: Wallet01Icon },
   { name: "Wallet02Icon", label: "Pocket wallet", icon: Wallet02Icon },
-  { name: "WalletCardsIcon", label: "Wallet with cards", icon: WalletCardsIcon },
+  {
+    name: "WalletCardsIcon",
+    label: "Wallet with cards",
+    icon: WalletCardsIcon,
+  },
   { name: "CreditCardIcon", label: "Credit card", icon: CreditCardIcon },
   { name: "BankIcon", label: "Bank", icon: BankIcon },
   { name: "Building01Icon", label: "Bank building", icon: Building01Icon },
@@ -55,9 +59,13 @@ const accountIconAliases: Record<string, AccountIconName> = {
   IconCashBanknote: "Cash01Icon",
 }
 
-const accountIconsByName = new Map(accountIconOptions.map((item) => [item.name, item]))
+const accountIconsByName = new Map(
+  accountIconOptions.map((item) => [item.name, item])
+)
 
-export function resolveAccountIconName(iconName?: string | null): AccountIconName {
+export function resolveAccountIconName(
+  iconName?: string | null
+): AccountIconName {
   if (!iconName) {
     return defaultAccountIcon.name as AccountIconName
   }
@@ -73,6 +81,11 @@ export function resolveAccountIconName(iconName?: string | null): AccountIconNam
   return defaultAccountIcon.name as AccountIconName
 }
 
-export function getAccountIconDefinition(iconName?: string | null): AccountIconDefinition {
-  return accountIconsByName.get(resolveAccountIconName(iconName)) ?? defaultAccountIcon
+export function getAccountIconDefinition(
+  iconName?: string | null
+): AccountIconDefinition {
+  return (
+    accountIconsByName.get(resolveAccountIconName(iconName)) ??
+    defaultAccountIcon
+  )
 }
