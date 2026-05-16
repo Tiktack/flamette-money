@@ -1,37 +1,30 @@
 # Copilot instructions for Flamette Money
 
-You are working on a personal finance app with two projects:
-- Backend: ASP.NET Core Minimal APIs with Carter modules in [backend/FlametteMoney.Web](backend/FlametteMoney.Web).
-- Frontend: Vite + React 19 + TypeScript in [frontend](frontend) with Mantine UI, React Query, and TanStack Router (file-based).
+You are working on a personal finance app built as a full-stack TanStack Start application.
 
 Product goals from the specs:
 - Foundation: account management with multi-currency accounts and accurate balances.
 - Categories: single-table hierarchy with parent/child categories and strict type matching.
 - Transactions: income/expense basics plus advanced transfers and refunds that adjust balances correctly.
-- Search: multi-filter transactions search endpoint.
+- Search: multi-filter transactions search.
 - Itemization: optional transaction items with per-item amounts and category overrides.
 - Reports: category breakdowns and time-series analytics, with refunds reducing expense totals.
 - Receipt scanning: AI-assisted receipt parsing to draft transactions (not auto-saved).
 
-Backend architecture and conventions:
-- Endpoints live under [backend/FlametteMoney.Web/Features](backend/FlametteMoney.Web/Features). Each endpoint class implements `ICarterModule` with a static handler and `Task<Results<...>>` return types (see [backend/FlametteMoney.Web/Features/Transactions/CreateTransactionEndpoint.cs](backend/FlametteMoney.Web/Features/Transactions/CreateTransactionEndpoint.cs)).
-- Use `TypedResults` and `ProducesValidationProblem()`; validators live in the same feature folder and map errors via [backend/FlametteMoney.Web/Infrastructure/Validation/ValidationResultExtensions.cs](backend/FlametteMoney.Web/Infrastructure/Validation/ValidationResultExtensions.cs).
-- EF Core uses SQLite and `AppDbContext`. Migrations run on startup in [backend/FlametteMoney.Web/Program.cs](backend/FlametteMoney.Web/Program.cs). Entity configs belong in [backend/FlametteMoney.Web/Infrastructure/Database/Configurations](backend/FlametteMoney.Web/Infrastructure/Database/Configurations).
-- Domain rules live in transaction endpoints: transfers, refunds, and balance updates in [backend/FlametteMoney.Web/Features/Transactions](backend/FlametteMoney.Web/Features/Transactions).
-- Demo data can be seeded at POST `/api/seed/demo` via [backend/FlametteMoney.Web/Features/Seed/SeedDemoEndpoint.cs](backend/FlametteMoney.Web/Features/Seed/SeedDemoEndpoint.cs).
+Architecture and conventions:
+- **Stack**: TanStack Start (Vite + React 19 + TypeScript), TanStack Router (file-based), TanStack React Query, Better Auth, Drizzle ORM, SQLite.
+- **UI**: shadcn/ui components with Tailwind CSS 4. Source lives in [src/components](src/components).
+- **Routes**: file-based in [src/routes](src/routes); root layout in [src/routes/__root.tsx](src/routes/__root.tsx).
+- **Server functions**: data access and mutations use TanStack Start server functions (`createServerFn`). No separate API server.
+- **Database**: SQLite via Drizzle ORM. Schema and migrations live in [src/lib/db](src/lib/db).
+- **Auth**: Better Auth with email/password. Auth config in [src/lib/auth](src/lib/auth).
 
-Frontend architecture and conventions:
-- Routes are file-based in [frontend/src/routes](frontend/src/routes); root layout is defined in [frontend/src/routes/__root.tsx](frontend/src/routes/__root.tsx).
-- Global providers are set in [frontend/src/main.tsx](frontend/src/main.tsx) (Mantine, React Query, Router, devtools).
-- API calls go through React Query hooks in [frontend/src/lib/api/hooks.ts](frontend/src/lib/api/hooks.ts) which call `apiGet` in [frontend/src/lib/api/client.ts](frontend/src/lib/api/client.ts). `VITE_API_BASE_URL` controls the host; add a Vite proxy for `/api` when needed.
-- UI style intent: a dashboard shell with top nav, submenu actions, cards, and charts using Mantine defaults plus light CSS modules.
-
-Developer workflows:
-- Backend: `dotnet run` in [backend/FlametteMoney.Web](backend/FlametteMoney.Web). Ports are in [backend/FlametteMoney.Web/Properties/launchSettings.json](backend/FlametteMoney.Web/Properties/launchSettings.json).
-- Frontend: `npm install` then `npm run dev` in [frontend](frontend).
-- CORS dev policy is `FrontendDev` allowing http://localhost:5174 in [backend/FlametteMoney.Web/Program.cs](backend/FlametteMoney.Web/Program.cs); keep Vite and CORS aligned.
+Developer workflow:
+- Run: `pnpm install` then `pnpm dev` from the repo root.
+- App runs at `http://localhost:5174`.
+- Environment variables: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`, `OPENROUTER_API_KEY` (optional).
 
 Upcoming features to align with specs (use these as guidance when extending code):
-- Reports endpoints under `/api/reports/*` for category breakdowns and time series, with refund adjustments.
-- Transaction items support in create/update payloads and storage.
-- Receipt scanning endpoint `/api/receipts/scan` using Gemini Flash, returning draft transaction data only.
+- Reports: category breakdowns and time-series analytics with refund adjustments.
+- Transaction items: per-item amounts and category overrides in create/update flows.
+- Receipt scanning: `/api/receipts/scan` using OpenRouter, returning draft transaction data only.

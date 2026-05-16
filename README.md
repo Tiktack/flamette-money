@@ -22,23 +22,18 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
 
 ## Architecture
 
-### Active app
-- **Frontend + server runtime**: `frontend-new` is now a `TanStack Start` full-stack app.
-- **Authentication**: `Better Auth` with email/password sign-up and sign-in.
-- **Database**: local `SQLite` shared by the app and auth, accessed through `Drizzle ORM`.
-- **Routing and data**: `TanStack Router`, `TanStack React Query`, and TanStack Start server functions/routes.
-- **UI**: the existing React UI and feature set are preserved, but the app is no longer wired to the .NET API.
-
-### Legacy backend
-- The original `.NET 10` backend under `backend/FlametteMoney.Web` is still in the repository during the migration.
-- It remains useful as reference/source material, but `frontend-new` is intended to run independently of it.
+- **Frontend + server runtime**: TanStack Start full-stack app (source at `src/`).
+- **Authentication**: Better Auth with email/password sign-up and sign-in.
+- **Database**: local SQLite shared by the app and auth, accessed through Drizzle ORM.
+- **Routing and data**: TanStack Router, TanStack React Query, and TanStack Start server functions.
+- **UI**: shadcn/ui components with Tailwind CSS 4.
 
 ## Project Structure
 
-- `backend/FlametteMoney.AppHost`: Aspire orchestration project.
-- `backend/FlametteMoney.Web`: Main API project.
-- `frontend-new/src`: Active TanStack Start application sources.
-- `frontend/src`: Older frontend kept in the repository during the migration.
+- `src/routes/`: File-based routes (TanStack Router).
+- `src/components/`: Shared UI components.
+- `src/lib/`: Database schema, auth config, server utilities.
+- `public/`: Static assets.
 
 ## Configuration
 
@@ -58,12 +53,9 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 
 ### Launching the Application
 
-The active app runs directly from `frontend-new` with `pnpm`.
-
 1. **Configure**: Set the [environment variables](#configuration) you need.
 2. **Run**:
    ```bash
-   cd frontend-new
    pnpm install
    pnpm dev
    ```

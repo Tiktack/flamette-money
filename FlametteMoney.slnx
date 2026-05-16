@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="backend/FlametteMoney.AppHost/FlametteMoney.AppHost.csproj" />
-  <Project Path="backend/FlametteMoney.ServiceDefaults/FlametteMoney.ServiceDefaults.csproj" />
-  <Project Path="backend/FlametteMoney.Web/FlametteMoney.Web.csproj" />
-</Solution>
