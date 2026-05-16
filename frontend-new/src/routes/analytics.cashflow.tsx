@@ -178,7 +178,7 @@ function AnalyticsCashflowPage() {
                       <ChartTooltipContent
                         formatter={(value, name) => (
                           <div className="flex min-w-[140px] items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{formatSeriesLabel(name)}</span>
+                            <span className="text-muted-foreground">{formatSeriesLabel(name ?? "")}</span>
                             <span className="font-mono font-medium text-foreground tabular-nums">
                               {formatCurrency(value as number | string, baseCurrency)}
                             </span>

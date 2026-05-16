@@ -16,29 +16,28 @@ import {
   tripsQueryOptions,
 } from './queryOptions'
 import {
-  deleteApiAccountsById,
-  deleteApiCategoriesById,
-  deleteApiTransactionsById,
-  postApiAccounts,
-  postApiAuthLogout,
-  postApiCategories,
-  postApiProfileImportBackup,
-  postApiReceiptsScan,
-  postApiSeedDemo,
-  postApiSettingsResetData,
-  postApiTransactions,
-  postApiTrips,
-  putApiSettings,
-  putApiAccountsById,
-  putApiCategoriesById,
-  putApiTransactionsById,
-  putApiTripsById,
-} from './generated/sdk.gen'
+  createAccount,
+  createCategory,
+  createTransaction,
+  createTrip,
+  deleteAccount,
+  deleteCategory,
+  deleteTransaction,
+  postResetUserData,
+  updateAccount,
+  updateCategory,
+  updateSettings,
+  updateTransaction,
+  updateTrip,
+} from './finance.functions'
 import type {
   GetApiReportsCashflowSeriesData,
   GetApiReportsCategorySeriesData,
   GetApiReportsMonthlyYoyData,
   GetApiReportsPortfolioBalanceSeriesData,
+  ImportBackupResponse,
+  ScanReceiptResponse,
+  SeedDemoResponse,
   UpdateUserSettingsRequest,
   GetApiTransactionsSearchData,
 } from './generated/types.gen'
@@ -52,6 +51,7 @@ import type {
   TransactionCreateRequest,
   TransactionUpdateRequest,
 } from './types'
+import { authClient } from '@/lib/auth-client'
 
 export type BackupImportType = 'one-money' | 'flamette'
 export type BackupExportType = 'flamette'
@@ -76,19 +76,15 @@ export function useLogout() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => postApiAuthLogout({ throwOnError: true }).then(() => undefined),
+    mutationFn: async () => {
+      const { error } = await authClient.signOut()
+
+      if (error) {
+        throw new Error(error.message || 'Unable to sign out.')
+      }
+    },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      await queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
-      await queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
-      await queryClient.invalidateQueries({ queryKey: ['reports-category-series'] })
-      await queryClient.invalidateQueries({ queryKey: ['reports-monthly-yoy'] })
-      await queryClient.invalidateQueries({ queryKey: ['reports-portfolio-balance-series'] })
-      await queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
+      queryClient.clear()
     },
   })
 }
@@ -97,8 +93,7 @@ export function useUpdateSettings() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: UpdateUserSettingsRequest) =>
-      putApiSettings({ body: request, throwOnError: true }).then((result) => result.data),
+    mutationFn: (request: UpdateUserSettingsRequest) => updateSettings({ data: request }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.settings() })
       await queryClient.invalidateQueries({ queryKey: queryKeys.authMe() })
@@ -115,8 +110,7 @@ export function useCreateAccount() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: AccountCreateRequest) =>
-      postApiAccounts({ body: request, throwOnError: true }).then((result) => result.data),
+    mutationFn: (request: AccountCreateRequest) => createAccount({ data: request }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
@@ -130,9 +124,7 @@ export function useUpdateAccount() {
 
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: AccountUpdateRequest }) =>
-      putApiAccountsById({ path: { id }, body: request, throwOnError: true }).then(
-        (result) => result.data,
-      ),
+      updateAccount({ data: { id, request } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
@@ -145,8 +137,7 @@ export function useDeleteAccount() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      deleteApiAccountsById({ path: { id }, throwOnError: true }).then(() => undefined),
+    mutationFn: (id: string) => deleteAccount({ data: { id } }).then(() => undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
@@ -163,8 +154,7 @@ export function useCreateCategory() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: CategoryCreateRequest) =>
-      postApiCategories({ body: request, throwOnError: true }).then((result) => result.data),
+    mutationFn: (request: CategoryCreateRequest) => createCategory({ data: request }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories() }),
   })
 }
@@ -174,9 +164,7 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: CategoryUpdateRequest }) =>
-      putApiCategoriesById({ path: { id }, body: request, throwOnError: true }).then(
-        (result) => result.data,
-      ),
+      updateCategory({ data: { id, request } }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories() }),
   })
 }
@@ -185,8 +173,7 @@ export function useDeleteCategory() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      deleteApiCategoriesById({ path: { id }, throwOnError: true }).then(() => undefined),
+    mutationFn: (id: string) => deleteCategory({ data: { id } }).then(() => undefined),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories() }),
   })
 }
@@ -223,8 +210,7 @@ export function useCreateTrip() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: TripCreateRequest) =>
-      postApiTrips({ body: request, throwOnError: true }).then((result) => result.data),
+    mutationFn: (request: TripCreateRequest) => createTrip({ data: request }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
@@ -239,7 +225,7 @@ export function useUpdateTrip() {
 
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: TripUpdateRequest }) =>
-      putApiTripsById({ path: { id }, body: request, throwOnError: true }).then((result) => result.data),
+      updateTrip({ data: { id, request } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.trips() })
       queryClient.invalidateQueries({ queryKey: ['reports-cashflow-series'] })
@@ -262,8 +248,7 @@ export function useCreateTransaction() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: TransactionCreateRequest) =>
-      postApiTransactions({ body: request, throwOnError: true }).then((result) => result.data),
+    mutationFn: (request: TransactionCreateRequest) => createTransaction({ data: request }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
@@ -282,9 +267,7 @@ export function useUpdateTransaction() {
 
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: TransactionUpdateRequest }) =>
-      putApiTransactionsById({ path: { id }, body: request, throwOnError: true }).then(
-        (result) => result.data,
-      ),
+      updateTransaction({ data: { id, request } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
@@ -302,8 +285,7 @@ export function useDeleteTransaction() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) =>
-      deleteApiTransactionsById({ path: { id }, throwOnError: true }).then(() => undefined),
+    mutationFn: (id: string) => deleteTransaction({ data: { id } }).then(() => undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions-search'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
@@ -319,10 +301,24 @@ export function useDeleteTransaction() {
 
 export function useScanReceipt() {
   return useMutation({
-    mutationFn: ({ file, accountId }: { file: File; accountId: string }) =>
-      postApiReceiptsScan({ body: { file, accountId }, throwOnError: true }).then(
-        (result) => result.data,
-      ),
+    mutationFn: async ({ file, accountId }: { file: File; accountId: string }) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('accountId', accountId)
+
+      const response = await fetch('/api/receipts/scan', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Failed to scan receipt.')
+      }
+
+      return (await response.json()) as ScanReceiptResponse
+    },
   })
 }
 
@@ -330,10 +326,25 @@ export function useSeedDemo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ years, seed }: { years: number; seed?: number }) =>
-      postApiSeedDemo({ query: { Years: years, Seed: seed }, throwOnError: true }).then(
-        (result) => result.data,
-      ),
+    mutationFn: async ({ years, seed }: { years: number; seed?: number }) => {
+      const searchParams = new URLSearchParams()
+      searchParams.set('Years', String(years))
+      if (typeof seed === 'number' && Number.isFinite(seed)) {
+        searchParams.set('Seed', String(seed))
+      }
+
+      const response = await fetch(`/api/seed/demo?${searchParams.toString()}`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Unable to seed demo data.')
+      }
+
+      return (await response.json()) as SeedDemoResponse
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
@@ -352,10 +363,24 @@ export function useImportBackup() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ file, type }: { file: File; type: BackupImportType }) =>
-      postApiProfileImportBackup({ body: { file, type }, throwOnError: true }).then(
-        (result) => result.data,
-      ),
+    mutationFn: async ({ file, type }: { file: File; type: BackupImportType }) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('type', type)
+
+      const response = await fetch('/api/profile/import-backup', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Unable to import backup.')
+      }
+
+      return (await response.json()) as ImportBackupResponse
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
@@ -375,8 +400,7 @@ export function useResetData() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () =>
-      postApiSettingsResetData({ throwOnError: true }).then((result) => result.data),
+    mutationFn: () => postResetUserData(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounts() })
       queryClient.invalidateQueries({ queryKey: queryKeys.categories() })
@@ -394,8 +418,7 @@ export function useResetData() {
 export function useExportBackup() {
   return useMutation({
     mutationFn: async ({ type }: { type: BackupExportType }) => {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
-      const requestUrl = `${baseUrl}/api/profile/export-backup?type=${encodeURIComponent(type)}`
+      const requestUrl = `/api/profile/export-backup?type=${encodeURIComponent(type)}`
       const response = await fetch(requestUrl, {
         method: 'GET',
         credentials: 'include',

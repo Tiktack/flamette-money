@@ -15,64 +15,59 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
     - Category breakdowns.
     - Time-series analytics.
     - Refund-adjusted expense totals.
-- **Receipt Scanning**: AI-assisted receipt parsing (powered by Gemini Flash) to draft transactions from images.
+- **Receipt Scanning**: AI-assisted receipt parsing to draft transactions from images.
 - **Search**: Powerful multi-filter transaction search.
 - **Multi-currency**: Integration with exchange rate APIs for accurate cross-currency reporting.
 - **Trip Tracking**: Organize transactions by trips for better travel expense management.
 
 ## Architecture
 
-### Backend
-- **Framework**: `.NET 10` (Minimal APIs).
-- **Orchestration**: `.NET Aspire` for local development.
-- **Organization**: `Carter` modules for clean endpoint separation.
-- **Database**: `SQLite` with `Entity Framework Core`.
-- **Validation**: `FluentValidation` with automatic mapping to `TypedResults`.
-- **Documentation**: `OpenAPI` (scalar) at `/openapi/v1`.
+### Active app
+- **Frontend + server runtime**: `frontend-new` is now a `TanStack Start` full-stack app.
+- **Authentication**: `Better Auth` with email/password sign-up and sign-in.
+- **Database**: local `SQLite` shared by the app and auth, accessed through `Drizzle ORM`.
+- **Routing and data**: `TanStack Router`, `TanStack React Query`, and TanStack Start server functions/routes.
+- **UI**: the existing React UI and feature set are preserved, but the app is no longer wired to the .NET API.
 
-### Frontend
-- **Framework**: `React 19` + `Vite` + `TypeScript`.
-- **UI Library**: `Mantine UI` (v8) with `@tabler/icons-react`.
-- **Data Fetching**: `@tanstack/react-query`.
-- **Routing**: `@tanstack/react-router` (file-based routing).
-- **API Client**: Type-safe client generated via `openapi-ts`.
+### Legacy backend
+- The original `.NET 10` backend under `backend/FlametteMoney.Web` is still in the repository during the migration.
+- It remains useful as reference/source material, but `frontend-new` is intended to run independently of it.
 
 ## Project Structure
 
 - `backend/FlametteMoney.AppHost`: Aspire orchestration project.
 - `backend/FlametteMoney.Web`: Main API project.
-- `frontend/src`: React application sources.
+- `frontend-new/src`: Active TanStack Start application sources.
+- `frontend/src`: Older frontend kept in the repository during the migration.
 
 ## Configuration
 
-To run the application with all features enabled, you need to configure the following in `backend/FlametteMoney.Web/appsettings.json` (or use user-secrets):
+To run `frontend-new` with the full local TanStack Start stack, configure these environment variables:
 
-- **Google Authentication**: Required for user login.
-    - `Authentication:Google:ClientId`
-    - `Authentication:Google:ClientSecret`
-- **Gemini AI**: Required for receipt scanning features.
-    - `Gemini:ApiKey`
-- **ExchangeRate-API**: Required for accurate multi-currency conversions.
-    - `ExchangeRateApi:ApiKey` (obtain from [v6.exchangerate-api.com](https://v6.exchangerate-api.com))
+- `BETTER_AUTH_SECRET`: Better Auth signing secret.
+- `BETTER_AUTH_URL`: App origin for auth callbacks/cookies. Defaults to `http://localhost:5174`.
+- `DATABASE_URL`: SQLite path. Defaults to `file:./data/flamette-money.db`.
+- `OPENROUTER_API_KEY`: Optional, enables AI receipt scanning.
+- `OPENROUTER_MODEL`: Optional OpenRouter model override for receipt scanning.
 
 ## Getting Started
 
 ### Prerequisites
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Podman (required for Aspire)
 - [Node.js](https://nodejs.org/) (Latest LTS)
+- [pnpm](https://pnpm.io/)
 
 ### Launching the Application
 
-The project is fully orchestrated with [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview). Aspire manages the backend, the frontend dependencies (`npm install`), and the development server lifecycle.
+The active app runs directly from `frontend-new` with `pnpm`.
 
-1. **Configure**: Ensure you have configured the [API keys](#configuration).
+1. **Configure**: Set the [environment variables](#configuration) you need.
 2. **Run**:
    ```bash
-   cd backend/FlametteMoney.AppHost
-   dotnet run
+   cd frontend-new
+   pnpm install
+   pnpm dev
    ```
-3. **Explore**: Open the **Aspire Dashboard** link provided in the terminal to access the API and Frontend.
+3. **Explore**: Open `http://localhost:5174`.
 
 ## Demo Data
 
