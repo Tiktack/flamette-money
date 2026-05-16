@@ -20,6 +20,7 @@ const buildDefaultState = (): Omit<
   TransactionsFiltersState,
   | 'setAccountIds'
   | 'setCategoryIds'
+  | 'setTripIds'
   | 'setTransactionTypes'
   | 'setAmountMin'
   | 'setAmountMax'

@@ -174,7 +174,14 @@ function YearSelect({
   return (
     <div className="flex min-w-28 flex-col gap-2">
       <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
-      <Select value={value} onValueChange={onChange}>
+      <Select
+        value={value}
+        onValueChange={(nextValue) => {
+          if (nextValue) {
+            onChange(nextValue)
+          }
+        }}
+      >
         <SelectTrigger className="w-full">
           <SelectValue placeholder={label} />
         </SelectTrigger>

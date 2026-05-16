@@ -20,6 +20,11 @@ import { Route as AnalyticsPortfolioRouteImport } from './routes/analytics.portf
 import { Route as AnalyticsComparisonRouteImport } from './routes/analytics.comparison'
 import { Route as AnalyticsCategoriesRouteImport } from './routes/analytics.categories'
 import { Route as AnalyticsCashflowRouteImport } from './routes/analytics.cashflow'
+import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
+import { Route as ApiReceiptsScanRouteImport } from './routes/api/receipts/scan'
+import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
+import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const TripsRoute = TripsRouteImport.update({
   id: '/trips',
@@ -76,6 +81,31 @@ const AnalyticsCashflowRoute = AnalyticsCashflowRouteImport.update({
   path: '/cashflow',
   getParentRoute: () => AnalyticsRoute,
 } as any)
+const ApiSeedDemoRoute = ApiSeedDemoRouteImport.update({
+  id: '/api/seed/demo',
+  path: '/api/seed/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReceiptsScanRoute = ApiReceiptsScanRouteImport.update({
+  id: '/api/receipts/scan',
+  path: '/api/receipts/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileImportBackupRoute = ApiProfileImportBackupRouteImport.update({
+  id: '/api/profile/import-backup',
+  path: '/api/profile/import-backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileExportBackupRoute = ApiProfileExportBackupRouteImport.update({
+  id: '/api/profile/export-backup',
+  path: '/api/profile/export-backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +119,11 @@ export interface FileRoutesByFullPath {
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
+  '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
+  '/api/receipts/scan': typeof ApiReceiptsScanRoute
+  '/api/seed/demo': typeof ApiSeedDemoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +137,11 @@ export interface FileRoutesByTo {
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
+  '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
+  '/api/receipts/scan': typeof ApiReceiptsScanRoute
+  '/api/seed/demo': typeof ApiSeedDemoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +156,11 @@ export interface FileRoutesById {
   '/analytics/categories': typeof AnalyticsCategoriesRoute
   '/analytics/comparison': typeof AnalyticsComparisonRoute
   '/analytics/portfolio': typeof AnalyticsPortfolioRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
+  '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
+  '/api/receipts/scan': typeof ApiReceiptsScanRoute
+  '/api/seed/demo': typeof ApiSeedDemoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +176,11 @@ export interface FileRouteTypes {
     | '/analytics/categories'
     | '/analytics/comparison'
     | '/analytics/portfolio'
+    | '/api/auth/$'
+    | '/api/profile/export-backup'
+    | '/api/profile/import-backup'
+    | '/api/receipts/scan'
+    | '/api/seed/demo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +194,11 @@ export interface FileRouteTypes {
     | '/analytics/categories'
     | '/analytics/comparison'
     | '/analytics/portfolio'
+    | '/api/auth/$'
+    | '/api/profile/export-backup'
+    | '/api/profile/import-backup'
+    | '/api/receipts/scan'
+    | '/api/seed/demo'
   id:
     | '__root__'
     | '/'
@@ -157,6 +212,11 @@ export interface FileRouteTypes {
     | '/analytics/categories'
     | '/analytics/comparison'
     | '/analytics/portfolio'
+    | '/api/auth/$'
+    | '/api/profile/export-backup'
+    | '/api/profile/import-backup'
+    | '/api/receipts/scan'
+    | '/api/seed/demo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,6 +227,11 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
   TripsRoute: typeof TripsRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiProfileExportBackupRoute: typeof ApiProfileExportBackupRoute
+  ApiProfileImportBackupRoute: typeof ApiProfileImportBackupRoute
+  ApiReceiptsScanRoute: typeof ApiReceiptsScanRoute
+  ApiSeedDemoRoute: typeof ApiSeedDemoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -248,6 +313,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsCashflowRouteImport
       parentRoute: typeof AnalyticsRoute
     }
+    '/api/seed/demo': {
+      id: '/api/seed/demo'
+      path: '/api/seed/demo'
+      fullPath: '/api/seed/demo'
+      preLoaderRoute: typeof ApiSeedDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/receipts/scan': {
+      id: '/api/receipts/scan'
+      path: '/api/receipts/scan'
+      fullPath: '/api/receipts/scan'
+      preLoaderRoute: typeof ApiReceiptsScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/import-backup': {
+      id: '/api/profile/import-backup'
+      path: '/api/profile/import-backup'
+      fullPath: '/api/profile/import-backup'
+      preLoaderRoute: typeof ApiProfileImportBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/export-backup': {
+      id: '/api/profile/export-backup'
+      path: '/api/profile/export-backup'
+      fullPath: '/api/profile/export-backup'
+      preLoaderRoute: typeof ApiProfileExportBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -277,7 +377,21 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,
   TripsRoute: TripsRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiProfileExportBackupRoute: ApiProfileExportBackupRoute,
+  ApiProfileImportBackupRoute: ApiProfileImportBackupRoute,
+  ApiReceiptsScanRoute: ApiReceiptsScanRoute,
+  ApiSeedDemoRoute: ApiSeedDemoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

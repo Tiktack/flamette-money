@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -140,7 +140,14 @@ function SettingsPage() {
             <div className="flex w-full flex-col gap-3 md:ml-auto md:max-w-sm">
               <Field>
                 <FieldLabel>Currency</FieldLabel>
-                <Select value={baseCurrency} onValueChange={setBaseCurrency}>
+                <Select
+                  value={baseCurrency}
+                  onValueChange={(value) => {
+                    if (value) {
+                      setBaseCurrency(value)
+                    }
+                  }}
+                >
                   <SelectTrigger aria-label="Base currency">
                     <SelectValue placeholder="Base currency" />
                   </SelectTrigger>

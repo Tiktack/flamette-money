@@ -1,19 +1,19 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 import {
-  getApiAccounts,
-  getApiAppInfo,
-  getApiAuthMe,
-  getApiReportsCashflowSeries,
-  getApiCategories,
-  getApiReportsCategorySeries,
-  getApiReportsMonthlyYoy,
-  getApiReportsPortfolioBalanceSeries,
-  getApiSettings,
-  getApiTransactions,
-  getApiTransactionsById,
-  getApiTransactionsSearch,
-  getApiTrips,
-} from './generated/sdk.gen'
+  getAccounts,
+  getAppInfo,
+  getCashflowSeriesReport,
+  getCategorySeriesReport,
+  getMonthlyYoyReport,
+  getCurrentUser,
+  getSettings,
+  getTransaction,
+  getTransactions,
+  getTrips,
+  getPortfolioBalanceSeriesReport,
+  searchTransactions,
+  getCategories,
+} from './finance.functions'
 import type {
   AppInfoResponse,
   CurrentUserResponse,
@@ -49,123 +49,85 @@ export const queryKeys = {
 export const accountsQueryOptions = () =>
   queryOptions({
     queryKey: queryKeys.accounts(),
-    queryFn: () => getApiAccounts({ throwOnError: true }),
-    select: (result: Awaited<ReturnType<typeof getApiAccounts>>) => result.data ?? [],
+    queryFn: () => getAccounts(),
   })
 
 export const currentUserQueryOptions = () =>
   queryOptions<CurrentUserResponse | null>({
     queryKey: queryKeys.authMe(),
-    queryFn: async () => {
-      const result = await getApiAuthMe({ throwOnError: false })
-      return result.data ?? null
-    },
+    queryFn: () => getCurrentUser(),
     staleTime: 60_000,
   })
 
 export const categoriesQueryOptions = () =>
   queryOptions({
     queryKey: queryKeys.categories(),
-    queryFn: () => getApiCategories({ throwOnError: true }),
-    select: (result: Awaited<ReturnType<typeof getApiCategories>>) => result.data ?? [],
+    queryFn: () => getCategories(),
   })
 
 export const tripsQueryOptions = () =>
   queryOptions({
     queryKey: queryKeys.trips(),
-    queryFn: () => getApiTrips({ throwOnError: true }),
-    select: (result: Awaited<ReturnType<typeof getApiTrips>>) => result.data ?? [],
+    queryFn: () => getTrips(),
   })
 
 export const transactionsQueryOptions = (page = 1, pageSize = 50) =>
   queryOptions({
     queryKey: queryKeys.transactions(page, pageSize),
-    queryFn: () =>
-      getApiTransactions({
-        query: { page, pageSize },
-        throwOnError: true,
-      }),
-    select: (result: Awaited<ReturnType<typeof getApiTransactions>>) => result.data ?? [],
+    queryFn: () => getTransactions({ data: { page, pageSize } }),
   })
 
 export const transactionQueryOptions = (id: string) =>
   queryOptions({
     queryKey: queryKeys.transactionById(id),
-    queryFn: () => getApiTransactionsById({ path: { id }, throwOnError: true }),
-    select: (result: Awaited<ReturnType<typeof getApiTransactionsById>>) => result.data,
+    queryFn: () => getTransaction({ data: { id } }),
   })
 
 export const transactionsSearchQueryOptions = (query?: GetApiTransactionsSearchData['query']) =>
   queryOptions({
     queryKey: queryKeys.transactionsSearch(query),
-    queryFn: () =>
-      getApiTransactionsSearch(
-        query ? { query, throwOnError: true } : { throwOnError: true },
-      ),
+    queryFn: () => searchTransactions({ data: query }),
     placeholderData: keepPreviousData,
-    select: (result: Awaited<ReturnType<typeof getApiTransactionsSearch>>) => result.data ?? [],
   })
 
 export const cashflowSeriesQueryOptions = (query?: GetApiReportsCashflowSeriesData['query']) =>
   queryOptions({
     queryKey: queryKeys.reportsCashflowSeries(query),
-    queryFn: () =>
-      getApiReportsCashflowSeries(
-        query ? { query, throwOnError: true } : { throwOnError: true },
-      ),
+    queryFn: () => getCashflowSeriesReport({ data: query }),
     placeholderData: keepPreviousData,
-    select: (result: Awaited<ReturnType<typeof getApiReportsCashflowSeries>>) => result.data,
   })
 
 export const categorySeriesQueryOptions = (query?: GetApiReportsCategorySeriesData['query']) =>
   queryOptions({
     queryKey: queryKeys.reportsCategorySeries(query),
-    queryFn: () =>
-      getApiReportsCategorySeries(
-        query ? { query, throwOnError: true } : { throwOnError: true },
-      ),
+    queryFn: () => getCategorySeriesReport({ data: query }),
     placeholderData: keepPreviousData,
-    select: (result: Awaited<ReturnType<typeof getApiReportsCategorySeries>>) => result.data,
   })
 
 export const monthlyYoyQueryOptions = (query?: GetApiReportsMonthlyYoyData['query']) =>
   queryOptions({
     queryKey: queryKeys.reportsMonthlyYoy(query),
-    queryFn: () =>
-      getApiReportsMonthlyYoy(
-        query ? { query, throwOnError: true } : { throwOnError: true },
-      ),
+    queryFn: () => getMonthlyYoyReport({ data: query }),
     placeholderData: keepPreviousData,
-    select: (result: Awaited<ReturnType<typeof getApiReportsMonthlyYoy>>) => result.data,
   })
 
 export const portfolioBalanceSeriesQueryOptions = (query?: GetApiReportsPortfolioBalanceSeriesData['query']) =>
   queryOptions({
     queryKey: queryKeys.reportsPortfolioBalanceSeries(query),
-    queryFn: () =>
-      getApiReportsPortfolioBalanceSeries(
-        query ? { query, throwOnError: true } : { throwOnError: true },
-      ),
+    queryFn: () => getPortfolioBalanceSeriesReport({ data: query }),
     placeholderData: keepPreviousData,
-    select: (result: Awaited<ReturnType<typeof getApiReportsPortfolioBalanceSeries>>) => result.data,
   })
 
 export const appInfoQueryOptions = () =>
   queryOptions<AppInfoResponse | null>({
     queryKey: queryKeys.appInfo(),
-    queryFn: async () => {
-      const result = await getApiAppInfo({ throwOnError: false })
-      return result.data ?? null
-    },
+    queryFn: () => getAppInfo(),
     staleTime: 60_000,
   })
 
 export const settingsQueryOptions = () =>
   queryOptions<UserSettingsResponse | null>({
     queryKey: queryKeys.settings(),
-    queryFn: async () => {
-      const result = await getApiSettings({ throwOnError: false })
-      return result.data ?? null
-    },
+    queryFn: () => getSettings(),
     staleTime: 60_000,
   })

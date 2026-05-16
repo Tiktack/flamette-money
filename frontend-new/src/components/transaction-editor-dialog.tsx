@@ -159,7 +159,7 @@ function fillFromTransaction(transaction: TransactionDetail): TransactionFormSta
   }
 }
 
-function applyPresetCategory(state: TransactionFormState, presetCategoryId: string, categories: CategoryHierarchy[]) {
+function applyPresetCategory(state: TransactionFormState, presetCategoryId: string, categories: CategoryHierarchy[]): TransactionFormState {
   const map = buildCategoryMap(categories)
   const category = map.get(presetCategoryId)
   if (!category) {
@@ -447,14 +447,15 @@ function TransactionFormFields({
           <FieldLabel>{requiresTarget ? "Source account" : "Account"}</FieldLabel>
           <Select
             value={form.accountId}
-            onValueChange={(value) =>
+            onValueChange={(value) => {
+              const nextAccountId = value ?? ""
               setForm((state) => ({
                 ...state,
-                accountId: value,
-                currency: accountMap.get(value)?.currency ?? state.currency,
-                currency2: requiresTarget ? state.currency2 : accountMap.get(value)?.currency ?? state.currency2,
+                accountId: nextAccountId,
+                currency: accountMap.get(nextAccountId)?.currency ?? state.currency,
+                currency2: requiresTarget ? state.currency2 : accountMap.get(nextAccountId)?.currency ?? state.currency2,
               }))
-            }
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select account" />
@@ -483,7 +484,7 @@ function TransactionFormFields({
 
         <Field>
           <FieldLabel>Currency</FieldLabel>
-          <Select value={form.currency} onValueChange={(value) => setForm((state) => ({ ...state, currency: value }))}>
+          <Select value={form.currency} onValueChange={(value) => setForm((state) => ({ ...state, currency: value ?? state.currency }))}>
             <SelectTrigger>
               <SelectValue placeholder="Currency" />
             </SelectTrigger>
@@ -503,7 +504,17 @@ function TransactionFormFields({
         <FieldGroup className="grid gap-4 sm:grid-cols-3">
           <Field>
             <FieldLabel>Target account</FieldLabel>
-            <Select value={form.targetAccountId ?? ""} onValueChange={(value) => setForm((state) => ({ ...state, targetAccountId: value, currency2: accountMap.get(value)?.currency ?? state.currency2 }))}>
+            <Select
+              value={form.targetAccountId ?? ""}
+              onValueChange={(value) => {
+                const nextTargetAccountId = value ?? null
+                setForm((state) => ({
+                  ...state,
+                  targetAccountId: nextTargetAccountId,
+                  currency2: (nextTargetAccountId ? accountMap.get(nextTargetAccountId)?.currency : undefined) ?? state.currency2,
+                }))
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select target account" />
               </SelectTrigger>
@@ -522,7 +533,7 @@ function TransactionFormFields({
           </Field>
           <Field>
             <FieldLabel>Target currency</FieldLabel>
-            <Select value={form.currency2} onValueChange={(value) => setForm((state) => ({ ...state, currency2: value }))}>
+            <Select value={form.currency2} onValueChange={(value) => setForm((state) => ({ ...state, currency2: value ?? state.currency2 }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Target currency" />
               </SelectTrigger>
@@ -601,7 +612,7 @@ function TransactionFormFields({
       {requiresOriginal ? (
         <Field>
           <FieldLabel>Original transaction</FieldLabel>
-          <Select value={form.originalTransactionId || ""} onValueChange={(value) => setForm((state) => ({ ...state, originalTransactionId: value }))}>
+          <Select value={form.originalTransactionId || ""} onValueChange={(value) => setForm((state) => ({ ...state, originalTransactionId: value ?? "" }))}>
             <SelectTrigger>
               <SelectValue placeholder="Select original transaction" />
             </SelectTrigger>
@@ -836,16 +847,17 @@ export function TransactionEditorDialog({
 
     if (mode === "new") {
       const baseState = buildDefaultState(presetType ?? defaultType)
-      const withPreset = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
+      const withPreset: TransactionFormState = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
       const defaultAccount = accountsQuery.data?.[0]
       const defaultCurrency = defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
-      setForm({
+      const nextForm: TransactionFormState = {
         ...withPreset,
         accountId: defaultAccount?.id ?? "",
         currency: defaultCurrency,
         currency2: defaultCurrency,
         tripId: presetTripId ?? withPreset.tripId,
-      })
+      }
+      setForm(nextForm)
     }
   }, [accountsQuery.data, categories, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
 
@@ -1039,14 +1051,15 @@ export function TransactionEditorDialog({
                       <FieldLabel>Account</FieldLabel>
                       <Select
                         value={form.accountId}
-                        onValueChange={(value) =>
+                        onValueChange={(value) => {
+                          const nextAccountId = value ?? ""
                           setForm((state) => ({
                             ...state,
-                            accountId: value,
-                            currency: accountMap.get(value)?.currency ?? state.currency,
-                            currency2: accountMap.get(value)?.currency ?? state.currency2,
+                            accountId: nextAccountId,
+                            currency: accountMap.get(nextAccountId)?.currency ?? state.currency,
+                            currency2: accountMap.get(nextAccountId)?.currency ?? state.currency2,
                           }))
-                        }
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select account" />
