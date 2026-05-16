@@ -1,4 +1,8 @@
-import type { CategoryHierarchy, TransactionListItem, TransactionType } from "@/lib/api/types"
+import type {
+  TransactionListItem,
+  TransactionType,
+} from "@/features/transactions/types"
+import type { CategoryHierarchy } from "@/features/categories/types"
 
 export const DEFAULT_ACCOUNT_COLOR = "#B9A88A"
 export const DEFAULT_CATEGORY_COLOR = "#D96B4F"
@@ -16,7 +20,10 @@ export function toNumber(value: number | string | null | undefined) {
   return 0
 }
 
-export function normalizeHexColor(value?: string | null, fallback = DEFAULT_ACCOUNT_COLOR) {
+export function normalizeHexColor(
+  value?: string | null,
+  fallback = DEFAULT_ACCOUNT_COLOR
+) {
   if (!value) {
     return fallback
   }
@@ -27,7 +34,7 @@ export function normalizeHexColor(value?: string | null, fallback = DEFAULT_ACCO
 export function formatCurrency(
   value: number | string | null | undefined,
   currency = "USD",
-  minimumFractionDigits = 0,
+  minimumFractionDigits = 0
 ) {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -70,12 +77,14 @@ export function formatShortMonth(value: string) {
 }
 
 export function initials(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((segment) => segment[0]?.toUpperCase() ?? "")
-    .join("") || "FM"
+  return (
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((segment) => segment[0]?.toUpperCase() ?? "")
+      .join("") || "FM"
+  )
 }
 
 export function buildSeed(value: string) {
@@ -125,7 +134,7 @@ export function transactionTone(type: TransactionType, isRefund?: boolean) {
 
 export function getCategoryLabel(
   transaction: TransactionListItem,
-  categoryMap: Map<string, CategoryHierarchy>,
+  categoryMap: Map<string, CategoryHierarchy>
 ) {
   if (transaction.type === "Transfer") {
     return "Transfer"

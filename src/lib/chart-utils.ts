@@ -8,7 +8,7 @@ export function formatCompactNumber(value: number | string | null | undefined) {
     })
       .format(num)
       .toLowerCase()
-  } catch (e) {
+  } catch {
     // Fallback for environments without compact notation
     const abs = Math.abs(num)
     if (abs >= 1_000_000) return `${Math.round(num / 1_000_000)}m`

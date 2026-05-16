@@ -3,18 +3,19 @@
 Flamette Money is a sophisticated personal finance application designed to help users track their multi-currency accounts, categorize transactions with precision, and gain insights through detailed reports.
 
 Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkEgudSps3ohrVdpR4AeyTaHfWgvvWkJfkYwKjHLY?e=7aCq8c)
+
 ## Features
 
 - **Account Management**: Manage multi-currency accounts with accurate balances and visual customization (colors).
 - **Categories**: Single-table hierarchy support for parent/child categories with strict type matching.
 - **Advanced Transactions**:
-    - Support for Income, Expense, Transfers, and Refunds.
-    - Automatic balance adjustments.
-    - Transaction itemization with category overrides.
+  - Support for Income, Expense, Transfers, and Refunds.
+  - Automatic balance adjustments.
+  - Transaction itemization with category overrides.
 - **Reporting**:
-    - Category breakdowns.
-    - Time-series analytics.
-    - Refund-adjusted expense totals.
+  - Category breakdowns.
+  - Time-series analytics.
+  - Refund-adjusted expense totals.
 - **Receipt Scanning**: AI-assisted receipt parsing to draft transactions from images.
 - **Search**: Powerful multi-filter transaction search.
 - **Multi-currency**: Integration with exchange rate APIs for accurate cross-currency reporting.
@@ -48,6 +49,7 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 ## Getting Started
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (Latest LTS)
 - [pnpm](https://pnpm.io/)
 
@@ -63,6 +65,4 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 
 ## Demo Data
 
-
 You can seed the database with demo data directly from the **User Settings** page in the application UI. This will populate the app with common categories, multi-currency accounts, and sample transactions to help you explore the features.
-

@@ -8,10 +8,20 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core"
 
-export const accountTypes = ["Cash", "DebitCard", "CreditCard", "Savings"] as const
+export const accountTypes = [
+  "Cash",
+  "DebitCard",
+  "CreditCard",
+  "Savings",
+] as const
 export const categoryTypes = ["Income", "Expense"] as const
 export const subscriptionTypes = ["Free", "Premium"] as const
-export const transactionTypes = ["Income", "Expense", "Transfer", "Refund"] as const
+export const transactionTypes = [
+  "Income",
+  "Expense",
+  "Transfer",
+  "Refund",
+] as const
 
 const timestampDefault = sql`(cast(unixepoch('subsecond') * 1000 as integer))`
 
@@ -21,16 +31,24 @@ export const users = sqliteTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     email: text("email").notNull(),
-    emailVerified: integer("email_verified", { mode: "boolean" }).default(false).notNull(),
+    emailVerified: integer("email_verified", { mode: "boolean" })
+      .default(false)
+      .notNull(),
     image: text("image"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
     baseCurrency: text("base_currency").notNull().default("USD"),
     subscriptionType: text("subscription_type", {
       enum: subscriptionTypes,
-    }).notNull().default("Free"),
+    })
+      .notNull()
+      .default("Free"),
   },
-  (table) => [uniqueIndex("users_email_idx").on(table.email)],
+  (table) => [uniqueIndex("users_email_idx").on(table.email)]
 )
 
 export const authSessions = sqliteTable(
@@ -39,8 +57,12 @@ export const authSessions = sqliteTable(
     id: text("id").primaryKey(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     token: text("token").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
@@ -50,7 +72,7 @@ export const authSessions = sqliteTable(
   (table) => [
     uniqueIndex("auth_sessions_token_idx").on(table.token),
     index("auth_sessions_user_id_idx").on(table.userId),
-  ],
+  ]
 )
 
 export const authAccounts = sqliteTable(
@@ -65,14 +87,22 @@ export const authAccounts = sqliteTable(
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp_ms" }),
-    refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp_ms" }),
+    accessTokenExpiresAt: integer("access_token_expires_at", {
+      mode: "timestamp_ms",
+    }),
+    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
+      mode: "timestamp_ms",
+    }),
     scope: text("scope"),
     password: text("password"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
   },
-  (table) => [index("auth_accounts_user_id_idx").on(table.userId)],
+  (table) => [index("auth_accounts_user_id_idx").on(table.userId)]
 )
 
 export const authVerifications = sqliteTable(
@@ -82,10 +112,14 @@ export const authVerifications = sqliteTable(
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
   },
-  (table) => [index("auth_verifications_identifier_idx").on(table.identifier)],
+  (table) => [index("auth_verifications_identifier_idx").on(table.identifier)]
 )
 
 export const accounts = sqliteTable(
@@ -102,13 +136,17 @@ export const accounts = sqliteTable(
     icon: text("icon").notNull(),
     type: text("type", { enum: accountTypes }).notNull(),
     currentBalance: real("current_balance").notNull().default(0),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
   },
   (table) => [
     index("accounts_user_id_name_idx").on(table.userId, table.name),
     index("accounts_user_id_type_idx").on(table.userId, table.type),
-  ],
+  ]
 )
 
 export const categories = sqliteTable(
@@ -123,13 +161,21 @@ export const categories = sqliteTable(
     icon: text("icon").notNull(),
     parentId: text("parent_id"),
     type: text("type", { enum: categoryTypes }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
   },
   (table) => [
     index("categories_user_id_name_idx").on(table.userId, table.name),
-    index("categories_user_id_type_parent_idx").on(table.userId, table.type, table.parentId),
-  ],
+    index("categories_user_id_type_parent_idx").on(
+      table.userId,
+      table.type,
+      table.parentId
+    ),
+  ]
 )
 
 export const trips = sqliteTable(
@@ -144,13 +190,17 @@ export const trips = sqliteTable(
     startDate: integer("start_date", { mode: "timestamp_ms" }),
     endDate: integer("end_date", { mode: "timestamp_ms" }),
     imageUrl: text("image_url"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
   },
   (table) => [
     index("trips_user_id_name_idx").on(table.userId, table.name),
     index("trips_user_id_start_date_idx").on(table.userId, table.startDate),
-  ],
+  ]
 )
 
 export const transactions = sqliteTable(
@@ -175,19 +225,37 @@ export const transactions = sqliteTable(
     relatedTransactionId: text("related_transaction_id"),
     originalTransactionId: text("original_transaction_id"),
     tripId: text("trip_id"),
-    isRefund: integer("is_refund", { mode: "boolean" }).default(false).notNull(),
+    isRefund: integer("is_refund", { mode: "boolean" })
+      .default(false)
+      .notNull(),
     note: text("note"),
     merchantName: text("merchant_name"),
     location: text("location"),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(timestampDefault)
+      .notNull(),
   },
   (table) => [
     index("transactions_user_id_date_idx").on(table.userId, table.date),
-    index("transactions_user_id_account_id_date_idx").on(table.userId, table.accountId, table.date),
-    index("transactions_user_id_category_id_date_idx").on(table.userId, table.categoryId, table.date),
-    index("transactions_user_id_trip_id_date_idx").on(table.userId, table.tripId, table.date),
-  ],
+    index("transactions_user_id_account_id_date_idx").on(
+      table.userId,
+      table.accountId,
+      table.date
+    ),
+    index("transactions_user_id_category_id_date_idx").on(
+      table.userId,
+      table.categoryId,
+      table.date
+    ),
+    index("transactions_user_id_trip_id_date_idx").on(
+      table.userId,
+      table.tripId,
+      table.date
+    ),
+  ]
 )
 
 export const transactionItems = sqliteTable("transaction_items", {
@@ -203,8 +271,12 @@ export const transactionItems = sqliteTable("transaction_items", {
   finalAmount: real("final_amount").notNull().default(0),
   categoryId: text("category_id"),
   subCategoryId: text("sub_category_id"),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .default(timestampDefault)
+    .notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .default(timestampDefault)
+    .notNull(),
 })
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -244,28 +316,34 @@ export const tripsRelations = relations(trips, ({ one, many }) => ({
   transactions: many(transactions),
 }))
 
-export const transactionsRelations = relations(transactions, ({ one, many }) => ({
-  user: one(users, {
-    fields: [transactions.userId],
-    references: [users.id],
-  }),
-  account: one(accounts, {
-    fields: [transactions.accountId],
-    references: [accounts.id],
-  }),
-  trip: one(trips, {
-    fields: [transactions.tripId],
-    references: [trips.id],
-  }),
-  items: many(transactionItems),
-}))
+export const transactionsRelations = relations(
+  transactions,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [transactions.userId],
+      references: [users.id],
+    }),
+    account: one(accounts, {
+      fields: [transactions.accountId],
+      references: [accounts.id],
+    }),
+    trip: one(trips, {
+      fields: [transactions.tripId],
+      references: [trips.id],
+    }),
+    items: many(transactionItems),
+  })
+)
 
-export const transactionItemsRelations = relations(transactionItems, ({ one }) => ({
-  transaction: one(transactions, {
-    fields: [transactionItems.transactionId],
-    references: [transactions.id],
-  }),
-}))
+export const transactionItemsRelations = relations(
+  transactionItems,
+  ({ one }) => ({
+    transaction: one(transactions, {
+      fields: [transactionItems.transactionId],
+      references: [transactions.id],
+    }),
+  })
+)
 
 export const authSessionsRelations = relations(authSessions, ({ one }) => ({
   user: one(users, {

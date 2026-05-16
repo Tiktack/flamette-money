@@ -1,8 +1,16 @@
 import * as React from "react"
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { type ColumnDef, type Table as TanstackTable } from "@tanstack/react-table"
-import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, TransactionIcon } from "@hugeicons/core-free-icons"
+import {
+  type ColumnDef,
+  type Table as TanstackTable,
+} from "@tanstack/react-table"
+import {
+  Delete02Icon,
+  Edit01Icon,
+  MoreHorizontalCircle01Icon,
+  TransactionIcon,
+} from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Line, LineChart, ResponsiveContainer } from "recharts"
 
@@ -37,25 +45,44 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { accountIconOptions, getAccountIconDefinition, resolveAccountIconName } from "@/lib/account-icons"
-import { getApiErrorMessage } from "@/lib/api/errors"
+import {
+  accountIconOptions,
+  getAccountIconDefinition,
+  resolveAccountIconName,
+} from "@/lib/account-icons"
+import { getApiErrorMessage } from "@/features/shared/errors"
+import { useAppInfo } from "@/features/app/hooks"
 import {
   useAccounts,
-  useAppInfo,
   useCreateAccount,
   useDeleteAccount,
   useUpdateAccount,
-} from "@/lib/api/hooks"
-import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
-import type { AccountListItem, AccountType } from "@/lib/api/types"
-import { buildSeed, buildTrendSeries, formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
+} from "@/features/accounts/hooks"
+import {
+  PAGE_ACTION_EVENT,
+  pageActionTypes,
+  type PageActionType,
+} from "@/lib/page-actions"
+import type { AccountListItem, AccountType } from "@/features/accounts/types"
+import {
+  buildSeed,
+  buildTrendSeries,
+  formatCurrency,
+  normalizeHexColor,
+  toNumber,
+} from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/_protected/accounts")({
   component: AccountsPage,
 })
 
-const accountTypeOptions: AccountType[] = ["Cash", "DebitCard", "CreditCard", "Savings"]
+const accountTypeOptions: AccountType[] = [
+  "Cash",
+  "DebitCard",
+  "CreditCard",
+  "Savings",
+]
 const accountTypeMeta: Record<AccountType, { label: string }> = {
   Cash: { label: "Cash" },
   DebitCard: { label: "Debit card" },
@@ -93,10 +120,15 @@ function AccountsPage() {
   const deleteAccount = useDeleteAccount()
   const setAccountIds = useTransactionsFilters((state) => state.setAccountIds)
   const [createOpen, setCreateOpen] = React.useState(false)
-  const [editAccount, setEditAccount] = React.useState<AccountListItem | null>(null)
-  const [deleteTarget, setDeleteTarget] = React.useState<AccountListItem | null>(null)
-  const [createForm, setCreateForm] = React.useState<AccountFormState>(defaultAccountForm)
-  const [editForm, setEditForm] = React.useState<AccountFormState>(defaultAccountForm)
+  const [editAccount, setEditAccount] = React.useState<AccountListItem | null>(
+    null
+  )
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<AccountListItem | null>(null)
+  const [createForm, setCreateForm] =
+    React.useState<AccountFormState>(defaultAccountForm)
+  const [editForm, setEditForm] =
+    React.useState<AccountFormState>(defaultAccountForm)
 
   const openCreate = React.useCallback(() => {
     setCreateForm(defaultAccountForm)
@@ -117,7 +149,10 @@ function AccountsPage() {
   }, [openCreate])
 
   const currencyOptions = React.useMemo(() => {
-    const values = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? fallbackCurrencies
+    const values =
+      appInfoQuery.data?.supportedCurrencies?.map((item) =>
+        item.code.toUpperCase()
+      ) ?? fallbackCurrencies
     return Array.from(new Set(values))
   }, [appInfoQuery.data?.supportedCurrencies])
 
@@ -159,7 +194,7 @@ function AccountsPage() {
     }
   }
 
-  const openEdit = (account: AccountListItem) => {
+  const openEdit = React.useCallback((account: AccountListItem) => {
     setEditAccount(account)
     setEditForm({
       name: account.name,
@@ -170,12 +205,15 @@ function AccountsPage() {
       type: account.type,
       currentBalance: toNumber(account.currentBalance),
     })
-  }
+  }, [])
 
-  const openTransactions = async (accountId: string) => {
-    setAccountIds([accountId])
-    await navigate({ to: "/transactions" })
-  }
+  const openTransactions = React.useCallback(
+    async (accountId: string) => {
+      setAccountIds([accountId])
+      await navigate({ to: "/transactions" })
+    },
+    [navigate, setAccountIds]
+  )
 
   const columns = React.useMemo<ColumnDef<AccountListItem>[]>(
     () => [
@@ -191,13 +229,30 @@ function AccountsPage() {
 
           return (
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white" style={{ backgroundColor: color }}>
-                <HugeiconsIcon icon={iconDefinition.icon} strokeWidth={2} className="size-5" />
+              <div
+                className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white"
+                style={{ backgroundColor: color }}
+              >
+                <HugeiconsIcon
+                  icon={iconDefinition.icon}
+                  strokeWidth={2}
+                  className="size-5"
+                />
               </div>
-              <div className={description ? "min-w-0" : "flex min-h-10 min-w-0 items-center"}>
+              <div
+                className={
+                  description ? "min-w-0" : "flex min-h-10 min-w-0 items-center"
+                }
+              >
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-foreground">{account.name}</p>
-                  {description ? <p className="truncate text-sm text-muted-foreground">{description}</p> : null}
+                  <p className="truncate font-medium text-foreground">
+                    {account.name}
+                  </p>
+                  {description ? (
+                    <p className="truncate text-sm text-muted-foreground">
+                      {description}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -208,13 +263,19 @@ function AccountsPage() {
         accessorKey: "type",
         header: "Type",
         filterFn: "equalsString",
-        cell: ({ row }) => <Badge variant="outline">{accountTypeMeta[row.original.type].label}</Badge>,
+        cell: ({ row }) => (
+          <Badge variant="outline">
+            {accountTypeMeta[row.original.type].label}
+          </Badge>
+        ),
       },
       {
         accessorKey: "currency",
         header: "Currency",
         filterFn: "equalsString",
-        cell: ({ row }) => <Badge variant="secondary">{row.original.currency}</Badge>,
+        cell: ({ row }) => (
+          <Badge variant="secondary">{row.original.currency}</Badge>
+        ),
       },
       {
         accessorFn: (row) => toNumber(row.currentBalance),
@@ -224,8 +285,17 @@ function AccountsPage() {
           const amount = toNumber(row.original.currentBalance)
 
           return (
-            <div className={amount < 0 ? "text-right font-medium text-destructive" : "text-right font-medium text-foreground"}>
-              {formatCurrency(row.original.currentBalance, row.original.currency)}
+            <div
+              className={
+                amount < 0
+                  ? "text-right font-medium text-destructive"
+                  : "text-right font-medium text-foreground"
+              }
+            >
+              {formatCurrency(
+                row.original.currentBalance,
+                row.original.currency
+              )}
             </div>
           )
         },
@@ -242,7 +312,13 @@ function AccountsPage() {
             <div className="h-10 w-28">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sparkline}>
-                  <Line dataKey="value" dot={false} stroke={color} strokeWidth={2} type="monotone" />
+                  <Line
+                    dataKey="value"
+                    dot={false}
+                    stroke={color}
+                    strokeWidth={2}
+                    type="monotone"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -259,23 +335,51 @@ function AccountsPage() {
 
           return (
             <div className="flex justify-end gap-1">
-              <Button variant="ghost" size="icon-sm" onClick={() => openEdit(account)}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => openEdit(account)}
+              >
                 <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
                 <span className="sr-only">Edit {account.name}</span>
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground data-open:bg-muted" />}>
-                  <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} />
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-muted-foreground data-open:bg-muted"
+                    />
+                  }
+                >
+                  <HugeiconsIcon
+                    icon={MoreHorizontalCircle01Icon}
+                    strokeWidth={2}
+                  />
                   <span className="sr-only">More actions</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem onClick={() => void openTransactions(account.id)}>
-                    <HugeiconsIcon icon={TransactionIcon} strokeWidth={2} className="text-muted-foreground" />
+                  <DropdownMenuItem
+                    onClick={() => void openTransactions(account.id)}
+                  >
+                    <HugeiconsIcon
+                      icon={TransactionIcon}
+                      strokeWidth={2}
+                      className="text-muted-foreground"
+                    />
                     <span>Show transactions</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(account)}>
-                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="text-destructive" />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setDeleteTarget(account)}
+                  >
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      strokeWidth={2}
+                      className="text-destructive"
+                    />
                     <span>Remove account</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -285,7 +389,7 @@ function AccountsPage() {
         },
       },
     ],
-    [openTransactions],
+    [openEdit, openTransactions]
   )
 
   return (
@@ -302,7 +406,9 @@ function AccountsPage() {
       ) : accountsQuery.isError ? (
         <Alert variant="destructive">
           <AlertTitle>Unable to load accounts</AlertTitle>
-          <AlertDescription>{getApiErrorMessage(accountsQuery.error, "Try again in a moment.")}</AlertDescription>
+          <AlertDescription>
+            {getApiErrorMessage(accountsQuery.error, "Try again in a moment.")}
+          </AlertDescription>
         </Alert>
       ) : accounts.length === 0 ? (
         <EmptyState
@@ -319,13 +425,27 @@ function AccountsPage() {
           searchPlaceholder="Search accounts"
           emptyMessage="No accounts match the current filters."
           filters={(table: TanstackTable<AccountListItem>) => {
-            const typeValue = (table.getColumn("type")?.getFilterValue() as string) ?? "all-types"
-            const currencyValue = (table.getColumn("currency")?.getFilterValue() as string) ?? "all-currencies"
-            const hasFilters = typeValue !== "all-types" || currencyValue !== "all-currencies"
+            const typeValue =
+              (table.getColumn("type")?.getFilterValue() as string) ??
+              "all-types"
+            const currencyValue =
+              (table.getColumn("currency")?.getFilterValue() as string) ??
+              "all-currencies"
+            const hasFilters =
+              typeValue !== "all-types" || currencyValue !== "all-currencies"
 
             return (
               <>
-                <Select value={typeValue} onValueChange={(value) => table.getColumn("type")?.setFilterValue(value === "all-types" ? undefined : value)}>
+                <Select
+                  value={typeValue}
+                  onValueChange={(value) =>
+                    table
+                      .getColumn("type")
+                      ?.setFilterValue(
+                        value === "all-types" ? undefined : value
+                      )
+                  }
+                >
                   <SelectTrigger size="sm" className="w-[148px]">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
@@ -333,21 +453,36 @@ function AccountsPage() {
                     <SelectGroup>
                       <SelectItem value="all-types">All types</SelectItem>
                       {accountTypeOptions.map((type) => (
-                        <SelectItem key={type} value={type}>{accountTypeMeta[type].label}</SelectItem>
+                        <SelectItem key={type} value={type}>
+                          {accountTypeMeta[type].label}
+                        </SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
 
-                <Select value={currencyValue} onValueChange={(value) => table.getColumn("currency")?.setFilterValue(value === "all-currencies" ? undefined : value)}>
+                <Select
+                  value={currencyValue}
+                  onValueChange={(value) =>
+                    table
+                      .getColumn("currency")
+                      ?.setFilterValue(
+                        value === "all-currencies" ? undefined : value
+                      )
+                  }
+                >
                   <SelectTrigger size="sm" className="w-[148px]">
                     <SelectValue placeholder="All currencies" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value="all-currencies">All currencies</SelectItem>
+                      <SelectItem value="all-currencies">
+                        All currencies
+                      </SelectItem>
                       {currencyOptions.map((currency) => (
-                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                        <SelectItem key={currency} value={currency}>
+                          {currency}
+                        </SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
@@ -380,7 +515,14 @@ function AccountsPage() {
         onChange={setCreateForm}
         currencies={currencyOptions}
         pending={createAccount.isPending}
-        error={createAccount.isError ? getApiErrorMessage(createAccount.error, "Unable to create account.") : null}
+        error={
+          createAccount.isError
+            ? getApiErrorMessage(
+                createAccount.error,
+                "Unable to create account."
+              )
+            : null
+        }
         onOpenChange={(open) => {
           setCreateOpen(open)
           if (!open) {
@@ -399,7 +541,14 @@ function AccountsPage() {
         onChange={setEditForm}
         currencies={currencyOptions}
         pending={updateAccount.isPending}
-        error={updateAccount.isError ? getApiErrorMessage(updateAccount.error, "Unable to update account.") : null}
+        error={
+          updateAccount.isError
+            ? getApiErrorMessage(
+                updateAccount.error,
+                "Unable to update account."
+              )
+            : null
+        }
         onOpenChange={(open) => {
           if (!open) {
             setEditAccount(null)
@@ -408,21 +557,38 @@ function AccountsPage() {
         onSubmit={handleEdit}
       />
 
-      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete account</DialogTitle>
-            <DialogDescription>This removes the account from the workspace. Existing transactions may prevent deletion if the backend rejects it.</DialogDescription>
+            <DialogDescription>
+              This removes the account from the workspace. Existing transactions
+              may prevent deletion if the backend rejects it.
+            </DialogDescription>
           </DialogHeader>
           {deleteAccount.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Delete failed</AlertTitle>
-              <AlertDescription>{getApiErrorMessage(deleteAccount.error, "Unable to delete account.")}</AlertDescription>
+              <AlertDescription>
+                {getApiErrorMessage(
+                  deleteAccount.error,
+                  "Unable to delete account."
+                )}
+              </AlertDescription>
             </Alert>
           ) : null}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleteAccount.isPending}>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteAccount.isPending}
+            >
               {deleteAccount.isPending ? "Deleting" : "Delete"}
             </Button>
           </DialogFooter>
@@ -469,18 +635,34 @@ function AccountDialog({
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <Field>
             <FieldLabel htmlFor={`${title}-name`}>Name</FieldLabel>
-            <Input id={`${title}-name`} value={value.name} onChange={(event) => onChange((state) => ({ ...state, name: event.target.value }))} />
+            <Input
+              id={`${title}-name`}
+              value={value.name}
+              onChange={(event) =>
+                onChange((state) => ({ ...state, name: event.target.value }))
+              }
+            />
           </Field>
           <Field>
             <FieldLabel>Currency</FieldLabel>
-            <Select value={value.currency} onValueChange={(next) => onChange((state) => ({ ...state, currency: next ?? state.currency }))}>
+            <Select
+              value={value.currency}
+              onValueChange={(next) =>
+                onChange((state) => ({
+                  ...state,
+                  currency: next ?? state.currency,
+                }))
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Currency" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {currencies.map((currency) => (
-                    <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
@@ -488,49 +670,95 @@ function AccountDialog({
           </Field>
           <Field>
             <FieldLabel>Account type</FieldLabel>
-            <Select value={value.type} onValueChange={(next) => onChange((state) => ({ ...state, type: next as AccountType }))}>
+            <Select
+              value={value.type}
+              onValueChange={(next) =>
+                onChange((state) => ({ ...state, type: next as AccountType }))
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {accountTypeOptions.map((type) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
                   ))}
                 </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
           <Field>
-            <FieldLabel htmlFor={`${title}-balance`}>Current balance</FieldLabel>
-            <Input id={`${title}-balance`} type="number" value={value.currentBalance} onChange={(event) => onChange((state) => ({ ...state, currentBalance: Number(event.target.value) || 0 }))} />
+            <FieldLabel htmlFor={`${title}-balance`}>
+              Current balance
+            </FieldLabel>
+            <Input
+              id={`${title}-balance`}
+              type="number"
+              value={value.currentBalance}
+              onChange={(event) =>
+                onChange((state) => ({
+                  ...state,
+                  currentBalance: Number(event.target.value) || 0,
+                }))
+              }
+            />
           </Field>
           <Field className="md:col-span-2">
-            <FieldLabel htmlFor={`${title}-description`}>Description</FieldLabel>
+            <FieldLabel htmlFor={`${title}-description`}>
+              Description
+            </FieldLabel>
             <Textarea
               id={`${title}-description`}
               value={value.description}
-              onChange={(event) => onChange((state) => ({ ...state, description: event.target.value }))}
+              onChange={(event) =>
+                onChange((state) => ({
+                  ...state,
+                  description: event.target.value,
+                }))
+              }
               placeholder="Add a short note about how you use this account"
               rows={3}
             />
           </Field>
           <Field>
             <FieldLabel>Accent color</FieldLabel>
-            <Input type="color" value={value.color} onChange={(event) => onChange((state) => ({ ...state, color: event.target.value }))} className="h-11 p-1" />
+            <Input
+              type="color"
+              value={value.color}
+              onChange={(event) =>
+                onChange((state) => ({ ...state, color: event.target.value }))
+              }
+              className="h-11 p-1"
+            />
           </Field>
           <Field>
             <FieldLabel>Account icon</FieldLabel>
-            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next ?? state.icon }))}>
+            <Select
+              value={value.icon}
+              onValueChange={(next) =>
+                onChange((state) => ({ ...state, icon: next ?? state.icon }))
+              }
+            >
               <SelectTrigger>
-                <HugeiconsIcon icon={selectedIcon.icon} strokeWidth={2} className="text-muted-foreground" />
+                <HugeiconsIcon
+                  icon={selectedIcon.icon}
+                  strokeWidth={2}
+                  className="text-muted-foreground"
+                />
                 <SelectValue placeholder="Icon" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {accountIconOptions.map((icon) => (
                     <SelectItem key={icon.name} value={icon.name}>
-                      <HugeiconsIcon icon={icon.icon} strokeWidth={2} className="text-muted-foreground" />
+                      <HugeiconsIcon
+                        icon={icon.icon}
+                        strokeWidth={2}
+                        className="text-muted-foreground"
+                      />
                       <span>{icon.label}</span>
                     </SelectItem>
                   ))}
@@ -546,11 +774,14 @@ function AccountDialog({
           </Alert>
         ) : null}
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={onSubmit} disabled={pending || !value.name.trim()}>{pending ? "Saving" : submitLabel}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={onSubmit} disabled={pending || !value.name.trim()}>
+            {pending ? "Saving" : submitLabel}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
-

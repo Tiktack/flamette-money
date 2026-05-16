@@ -9,7 +9,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -19,8 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
-import { useMonthlyYoyReport } from "@/lib/api/hooks"
-import { getApiErrorMessage } from "@/lib/api/errors"
+import { getApiErrorMessage } from "@/features/shared/errors"
+import { useMonthlyYoyReport } from "@/features/reports/hooks"
 import { formatCurrency, toNumber } from "@/lib/finance"
 
 export const Route = createFileRoute("/_protected/analytics/comparison")({
@@ -49,7 +55,7 @@ function AnalyticsComparisonPage() {
 
   const yearOptions = React.useMemo(
     () => Array.from({ length: 8 }, (_, index) => String(currentYear - index)),
-    [currentYear],
+    [currentYear]
   )
 
   const chartData = React.useMemo(
@@ -61,7 +67,7 @@ function AnalyticsComparisonPage() {
         }
         return row
       }),
-    [reportQuery.data],
+    [reportQuery.data]
   )
 
   const chartConfig = React.useMemo(
@@ -73,7 +79,7 @@ function AnalyticsComparisonPage() {
         }
         return config
       }, {}),
-    [reportQuery.data?.series],
+    [reportQuery.data?.series]
   )
 
   return (
@@ -83,7 +89,9 @@ function AnalyticsComparisonPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <CardTitle>Year-over-year monthly comparison</CardTitle>
-              <CardDescription>Compare full calendar years by month for income or expenses.</CardDescription>
+              <CardDescription>
+                Compare full calendar years by month for income or expenses.
+              </CardDescription>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="flex rounded-full border border-border bg-muted/60 p-1">
@@ -92,14 +100,28 @@ function AnalyticsComparisonPage() {
                     key={value}
                     type="button"
                     onClick={() => setMode(value)}
-                    className={value === mode ? "rounded-full bg-background px-3 py-1.5 text-sm font-medium shadow-sm" : "rounded-full px-3 py-1.5 text-sm text-muted-foreground"}
+                    className={
+                      value === mode
+                        ? "rounded-full bg-background px-3 py-1.5 text-sm font-medium shadow-sm"
+                        : "rounded-full px-3 py-1.5 text-sm text-muted-foreground"
+                    }
                   >
                     {value === "Expense" ? "Expenses" : "Income"}
                   </button>
                 ))}
               </div>
-              <YearSelect label="From" value={startYear} options={yearOptions} onChange={setStartYear} />
-              <YearSelect label="To" value={endYear} options={yearOptions} onChange={setEndYear} />
+              <YearSelect
+                label="From"
+                value={startYear}
+                options={yearOptions}
+                onChange={setStartYear}
+              />
+              <YearSelect
+                label="To"
+                value={endYear}
+                options={yearOptions}
+                onChange={setEndYear}
+              />
             </div>
           </div>
         </CardHeader>
@@ -110,7 +132,10 @@ function AnalyticsComparisonPage() {
             <EmptyState
               eyebrow="Report"
               title="Unable to load the comparison report"
-              description={getApiErrorMessage(reportQuery.error, "Try another year range or refresh the page.")}
+              description={getApiErrorMessage(
+                reportQuery.error,
+                "Try another year range or refresh the page."
+              )}
             />
           ) : chartData.length === 0 ? (
             <EmptyState
@@ -120,10 +145,15 @@ function AnalyticsComparisonPage() {
             />
           ) : (
             <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-              <BarChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
+              <BarChart
+                data={chartData}
+                margin={{ left: 8, right: 8, top: 12 }}
+              >
                 <CartesianGrid vertical={false} />
                 <XAxis axisLine={false} dataKey="month" tickLine={false} />
-                <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                <ChartTooltip
+                  content={<ChartTooltipContent indicator="line" />}
+                />
                 <ChartLegend content={<ChartLegendContent />} />
                 {(reportQuery.data?.series ?? []).map((series) => (
                   <Bar
@@ -147,12 +177,18 @@ function AnalyticsComparisonPage() {
         />
         <SummaryCard
           label="Previous year"
-          value={formatCurrency(reportQuery.data?.summary.previousYearTotal, baseCurrency)}
+          value={formatCurrency(
+            reportQuery.data?.summary.previousYearTotal,
+            baseCurrency
+          )}
           helper="Reference period total"
         />
         <SummaryCard
           label="Average per month"
-          value={formatCurrency(reportQuery.data?.summary.averagePerMonth, baseCurrency)}
+          value={formatCurrency(
+            reportQuery.data?.summary.averagePerMonth,
+            baseCurrency
+          )}
           helper="Latest year monthly average"
         />
       </div>
@@ -173,7 +209,9 @@ function YearSelect({
 }) {
   return (
     <div className="flex min-w-28 flex-col gap-2">
-      <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+        {label}
+      </span>
       <Select
         value={value}
         onValueChange={(nextValue) => {
@@ -199,12 +237,22 @@ function YearSelect({
   )
 }
 
-function SummaryCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+function SummaryCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string
+  value: string
+  helper: string
+}) {
   return (
     <Card className="border-border/60 bg-card/80 shadow-sm">
       <CardContent className="space-y-2 p-5">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+        <p className="text-2xl font-semibold tracking-tight text-foreground">
+          {value}
+        </p>
         <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
       </CardContent>
     </Card>

@@ -7,12 +7,15 @@ export const pageActionTypes = {
   createTrip: "create-trip",
 } as const
 
-export type PageActionType = (typeof pageActionTypes)[keyof typeof pageActionTypes]
+export type PageActionType =
+  (typeof pageActionTypes)[keyof typeof pageActionTypes]
 
 export function dispatchPageAction(action: PageActionType) {
   if (typeof window === "undefined") {
     return
   }
 
-  window.dispatchEvent(new CustomEvent<PageActionType>(PAGE_ACTION_EVENT, { detail: action }))
+  window.dispatchEvent(
+    new CustomEvent<PageActionType>(PAGE_ACTION_EVENT, { detail: action })
+  )
 }

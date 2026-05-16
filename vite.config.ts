@@ -4,15 +4,11 @@ import tailwindcss from "@tailwindcss/vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 
 const config = defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
-  const port = Number.parseInt(env.VITE_PORT ?? '5174', 10)
+  const env = loadEnv(mode, process.cwd(), "")
+  const port = Number.parseInt(env.VITE_PORT ?? "5174", 10)
 
   return {
-    plugins: [
-      tailwindcss(),
-      tanstackStart(),
-      viteReact(),
-    ],
+    plugins: [tailwindcss(), tanstackStart(), viteReact()],
     resolve: {
       tsconfigPaths: true,
     },
@@ -21,8 +17,8 @@ const config = defineConfig(({ mode }) => {
       port,
     },
     ssr: {
-      external: ['better-sqlite3'],
-    }
+      external: ["better-sqlite3"],
+    },
   }
 })
 

@@ -70,7 +70,13 @@ export function SharedDateRangeToolbar() {
       from: toDateOrUndefined(state.customStartDate),
       to: toDateOrUndefined(state.customEndDate),
     }
-  }, [resolvedRange.end, resolvedRange.start, state.customEndDate, state.customStartDate, state.preset])
+  }, [
+    resolvedRange.end,
+    resolvedRange.start,
+    state.customEndDate,
+    state.customStartDate,
+    state.preset,
+  ])
 
   const shiftBackward = () => {
     if (state.preset === "month") {
@@ -115,12 +121,13 @@ export function SharedDateRangeToolbar() {
     state.setCustomEndDate(format(range.to ?? range.from, "yyyy-MM-dd"))
   }
 
-  const rangeLabel = state.preset === "custom"
-    ? formatRangeLabel(
-        state.customStartDate ? parseISO(state.customStartDate) : null,
-        state.customEndDate ? parseISO(state.customEndDate) : null,
-      )
-    : formatRangeLabel(resolvedRange.start, resolvedRange.end)
+  const rangeLabel =
+    state.preset === "custom"
+      ? formatRangeLabel(
+          state.customStartDate ? parseISO(state.customStartDate) : null,
+          state.customEndDate ? parseISO(state.customEndDate) : null
+        )
+      : formatRangeLabel(resolvedRange.start, resolvedRange.end)
 
   return (
     <div className="overflow-x-auto py-1">
@@ -169,7 +176,11 @@ export function SharedDateRangeToolbar() {
               />
             }
           >
-            <HugeiconsIcon icon={Calendar03Icon} strokeWidth={2} data-icon="inline-start" />
+            <HugeiconsIcon
+              icon={Calendar03Icon}
+              strokeWidth={2}
+              data-icon="inline-start"
+            />
             {rangeLabel}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

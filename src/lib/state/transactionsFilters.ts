@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "zustand"
 
 export type TransactionsFiltersState = {
   accountIds: string[]
@@ -18,13 +18,13 @@ export type TransactionsFiltersState = {
 
 const buildDefaultState = (): Omit<
   TransactionsFiltersState,
-  | 'setAccountIds'
-  | 'setCategoryIds'
-  | 'setTripIds'
-  | 'setTransactionTypes'
-  | 'setAmountMin'
-  | 'setAmountMax'
-  | 'resetFilters'
+  | "setAccountIds"
+  | "setCategoryIds"
+  | "setTripIds"
+  | "setTransactionTypes"
+  | "setAmountMin"
+  | "setAmountMax"
+  | "resetFilters"
 > => {
   return {
     accountIds: [],
@@ -36,13 +36,17 @@ const buildDefaultState = (): Omit<
   }
 }
 
-export const useTransactionsFilters = create<TransactionsFiltersState>((set) => ({
-  ...buildDefaultState(),
-  setAccountIds: (value) => set((state) => ({ ...state, accountIds: value })),
-  setCategoryIds: (value) => set((state) => ({ ...state, categoryIds: value })),
-  setTripIds: (value) => set((state) => ({ ...state, tripIds: value })),
-  setTransactionTypes: (value) => set((state) => ({ ...state, transactionTypes: value })),
-  setAmountMin: (value) => set((state) => ({ ...state, amountMin: value })),
-  setAmountMax: (value) => set((state) => ({ ...state, amountMax: value })),
-  resetFilters: () => set(buildDefaultState()),
-}))
+export const useTransactionsFilters = create<TransactionsFiltersState>(
+  (set) => ({
+    ...buildDefaultState(),
+    setAccountIds: (value) => set((state) => ({ ...state, accountIds: value })),
+    setCategoryIds: (value) =>
+      set((state) => ({ ...state, categoryIds: value })),
+    setTripIds: (value) => set((state) => ({ ...state, tripIds: value })),
+    setTransactionTypes: (value) =>
+      set((state) => ({ ...state, transactionTypes: value })),
+    setAmountMin: (value) => set((state) => ({ ...state, amountMin: value })),
+    setAmountMax: (value) => set((state) => ({ ...state, amountMax: value })),
+    resetFilters: () => set(buildDefaultState()),
+  })
+)

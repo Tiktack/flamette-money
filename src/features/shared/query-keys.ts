@@ -1,0 +1,21 @@
+export const queryKeys = {
+  authMe: () => ["auth", "me"] as const,
+  accounts: () => ["accounts"] as const,
+  categories: () => ["categories"] as const,
+  trips: () => ["trips"] as const,
+  transactions: (page: number, pageSize: number) =>
+    ["transactions", page, pageSize] as const,
+  transactionById: (id: string) => ["transactions", id] as const,
+  transactionsSearch: (query?: Record<string, unknown>) =>
+    ["transactions-search", query ?? {}] as const,
+  reportsCashflowSeries: (query?: Record<string, unknown>) =>
+    ["reports-cashflow-series", query ?? {}] as const,
+  reportsCategorySeries: (query?: Record<string, unknown>) =>
+    ["reports-category-series", query ?? {}] as const,
+  reportsMonthlyYoy: (query?: Record<string, unknown>) =>
+    ["reports-monthly-yoy", query ?? {}] as const,
+  reportsPortfolioBalanceSeries: (query?: Record<string, unknown>) =>
+    ["reports-portfolio-balance-series", query ?? {}] as const,
+  appInfo: () => ["app-info"] as const,
+  settings: () => ["settings"] as const,
+}

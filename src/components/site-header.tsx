@@ -27,7 +27,9 @@ const breadcrumbLabelMap: Record<string, string> = {
 }
 
 export function SiteHeader() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
 
   const breadcrumbs = pathname
     .split("/")
@@ -92,7 +94,9 @@ export function SiteHeader() {
                         {isLast ? (
                           <BreadcrumbPage>{item.label}</BreadcrumbPage>
                         ) : (
-                          <BreadcrumbLink render={<Link to={item.href} />}>{item.label}</BreadcrumbLink>
+                          <BreadcrumbLink render={<Link to={item.href} />}>
+                            {item.label}
+                          </BreadcrumbLink>
                         )}
                       </BreadcrumbItem>
                       {!isLast ? <BreadcrumbSeparator /> : null}

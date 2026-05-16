@@ -1,10 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import {
-  ComposableMap,
-  Geographies,
-  Geography,
-} from "react-simple-maps"
+import { ComposableMap, Geographies, Geography } from "react-simple-maps"
 
 import { ALPHA2_TO_NUMERIC, COUNTRIES } from "@/lib/countries"
 import { formatCurrency, formatDateLabel, toNumber } from "@/lib/finance"
@@ -33,14 +29,17 @@ const COLORS = {
 }
 
 function useColorScheme() {
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.classList.contains("dark"),
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
   )
   useEffect(() => {
     const obs = new MutationObserver(() =>
-      setIsDark(document.documentElement.classList.contains("dark")),
+      setIsDark(document.documentElement.classList.contains("dark"))
     )
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
     return () => obs.disconnect()
   }, [])
   return isDark ? COLORS.dark : COLORS.light
@@ -120,7 +119,7 @@ function TripWorldMapInner({ trips, baseCurrency }: TripMapProps) {
         data,
       })
     },
-    [byNumericId],
+    [byNumericId]
   )
 
   const handleMouseMove = useCallback(
@@ -130,11 +129,15 @@ function TripWorldMapInner({ trips, baseCurrency }: TripMapProps) {
       if (!rect) return
       setTooltip((prev) =>
         prev
-          ? { ...prev, x: event.clientX - rect.left, y: event.clientY - rect.top }
-          : prev,
+          ? {
+              ...prev,
+              x: event.clientX - rect.left,
+              y: event.clientY - rect.top,
+            }
+          : prev
       )
     },
-    [byNumericId],
+    [byNumericId]
   )
 
   const handleMouseLeave = useCallback(() => {
@@ -178,7 +181,9 @@ function TripWorldMapInner({ trips, baseCurrency }: TripMapProps) {
                     },
                     hover: {
                       outline: "none",
-                      fill: isVisited ? colors.fillVisitedHover : colors.fillDefaultHover,
+                      fill: isVisited
+                        ? colors.fillVisitedHover
+                        : colors.fillDefaultHover,
                       cursor: isVisited ? "pointer" : "default",
                     },
                     pressed: { outline: "none" },
@@ -216,7 +221,9 @@ function CountryTooltip({
       }}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground">{data.countryName}</span>
+        <span className="text-sm font-semibold text-foreground">
+          {data.countryName}
+        </span>
         <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-xs font-medium text-primary">
           {formatCurrency(data.totalSpent, baseCurrency)}
         </span>
@@ -224,7 +231,10 @@ function CountryTooltip({
 
       <div className="space-y-1.5">
         {data.trips.map((trip) => (
-          <div key={trip.id} className="flex items-center justify-between gap-2 text-xs">
+          <div
+            key={trip.id}
+            className="flex items-center justify-between gap-2 text-xs"
+          >
             <span className="truncate text-muted-foreground">{trip.name}</span>
             <span className="shrink-0 text-muted-foreground/70">
               {formatDateLabel(trip.startDate)}
@@ -234,8 +244,9 @@ function CountryTooltip({
       </div>
 
       <div className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-        {data.trips.reduce((sum, t) => sum + toNumber(t.transactionCount), 0)} transactions across{" "}
-        {data.trips.length} {data.trips.length === 1 ? "trip" : "trips"}
+        {data.trips.reduce((sum, t) => sum + toNumber(t.transactionCount), 0)}{" "}
+        transactions across {data.trips.length}{" "}
+        {data.trips.length === 1 ? "trip" : "trips"}
       </div>
     </div>
   )

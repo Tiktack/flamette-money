@@ -75,7 +75,7 @@ function ChartContainer({
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
-    ([, config]) => config.theme || config.color
+    ([, entry]) => entry.theme || entry.color
   )
 
   if (!colorConfig.length) {
@@ -122,7 +122,8 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: Partial<RechartsTooltipContentProps> & React.ComponentProps<"div"> & {
+}: Partial<RechartsTooltipContentProps> &
+  React.ComponentProps<"div"> & {
     hideLabel?: boolean
     hideIndicator?: boolean
     indicator?: "line" | "dot" | "dashed"
@@ -175,10 +176,10 @@ function ChartTooltipContent({
 
   return (
     <div
-        className={cn(
-          "grid min-w-32 items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
-          className
-        )}
+      className={cn(
+        "grid min-w-32 items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
+        className
+      )}
     >
       {!nestLabel ? tooltipLabel : null}
       <div className="grid gap-1.5">
