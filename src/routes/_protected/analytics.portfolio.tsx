@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import {
@@ -10,6 +10,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
+import { formatCompactNumber, computeNiceDomainTicks } from "@/lib/chart-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
@@ -69,6 +70,12 @@ function AnalyticsPortfolioPage() {
     [reportQuery.data?.points],
   )
 
+  const yAxisConfig = React.useMemo(() => {
+    const values = chartData.map((d) => d.balance).filter((v) => typeof v === "number" && isFinite(v))
+    const { domain, ticks } = computeNiceDomainTicks(values, { tickCount: 4, paddingFraction: 0.08 })
+    return { domain, ticks }
+  }, [chartData])
+
   const chartConfig: ChartConfig = {
     balance: {
       label: `Balance (${resolvedBaseCurrency})`,
@@ -124,13 +131,14 @@ function AnalyticsPortfolioPage() {
               />
             ) : (
               <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-                <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis axisLine={false} dataKey="period" tickLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  <Area dataKey="balance" fill="var(--color-balance)" fillOpacity={0.18} stroke="var(--color-balance)" type="linear" />
-                </AreaChart>
-              </ChartContainer>
+                  <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis axisLine={false} dataKey="period" tickLine={false} />
+                    <YAxis axisLine={false} tickLine={false} domain={yAxisConfig.domain} ticks={yAxisConfig.ticks} tickFormatter={(v) => formatCompactNumber(Number(v ?? 0))} />
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <Area dataKey="balance" fill="var(--color-balance)" fillOpacity={0.18} stroke="var(--color-balance)" type="linear" />
+                  </AreaChart>
+                </ChartContainer>
             )}
           </CardContent>
         </Card>
