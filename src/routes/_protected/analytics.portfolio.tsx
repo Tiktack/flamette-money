@@ -25,7 +25,7 @@ import { useCurrentUser, usePortfolioBalanceSeriesReport } from "@/lib/api/hooks
 import { formatCurrency, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
-export const Route = createFileRoute("/analytics/portfolio")({
+export const Route = createFileRoute("/_protected/analytics/portfolio")({
   component: AnalyticsPortfolioPage,
 })
 

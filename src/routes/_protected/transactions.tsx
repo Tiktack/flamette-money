@@ -74,7 +74,7 @@ import {
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
-export const Route = createFileRoute("/transactions")({
+export const Route = createFileRoute("/_protected/transactions")({
   component: TransactionsPage,
 })
 

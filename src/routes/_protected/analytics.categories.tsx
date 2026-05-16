@@ -31,7 +31,7 @@ import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { MetricCard } from "@/components/metric-card"
 
-export const Route = createFileRoute("/analytics/categories")({
+export const Route = createFileRoute("/_protected/analytics/categories")({
   component: AnalyticsCategoriesPage,
 })
 

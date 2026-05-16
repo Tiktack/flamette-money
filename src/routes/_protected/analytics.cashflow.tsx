@@ -33,7 +33,7 @@ import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } fr
 const POSITIVE_NET_COLOR = "#2f8f5b"
 const NEGATIVE_NET_COLOR = "#cb5a5a"
 
-export const Route = createFileRoute("/analytics/cashflow")({
+export const Route = createFileRoute("/_protected/analytics/cashflow")({
   component: AnalyticsCashflowPage,
 })
 

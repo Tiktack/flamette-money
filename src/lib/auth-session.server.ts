@@ -8,7 +8,8 @@ import { users } from "@/lib/db/schema"
 
 export async function getSessionData() {
   const headers = getRequestHeaders()
-  return auth.api.getSession({ headers })
+  const session = await auth.api.getSession({ headers })
+  return session
 }
 
 export async function requireSessionData() {

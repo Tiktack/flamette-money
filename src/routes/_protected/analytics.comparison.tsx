@@ -23,7 +23,7 @@ import { useMonthlyYoyReport } from "@/lib/api/hooks"
 import { getApiErrorMessage } from "@/lib/api/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
 
-export const Route = createFileRoute("/analytics/comparison")({
+export const Route = createFileRoute("/_protected/analytics/comparison")({
   component: AnalyticsComparisonPage,
 })
 

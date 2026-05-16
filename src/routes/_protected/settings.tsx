@@ -38,7 +38,7 @@ import {
   useUpdateSettings,
 } from "@/lib/api/hooks"
 
-export const Route = createFileRoute("/settings")({
+export const Route = createFileRoute("/_protected/settings")({
   component: SettingsPage,
 })
 
