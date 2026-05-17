@@ -17,6 +17,54 @@ export function formatCompactNumber(value: number | string | null | undefined) {
   }
 }
 
+export type TimeSeriesAxisInterval = "Auto" | "None" | "Day" | "Week" | "Month"
+
+const dayFormatter = new Intl.DateTimeFormat(undefined, { day: "numeric" })
+const monthFormatter = new Intl.DateTimeFormat(undefined, { month: "short" })
+const monthDayFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+})
+const yearFormatter = new Intl.DateTimeFormat(undefined, { year: "2-digit" })
+
+export function formatTimeSeriesAxisLabel(options: {
+  interval: TimeSeriesAxisInterval | undefined
+  rangeStart: Date | null
+  rangeEnd: Date | null
+  bucketStart: Date
+}) {
+  const { interval, rangeStart, rangeEnd, bucketStart } = options
+  const isSameMonth =
+    rangeStart !== null &&
+    rangeEnd !== null &&
+    rangeStart.getFullYear() === rangeEnd.getFullYear() &&
+    rangeStart.getMonth() === rangeEnd.getMonth()
+  const isSameYear =
+    rangeStart !== null &&
+    rangeEnd !== null &&
+    rangeStart.getFullYear() === rangeEnd.getFullYear()
+
+  if (interval === "Month") {
+    return isSameYear
+      ? monthFormatter.format(bucketStart)
+      : `${monthFormatter.format(bucketStart)}, ${yearFormatter.format(bucketStart)}`
+  }
+
+  if (interval === "Day" || interval === "Week") {
+    if (isSameMonth) {
+      return dayFormatter.format(bucketStart)
+    }
+
+    if (isSameYear) {
+      return monthDayFormatter.format(bucketStart)
+    }
+
+    return `${monthDayFormatter.format(bucketStart)}, ${yearFormatter.format(bucketStart)}`
+  }
+
+  return monthDayFormatter.format(bucketStart)
+}
+
 export function computeNiceDomainTicks(
   values: number[],
   options?: { tickCount?: number; paddingFraction?: number }

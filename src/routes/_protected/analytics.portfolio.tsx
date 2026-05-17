@@ -1,7 +1,14 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts"
 
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import {
@@ -10,7 +17,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { formatCompactNumber, computeNiceDomainTicks } from "@/lib/chart-utils"
+import {
+  computeNiceDomainTicks,
+  formatCompactNumber,
+  formatTimeSeriesAxisLabel,
+} from "@/lib/chart-utils"
 import {
   Card,
   CardContent,
@@ -77,18 +88,124 @@ function AnalyticsPortfolioPage() {
 
   const reportQuery = usePortfolioBalanceSeriesReport(query)
   const resolvedBaseCurrency = reportQuery.data?.baseCurrency ?? baseCurrency
-  const chartData = React.useMemo(
-    () =>
-      (reportQuery.data?.points ?? []).map((point) => ({
-        period: point.bucketLabel,
-        balance: toNumber(point.totalBalance),
-      })),
-    [reportQuery.data?.points]
+  const today = React.useMemo(() => new Date(), [])
+  const todayStart = React.useMemo(
+    () => new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+    [today]
   )
+  const todayEnd = React.useMemo(
+    () =>
+      new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+        23,
+        59,
+        59,
+        999
+      ),
+    [today]
+  )
+  const chartPresentation = React.useMemo(() => {
+    const points = reportQuery.data?.points ?? []
+    const startDate = reportQuery.data?.startDate
+      ? new Date(reportQuery.data.startDate)
+      : null
+    const endDate = reportQuery.data?.endDate
+      ? new Date(reportQuery.data.endDate)
+      : null
+    const reportInterval = reportQuery.data?.interval
+
+    let currentBucketIndex = -1
+
+    const hasProjection =
+      startDate !== null &&
+      endDate !== null &&
+      startDate.getTime() <= todayEnd.getTime() &&
+      endDate.getTime() > todayEnd.getTime()
+
+    const tickLabels = new Map<string, string>()
+    const data = points.map((point, index) => {
+      const bucketEnd = new Date(point.bucketDate)
+      const bucketStart =
+        index === 0
+          ? (startDate ?? bucketEnd)
+          : new Date(new Date(points[index - 1]!.bucketDate).getTime() + 1)
+      const rawBalance = toNumber(point.totalBalance)
+      const tickLabel = formatTimeSeriesAxisLabel({
+        interval: reportInterval,
+        rangeStart: startDate,
+        rangeEnd: endDate,
+        bucketStart,
+      })
+
+      if (
+        currentBucketIndex === -1 &&
+        bucketStart.getTime() <= todayEnd.getTime() &&
+        bucketEnd.getTime() >= todayStart.getTime()
+      ) {
+        currentBucketIndex = index
+      }
+
+      tickLabels.set(point.bucketLabel, tickLabel)
+
+      return {
+        period: point.bucketLabel,
+        balance:
+          hasProjection && currentBucketIndex >= 0 && index > currentBucketIndex
+            ? null
+            : rawBalance,
+        rawBalance,
+      }
+    })
+
+    return {
+      data,
+      hasProjection:
+        hasProjection &&
+        currentBucketIndex >= 0 &&
+        currentBucketIndex < points.length - 1,
+      currentBucketIndex,
+      tickLabels,
+    }
+  }, [
+    reportQuery.data?.endDate,
+    reportQuery.data?.interval,
+    reportQuery.data?.points,
+    reportQuery.data?.startDate,
+    todayStart,
+    todayEnd,
+  ])
+  const chartData = chartPresentation.data
+  const projectionSegment = React.useMemo(() => {
+    if (
+      !chartPresentation.hasProjection ||
+      chartPresentation.currentBucketIndex < 0 ||
+      chartData.length < 2
+    ) {
+      return null
+    }
+
+    const lastActualPoint = chartData[chartPresentation.currentBucketIndex]
+    const lastPoint = chartData[chartData.length - 1]
+
+    if (!lastActualPoint || !lastPoint) {
+      return null
+    }
+
+    return [
+      { x: lastActualPoint.period, y: lastActualPoint.rawBalance },
+      { x: lastPoint.period, y: lastActualPoint.rawBalance },
+    ] as const
+  }, [
+    chartData,
+    chartPresentation.hasProjection,
+    chartPresentation.currentBucketIndex,
+  ])
 
   const yAxisConfig = React.useMemo(() => {
     const values = chartData
-      .map((d) => d.balance)
+      .map((d) => d.rawBalance)
       .filter((v) => typeof v === "number" && isFinite(v))
     const { domain, ticks } = computeNiceDomainTicks(values, {
       tickCount: 4,
@@ -171,7 +288,15 @@ function AnalyticsPortfolioPage() {
                   margin={{ left: 8, right: 8, top: 12 }}
                 >
                   <CartesianGrid vertical={false} />
-                  <XAxis axisLine={false} dataKey="period" tickLine={false} />
+                  <XAxis
+                    axisLine={false}
+                    dataKey="period"
+                    tickFormatter={(value) =>
+                      chartPresentation.tickLabels.get(String(value)) ??
+                      String(value)
+                    }
+                    tickLine={false}
+                  />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
@@ -182,6 +307,15 @@ function AnalyticsPortfolioPage() {
                   <ChartTooltip
                     content={<ChartTooltipContent indicator="line" />}
                   />
+                  {projectionSegment ? (
+                    <ReferenceLine
+                      ifOverflow="extendDomain"
+                      segment={projectionSegment}
+                      stroke="var(--color-balance)"
+                      strokeDasharray="4 4"
+                      strokeWidth={2}
+                    />
+                  ) : null}
                   <Area
                     dataKey="balance"
                     fill="var(--color-balance)"
