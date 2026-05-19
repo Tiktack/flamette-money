@@ -19,6 +19,12 @@
       "skillPath": "better-auth/create-auth/SKILL.md",
       "computedHash": "393e8d2d795fa5797c9a4e0665f29183ea2e140233db59746d510340a10456e6"
     },
+    "hallmark": {
+      "source": "nutlope/hallmark",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "0a6839d1519a71f773923fccd0f0357ea94af0c31d248787f0d481a3240a1ef2"
+    },
     "shadcn": {
       "source": "shadcn-ui/ui",
       "sourceType": "github",

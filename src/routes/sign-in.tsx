@@ -2,6 +2,9 @@ import * as React from "react"
 
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
 
+import { HugeiconsIcon } from "@hugeicons/react"
+import { CommandIcon } from "@hugeicons/core-free-icons"
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -67,14 +70,27 @@ function SignInPage() {
 
   return (
     <div className="auth-bg flex min-h-svh flex-col items-center justify-center px-4 py-10">
+      <div className="mb-8 flex items-center gap-2.5">
+        <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
+          <HugeiconsIcon
+            icon={CommandIcon}
+            strokeWidth={2}
+            className="size-4 text-primary"
+          />
+        </div>
+        <span className="text-base font-semibold tracking-tight text-foreground">
+          Flamette Money
+        </span>
+      </div>
+
       <Card className="w-full max-w-sm gap-0 overflow-hidden rounded-xl py-0 shadow-lg">
-        <CardHeader className="pt-6 pb-4 text-center">
-          <CardTitle className="text-xl font-semibold">
-            {mode === "sign-in" ? "Sign in to Flamette" : "Create your account"}
+        <CardHeader className="pt-6 pb-4">
+          <CardTitle className="text-xl font-semibold tracking-tight">
+            {mode === "sign-in" ? "Sign in" : "Create your account"}
           </CardTitle>
           <CardDescription>
             {mode === "sign-in"
-              ? "Welcome back! Please sign in to continue"
+              ? "Welcome back — enter your details to continue"
               : "Fill in the details below to get started"}
           </CardDescription>
         </CardHeader>

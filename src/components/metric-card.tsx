@@ -41,7 +41,8 @@ export function MetricCard({
     <Card
       size="sm"
       className={cn(
-        "border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm",
+        "relative overflow-hidden border-border/60 bg-card shadow-sm",
+        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/35 before:to-transparent",
         className
       )}
     >
