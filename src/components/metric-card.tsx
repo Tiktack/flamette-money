@@ -41,12 +41,13 @@ export function MetricCard({
     <Card
       size="sm"
       className={cn(
-        "border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm",
+        "relative overflow-hidden border-border bg-card/95 shadow-none",
+        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent",
         className
       )}
     >
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm font-medium tracking-tight text-muted-foreground">
+        <CardTitle className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
           {icon !== undefined && (
             <span
               className={cn(
@@ -66,12 +67,12 @@ export function MetricCard({
         {badge !== undefined && <CardAction>{badge}</CardAction>}
       </CardHeader>
       <CardContent>
-        <p className="text-[2rem] leading-none font-semibold tracking-tight break-words text-foreground tabular-nums">
+        <p className="break-words text-[2rem] leading-none font-semibold tracking-[-0.035em] text-foreground tabular-nums">
           {value}
         </p>
       </CardContent>
       {footer !== undefined && (
-        <CardFooter className="border-t border-border/60 text-xs text-muted-foreground">
+        <CardFooter className="justify-between border-t border-border font-mono text-[11px] tracking-[0.08em] text-muted-foreground uppercase">
           {footer}
         </CardFooter>
       )}

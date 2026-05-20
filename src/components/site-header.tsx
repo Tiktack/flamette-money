@@ -92,14 +92,14 @@ export function SiteHeader() {
                     <React.Fragment key={item.href}>
                       <BreadcrumbItem>
                         {isLast ? (
-                          <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                          <BreadcrumbPage className="text-primary font-medium">{item.label}</BreadcrumbPage>
                         ) : (
                           <BreadcrumbLink render={<Link to={item.href} />}>
                             {item.label}
                           </BreadcrumbLink>
                         )}
                       </BreadcrumbItem>
-                      {!isLast ? <BreadcrumbSeparator /> : null}
+                      {!isLast ? <BreadcrumbSeparator className="text-muted-foreground/50">·</BreadcrumbSeparator> : null}
                     </React.Fragment>
                   )
                 })}

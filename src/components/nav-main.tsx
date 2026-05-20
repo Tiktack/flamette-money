@@ -64,7 +64,7 @@ export function NavMain({
               {quickAction.to ? (
                 <SidebarMenuButton
                   tooltip={quickAction.title}
-                  className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                  className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/95 hover:text-primary-foreground active:bg-primary/95 active:text-primary-foreground"
                   render={<Link to={quickAction.to} />}
                 >
                   <HugeiconsIcon icon={PlusSignCircleIcon} strokeWidth={2} />
@@ -73,7 +73,7 @@ export function NavMain({
               ) : (
                 <SidebarMenuButton
                   tooltip={quickAction.title}
-                  className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                  className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/95 hover:text-primary-foreground active:bg-primary/95 active:text-primary-foreground"
                   onClick={quickAction.onClick}
                 >
                   <HugeiconsIcon icon={PlusSignCircleIcon} strokeWidth={2} />

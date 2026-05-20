@@ -17,7 +17,7 @@ export function EmptyState({
     <div className="rounded-[1.75rem] border border-dashed border-border bg-card/70 p-8 text-center shadow-sm">
       <div className="mx-auto flex max-w-xl flex-col items-center gap-3">
         {eyebrow ? (
-          <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
+          <span className="font-mono text-xs tracking-widest text-primary/70 uppercase">
             {eyebrow}
           </span>
         ) : null}
