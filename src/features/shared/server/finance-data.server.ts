@@ -890,7 +890,12 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
       .sync()
 
     tx.delete(trips).where(eq(trips.userId, user.id)).run()
-    tx.delete(categories).where(eq(categories.userId, user.id)).run()
+    tx.delete(categories)
+      .where(and(eq(categories.userId, user.id), isNotNull(categories.parentId)))
+      .run()
+    tx.delete(categories)
+      .where(and(eq(categories.userId, user.id), isNull(categories.parentId)))
+      .run()
     tx.delete(accounts).where(eq(accounts.userId, user.id)).run()
 
     return {

@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm"
 import {
+  type AnySQLiteColumn,
   index,
   integer,
   real,
@@ -159,7 +160,10 @@ export const categories = sqliteTable(
     name: text("name").notNull(),
     color: text("color").notNull(),
     icon: text("icon").notNull(),
-    parentId: text("parent_id"),
+    parentId: text("parent_id").references(
+      (): AnySQLiteColumn => categories.id,
+      { onDelete: "restrict" }
+    ),
     type: text("type", { enum: categoryTypes }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(timestampDefault)
@@ -219,12 +223,26 @@ export const transactions = sqliteTable(
     accountId: text("account_id")
       .notNull()
       .references(() => accounts.id, { onDelete: "restrict" }),
-    categoryId: text("category_id"),
-    subCategoryId: text("sub_category_id"),
-    targetAccountId: text("target_account_id"),
-    relatedTransactionId: text("related_transaction_id"),
-    originalTransactionId: text("original_transaction_id"),
-    tripId: text("trip_id"),
+    categoryId: text("category_id").references(() => categories.id, {
+      onDelete: "restrict",
+    }),
+    subCategoryId: text("sub_category_id").references(() => categories.id, {
+      onDelete: "restrict",
+    }),
+    targetAccountId: text("target_account_id").references(() => accounts.id, {
+      onDelete: "restrict",
+    }),
+    relatedTransactionId: text("related_transaction_id").references(
+      (): AnySQLiteColumn => transactions.id,
+      { onDelete: "restrict" }
+    ),
+    originalTransactionId: text("original_transaction_id").references(
+      (): AnySQLiteColumn => transactions.id,
+      { onDelete: "restrict" }
+    ),
+    tripId: text("trip_id").references(() => trips.id, {
+      onDelete: "restrict",
+    }),
     isRefund: integer("is_refund", { mode: "boolean" })
       .default(false)
       .notNull(),
@@ -269,8 +287,12 @@ export const transactionItems = sqliteTable("transaction_items", {
   unitPrice: real("unit_price").notNull().default(0),
   promotionAmount: real("promotion_amount").notNull().default(0),
   finalAmount: real("final_amount").notNull().default(0),
-  categoryId: text("category_id"),
-  subCategoryId: text("sub_category_id"),
+  categoryId: text("category_id").references(() => categories.id, {
+    onDelete: "restrict",
+  }),
+  subCategoryId: text("sub_category_id").references(() => categories.id, {
+    onDelete: "restrict",
+  }),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(timestampDefault)
     .notNull(),

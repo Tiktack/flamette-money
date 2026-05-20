@@ -207,7 +207,7 @@ function SettingsPage() {
         <SettingsSection title="Backups & import">
           <SettingsRow
             title="Export backup"
-            description="Download a complete Flamette backup as an XLSX file."
+            description="Download a complete Flamette backup as an .xlsx file."
           >
             <div className="flex w-full justify-start md:justify-end">
               <Button
@@ -222,7 +222,7 @@ function SettingsPage() {
 
           <SettingsRow
             title="Import backup"
-            description="Restore a Flamette backup or bring in a 1Money CSV export."
+            description="Restore a Flamette backup or import a 1Money CSV export into this workspace."
             last
           >
             <div className="flex w-full flex-col gap-4 md:ml-auto md:max-w-md">
@@ -342,8 +342,8 @@ function SettingsPage() {
           </SettingsRow>
 
           <SettingsRow
-            title="Automatic backup"
-            description="Download a native backup as soon as demo data finishes generating."
+            title="Backup after seeding"
+            description="Automatically download a Flamette backup after demo data finishes generating."
             last
           >
             <label className="flex items-center gap-3 text-sm text-muted-foreground md:ml-auto">
@@ -351,7 +351,7 @@ function SettingsPage() {
                 checked={downloadAfterSeed}
                 onCheckedChange={setDownloadAfterSeed}
               />
-              <span>Download after seeding</span>
+              <span>Download backup after seeding</span>
             </label>
           </SettingsRow>
         </SettingsSection>
@@ -359,7 +359,7 @@ function SettingsPage() {
         <SettingsSection title="Danger zone" tone="danger">
           <SettingsRow
             title="Reset workspace"
-            description="Permanently remove transactions, accounts, categories, trips, and item lines."
+            description="Permanently remove transactions, accounts, categories, trips, and transaction items from this workspace."
             last
           >
             <div className="flex w-full flex-col gap-3 md:ml-auto md:max-w-md">
@@ -394,7 +394,8 @@ function SettingsPage() {
             <DialogTitle>Reset all data</DialogTitle>
             <DialogDescription>
               This permanently deletes transactions, accounts, categories,
-              trips, and item lines while keeping core settings.
+              trips, and transaction items while keeping your profile and
+              preferences.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
