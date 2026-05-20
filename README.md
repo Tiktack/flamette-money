@@ -24,7 +24,7 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
 ## Architecture
 
 - **Frontend + server runtime**: TanStack Start full-stack app (source at `src/`).
-- **Authentication**: Better Auth with email/password sign-up and sign-in.
+- **Authentication**: Better Auth with email/password plus optional Google and GitHub social sign-in.
 - **Database**: local SQLite shared by the app and auth, accessed through Drizzle ORM.
 - **Routing and data**: TanStack Router, TanStack React Query, and TanStack Start server functions.
 - **UI**: shadcn/ui components with Tailwind CSS 4.
@@ -41,10 +41,14 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
 To run `frontend-new` with the full local TanStack Start stack, configure these environment variables:
 
 - `BETTER_AUTH_SECRET`: Better Auth signing secret.
-- `BETTER_AUTH_URL`: App origin for auth callbacks/cookies. Defaults to `http://localhost:5174`.
+- `BETTER_AUTH_URL`: Optional explicit app origin for auth callbacks/cookies.
+- `BETTER_AUTH_ALLOWED_HOSTS`: Optional comma-separated host patterns for dynamic auth URLs. Defaults to local hosts like `localhost:*`.
+- `BETTER_AUTH_TRUSTED_ORIGINS`: Optional comma-separated extra origins Better Auth should trust.
 - `DATABASE_URL`: SQLite path. Defaults to `file:./data/flamette-money.db`.
 - `OPENROUTER_API_KEY`: Optional, enables AI receipt scanning.
 - `OPENROUTER_MODEL`: Optional OpenRouter model override for receipt scanning.
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Optional Google OAuth credentials.
+- `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`: Optional GitHub OAuth credentials.
 
 ## Getting Started
 
@@ -61,7 +65,7 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
    pnpm install
    pnpm dev
    ```
-3. **Explore**: Open `http://localhost:5174`.
+3. **Explore**: Open the local URL shown by Vite.
 
 ## Demo Data
 
