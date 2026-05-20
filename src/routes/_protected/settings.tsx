@@ -1,10 +1,21 @@
 import * as React from "react"
 
+import {
+  CheckmarkCircle02Icon,
+  Loading03Icon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute } from "@tanstack/react-router"
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -13,7 +24,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldContent,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -23,6 +39,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { useAppInfo, useCurrentUser } from "@/features/app/hooks"
 import { useSeedDemo } from "@/features/demo-seed/hooks"
@@ -35,7 +53,17 @@ import {
   useSettings,
   useUpdateSettings,
 } from "@/features/settings/hooks"
-import { cn } from "@/lib/utils"
+
+const fileAcceptByImportType: Record<BackupImportType, string> = {
+  flamette:
+    ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "one-money": ".csv,text/csv",
+}
+
+const importFormatLabels: Record<BackupImportType, string> = {
+  flamette: "Flamette backup (.xlsx)",
+  "one-money": "1Money backup (.csv)",
+}
 
 export const Route = createFileRoute("/_protected/settings")({
   component: SettingsPage,
@@ -54,45 +82,116 @@ function SettingsPage() {
   const [years, setYears] = React.useState(3)
   const [seedValue, setSeedValue] = React.useState("")
   const [downloadAfterSeed, setDownloadAfterSeed] = React.useState(true)
+  const [importOpen, setImportOpen] = React.useState(false)
+  const [seedOpen, setSeedOpen] = React.useState(false)
+  const [resetOpen, setResetOpen] = React.useState(false)
   const [importType, setImportType] =
     React.useState<BackupImportType>("flamette")
-  const [backupFile, setBackupFile] = React.useState<File | null>(null)
-  const [resetOpen, setResetOpen] = React.useState(false)
+  const [importFile, setImportFile] = React.useState<File | null>(null)
+  const [importConfirmed, setImportConfirmed] = React.useState(false)
+  const [resetConfirmed, setResetConfirmed] = React.useState(false)
+  const [saveError, setSaveError] = React.useState<string | null>(null)
+  const [exportError, setExportError] = React.useState<string | null>(null)
+  const [importError, setImportError] = React.useState<string | null>(null)
+  const [seedError, setSeedError] = React.useState<string | null>(null)
+  const [resetError, setResetError] = React.useState<string | null>(null)
+  const saveFeedback = useTransientFeedback()
+  const exportFeedback = useTransientFeedback()
+  const importFeedback = useTransientFeedback()
+  const seedFeedback = useTransientFeedback()
+  const resetFeedback = useTransientFeedback()
 
-  React.useEffect(() => {
-    const currency =
-      settingsQuery.data?.baseCurrency ?? currentUserQuery.data?.baseCurrency
-    if (currency) {
-      setBaseCurrency(currency)
-    }
-  }, [currentUserQuery.data?.baseCurrency, settingsQuery.data?.baseCurrency])
-
+  const currentBaseCurrency =
+    settingsQuery.data?.baseCurrency ??
+    currentUserQuery.data?.baseCurrency ??
+    "USD"
   const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) =>
     item.code.toUpperCase()
   ) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
-  const importFileAccept =
+  const isPageLoading = currentUserQuery.isLoading && !currentUserQuery.data
+  const isBaseCurrencyDirty = baseCurrency !== currentBaseCurrency
+  const seedButtonBusy = seedDemo.isPending || exportBackup.isPending
+  const importRequiresConfirmation = importType === "flamette"
+  const importAccept = fileAcceptByImportType[importType]
+  const importHint =
     importType === "flamette"
-      ? ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      : ".csv,text/csv"
+      ? "Full workspace restore."
+      : "Import from a 1Money CSV export."
 
-  const handleSaveSettings = async () => {
-    try {
-      await updateSettings.mutateAsync({ baseCurrency })
-    } catch {
-      // rendered below
-    }
+  React.useEffect(() => {
+    setBaseCurrency(currentBaseCurrency)
+  }, [currentBaseCurrency])
+
+  const resetImportState = () => {
+    setImportOpen(false)
+    setImportType("flamette")
+    setImportFile(null)
+    setImportConfirmed(false)
+    setImportError(null)
   }
 
-  const handleImport = async () => {
-    if (!backupFile) {
+  const resetResetState = () => {
+    setResetOpen(false)
+    setResetConfirmed(false)
+    setResetError(null)
+  }
+
+  const handleBaseCurrencyChange = (value: string | null) => {
+    if (!value) {
+      return
+    }
+
+    setBaseCurrency(value)
+    setSaveError(null)
+    saveFeedback.reset()
+  }
+
+  const handleSaveSettings = async () => {
+    if (!isBaseCurrencyDirty) {
       return
     }
 
     try {
-      await importBackup.mutateAsync({ file: backupFile, type: importType })
-      setBackupFile(null)
-    } catch {
-      // rendered below
+      await updateSettings.mutateAsync({ baseCurrency })
+      setSaveError(null)
+      saveFeedback.show("success")
+    } catch (error) {
+      setSaveError(getApiErrorMessage(error, "Unable to save settings."))
+      saveFeedback.show("error")
+    }
+  }
+
+  const handleExportBackup = async () => {
+    try {
+      await exportBackup.mutateAsync({ type: "flamette" })
+      setExportError(null)
+      exportFeedback.show("success")
+    } catch (error) {
+      setExportError(getApiErrorMessage(error, "Unable to export backup."))
+      exportFeedback.show("error")
+    }
+  }
+
+  const handleImportData = async () => {
+    if (!importFile) {
+      return
+    }
+
+    if (importRequiresConfirmation && !importConfirmed) {
+      return
+    }
+
+    try {
+      await importBackup.mutateAsync({
+        file: importFile,
+        type: importType,
+      })
+      setImportError(null)
+      importFeedback.show("success")
+      resetImportState()
+    } catch (error) {
+      setImportError(getApiErrorMessage(error, "Unable to import data."))
+      importFeedback.show("error")
     }
   }
 
@@ -106,308 +205,470 @@ function SettingsPage() {
       if (downloadAfterSeed) {
         await exportBackup.mutateAsync({ type: "flamette" })
       }
-    } catch {
-      // rendered below
+
+      setSeedError(null)
+      seedFeedback.show("success")
+      setSeedOpen(false)
+    } catch (error) {
+      setSeedError(getApiErrorMessage(error, "Unable to generate sample data."))
+      seedFeedback.show("error")
     }
   }
 
   const handleReset = async () => {
+    if (!resetConfirmed) {
+      return
+    }
+
     try {
       await resetData.mutateAsync()
-      setResetOpen(false)
-    } catch {
-      // rendered below
+      setResetError(null)
+      resetFeedback.show("success")
+      resetResetState()
+    } catch (error) {
+      setResetError(getApiErrorMessage(error, "Unable to reset data."))
+      resetFeedback.show("error")
     }
   }
 
+  if (isPageLoading) {
+    return <SettingsPageSkeleton />
+  }
+
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-3">
-      <div className="flex flex-col gap-3">
-        <SettingsSection title="Profile & preferences">
-          <SettingsRow
-            title="Profile"
-            description="Signed-in account used for this workspace."
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="text-sm text-muted-foreground">Workspace tools.</p>
+      </header>
+
+      <Card className="border-border/60 bg-card/90 shadow-sm">
+        <CardHeader className="gap-1">
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>Base currency.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <FieldGroup className="gap-3">
+            <Field>
+              <FieldLabel>Base currency</FieldLabel>
+              <Select
+                value={baseCurrency}
+                onValueChange={handleBaseCurrencyChange}
+                disabled={updateSettings.isPending}
+              >
+                <SelectTrigger aria-label="Base currency">
+                  <SelectValue placeholder="Base currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {currencyOptions.map((currency) => (
+                      <SelectItem key={currency} value={currency}>
+                        {currency}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            {saveError ? (
+              <p className="text-sm text-destructive">{saveError}</p>
+            ) : null}
+          </FieldGroup>
+
+          <Button
+            size="sm"
+            onClick={handleSaveSettings}
+            disabled={!isBaseCurrencyDirty || updateSettings.isPending}
           >
-            <div className="space-y-1 text-sm md:text-right">
-              <p className="font-medium text-foreground">
-                {currentUserQuery.data?.name ?? "User"}
-              </p>
-              {currentUserQuery.data?.email ? (
-                <p className="text-muted-foreground">
-                  {currentUserQuery.data.email}
-                </p>
-              ) : null}
-            </div>
-          </SettingsRow>
+            {updateSettings.isPending ? <StatusIcon /> : null}
+            {!updateSettings.isPending && saveFeedback.state === "success" ? (
+              <StatusIcon success />
+            ) : null}
+            {updateSettings.isPending
+              ? "Saving"
+              : saveFeedback.state === "success"
+                ? "Saved"
+                : saveFeedback.state === "error"
+                  ? "Retry"
+                  : "Save"}
+          </Button>
+        </CardContent>
+      </Card>
 
-          <SettingsRow
-            title="Base currency"
-            description="Used when aggregating balances, totals, and analytics across multiple accounts."
-            last
-          >
-            <div className="flex w-full flex-col gap-3 md:ml-auto md:max-w-sm">
-              <Field>
-                <FieldLabel>Currency</FieldLabel>
-                <Select
-                  value={baseCurrency}
-                  onValueChange={(value) => {
-                    if (value) {
-                      setBaseCurrency(value)
-                    }
-                  }}
-                >
-                  <SelectTrigger aria-label="Base currency">
-                    <SelectValue placeholder="Base currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {currencyOptions.map((currency) => (
-                        <SelectItem key={currency} value={currency}>
-                          {currency}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {updateSettings.isError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Save failed</AlertTitle>
-                  <AlertDescription>
-                    {getApiErrorMessage(
-                      updateSettings.error,
-                      "Unable to save settings."
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-
-              {updateSettings.isSuccess ? (
-                <Alert>
-                  <AlertTitle>Settings saved</AlertTitle>
-                  <AlertDescription>
-                    Your base currency preference has been updated.
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-
-              <div className="flex justify-start md:justify-end">
-                <Button
-                  onClick={handleSaveSettings}
-                  disabled={updateSettings.isPending}
-                >
-                  {updateSettings.isPending ? "Saving" : "Save changes"}
-                </Button>
-              </div>
-            </div>
-          </SettingsRow>
-        </SettingsSection>
-
-        <SettingsSection title="Backups & import">
-          <SettingsRow
+      <Card className="border-border/60 bg-card/90 shadow-sm">
+        <CardHeader className="gap-1">
+          <CardTitle>Data</CardTitle>
+          <CardDescription>Backup, import and sample data.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <ActionRow
             title="Export backup"
-            description="Download a complete Flamette backup as an .xlsx file."
-          >
-            <div className="flex w-full justify-start md:justify-end">
+            description={exportError ?? "Full workspace .xlsx"}
+            action={
               <Button
+                size="sm"
                 variant="outline"
-                onClick={() => exportBackup.mutate({ type: "flamette" })}
+                onClick={handleExportBackup}
                 disabled={exportBackup.isPending}
               >
-                {exportBackup.isPending ? "Preparing" : "Export .xlsx"}
+                {exportBackup.isPending ? <StatusIcon /> : null}
+                {!exportBackup.isPending &&
+                exportFeedback.state === "success" ? (
+                  <StatusIcon success />
+                ) : null}
+                {exportBackup.isPending
+                  ? "Preparing"
+                  : exportFeedback.state === "success"
+                    ? "Exported"
+                    : exportFeedback.state === "error"
+                      ? "Retry"
+                      : "Export"}
               </Button>
-            </div>
-          </SettingsRow>
+            }
+          />
 
-          <SettingsRow
-            title="Import backup"
-            description="Restore a Flamette backup or import a 1Money CSV export into this workspace."
-            last
-          >
-            <div className="flex w-full flex-col gap-4 md:ml-auto md:max-w-md">
-              <Field>
-                <FieldLabel>Backup type</FieldLabel>
-                <Select
-                  value={importType}
-                  onValueChange={(value) =>
-                    setImportType((value as BackupImportType) ?? "flamette")
+          <Separator />
+
+          <ActionRow
+            title="Import data"
+            description={importError ?? "All formats in one dialog."}
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+                disabled={importBackup.isPending}
+              >
+                {importFeedback.state === "success" ? (
+                  <StatusIcon success />
+                ) : null}
+                {importFeedback.state === "success"
+                  ? "Imported"
+                  : importFeedback.state === "error"
+                    ? "Retry"
+                    : "Import"}
+              </Button>
+            }
+          />
+
+          <Separator />
+
+          <ActionRow
+            title="Sample data"
+            description={
+              seedError ??
+              `${formatYearSummary(years)}${downloadAfterSeed ? " · backup on" : ""}`
+            }
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSeedOpen(true)}
+                disabled={seedDemo.isPending || exportBackup.isPending}
+              >
+                {seedFeedback.state === "success" ? (
+                  <StatusIcon success />
+                ) : null}
+                {seedFeedback.state === "success"
+                  ? "Generated"
+                  : seedFeedback.state === "error"
+                    ? "Retry"
+                    : "Configure"}
+              </Button>
+            }
+          />
+        </CardContent>
+      </Card>
+
+      <Card className="border-destructive/30 bg-card/90 shadow-sm">
+        <CardHeader className="gap-1">
+          <CardTitle>Danger zone</CardTitle>
+          <CardDescription>Remove workspace data.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionRow
+            title="Reset workspace"
+            description={resetError ?? "Keeps your profile and preferences."}
+            action={
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setResetOpen(true)}
+                disabled={resetData.isPending}
+              >
+                {resetFeedback.state === "success" ? (
+                  <StatusIcon success />
+                ) : null}
+                {resetFeedback.state === "success"
+                  ? "Cleared"
+                  : resetFeedback.state === "error"
+                    ? "Retry"
+                    : "Reset"}
+              </Button>
+            }
+          />
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={importOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetImportState()
+            return
+          }
+
+          setImportOpen(true)
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import data</DialogTitle>
+            <DialogDescription>Choose a source and a file.</DialogDescription>
+          </DialogHeader>
+
+          <FieldGroup className="gap-4">
+            <Field>
+              <FieldLabel>Source</FieldLabel>
+              <Select
+                value={importType}
+                onValueChange={(value) => {
+                  if (!value) {
+                    return
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Backup type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="flamette">
-                        Flamette backup (.xlsx)
-                      </SelectItem>
-                      <SelectItem value="one-money">
-                        1Money backup (.csv)
-                      </SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+
+                  setImportError(null)
+                  importFeedback.reset()
+                  setImportType(value as BackupImportType)
+                  setImportFile(null)
+                  setImportConfirmed(false)
+                }}
+                disabled={importBackup.isPending}
+              >
+                <SelectTrigger aria-label="Import source">
+                  <SelectValue placeholder="Select a source" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="flamette">
+                      {importFormatLabels.flamette}
+                    </SelectItem>
+                    <SelectItem value="one-money">
+                      {importFormatLabels["one-money"]}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+
+            <Field>
+              <FieldLabel>File</FieldLabel>
+              <Input
+                key={`${importType}-${importFile?.name ?? "empty"}`}
+                type="file"
+                accept={importAccept}
+                onChange={(event) => {
+                  setImportError(null)
+                  importFeedback.reset()
+                  setImportFile(event.target.files?.[0] ?? null)
+                }}
+              />
+              <p className="text-sm text-muted-foreground">
+                {importFile ? importFile.name : importHint}
+              </p>
+            </Field>
+
+            {importRequiresConfirmation ? (
+              <Field orientation="horizontal">
+                <Checkbox
+                  id="import-confirmation"
+                  checked={importConfirmed}
+                  onCheckedChange={(checked) => {
+                    setImportError(null)
+                    importFeedback.reset()
+                    setImportConfirmed(checked === true)
+                  }}
+                />
+                <FieldContent>
+                  <FieldLabel htmlFor="import-confirmation">
+                    Replace current workspace data
+                  </FieldLabel>
+                </FieldContent>
               </Field>
+            ) : null}
 
+            {importError ? (
+              <p className="text-sm text-destructive">{importError}</p>
+            ) : null}
+          </FieldGroup>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={resetImportState}>
+              Cancel
+            </Button>
+            <Button
+              variant={importRequiresConfirmation ? "destructive" : "default"}
+              onClick={handleImportData}
+              disabled={
+                !importFile ||
+                (importRequiresConfirmation && !importConfirmed) ||
+                importBackup.isPending
+              }
+            >
+              {importBackup.isPending ? <StatusIcon /> : null}
+              {importBackup.isPending
+                ? "Importing"
+                : importFeedback.state === "error"
+                  ? "Retry"
+                  : importRequiresConfirmation
+                    ? "Restore"
+                    : "Import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={seedOpen} onOpenChange={setSeedOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Sample data</DialogTitle>
+            <DialogDescription>Generate a demo workspace.</DialogDescription>
+          </DialogHeader>
+
+          <FieldGroup className="gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <FieldLabel>Backup file</FieldLabel>
+                <FieldLabel htmlFor="seed-years">Years</FieldLabel>
                 <Input
-                  type="file"
-                  accept={importFileAccept}
-                  onChange={(event) =>
-                    setBackupFile(event.target.files?.[0] ?? null)
-                  }
+                  id="seed-years"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={years}
+                  onChange={(event) => {
+                    setSeedError(null)
+                    seedFeedback.reset()
+                    const nextYears = Number(event.target.value)
+                    setYears(
+                      Number.isFinite(nextYears) && nextYears > 0
+                        ? Math.min(Math.trunc(nextYears), 20)
+                        : 1
+                    )
+                  }}
                 />
               </Field>
 
-              {importBackup.isError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Import failed</AlertTitle>
-                  <AlertDescription>
-                    {getApiErrorMessage(
-                      importBackup.error,
-                      "Unable to import the selected backup."
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-
-              <div className="flex justify-start md:justify-end">
-                <Button
-                  onClick={handleImport}
-                  disabled={!backupFile || importBackup.isPending}
-                >
-                  {importBackup.isPending
-                    ? "Importing"
-                    : "Import selected backup"}
-                </Button>
-              </div>
+              <Field>
+                <FieldLabel htmlFor="seed-value">Seed</FieldLabel>
+                <Input
+                  id="seed-value"
+                  type="number"
+                  value={seedValue}
+                  onChange={(event) => {
+                    setSeedError(null)
+                    seedFeedback.reset()
+                    setSeedValue(event.target.value)
+                  }}
+                  placeholder="Optional"
+                />
+              </Field>
             </div>
-          </SettingsRow>
-        </SettingsSection>
 
-        <SettingsSection title="Sample data">
-          <SettingsRow
-            title="Generate history"
-            description="Create synthetic transactions for a chosen span and optional seed value."
-          >
-            <div className="flex w-full flex-col gap-4 md:ml-auto md:max-w-md">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel>Years</FieldLabel>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={years}
-                    onChange={(event) =>
-                      setYears(Number(event.target.value) || 1)
-                    }
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel>Seed</FieldLabel>
-                  <Input
-                    type="number"
-                    value={seedValue}
-                    onChange={(event) => setSeedValue(event.target.value)}
-                    placeholder="Optional deterministic seed"
-                  />
-                </Field>
-              </div>
-
-              {seedDemo.isError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Seeding failed</AlertTitle>
-                  <AlertDescription>
-                    {getApiErrorMessage(
-                      seedDemo.error,
-                      "Unable to seed demo data."
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-
-              <div className="flex justify-start md:justify-end">
-                <Button
-                  onClick={handleSeed}
-                  disabled={seedDemo.isPending || exportBackup.isPending}
-                >
-                  {seedDemo.isPending ? "Seeding" : "Generate demo data"}
-                </Button>
-              </div>
-            </div>
-          </SettingsRow>
-
-          <SettingsRow
-            title="Backup after seeding"
-            description="Automatically download a Flamette backup after demo data finishes generating."
-            last
-          >
-            <label className="flex items-center gap-3 text-sm text-muted-foreground md:ml-auto">
+            <Field orientation="horizontal">
               <Switch
+                id="download-after-seed"
                 checked={downloadAfterSeed}
-                onCheckedChange={setDownloadAfterSeed}
+                onCheckedChange={(checked) => {
+                  setSeedError(null)
+                  seedFeedback.reset()
+                  setDownloadAfterSeed(checked)
+                }}
               />
-              <span>Download backup after seeding</span>
-            </label>
-          </SettingsRow>
-        </SettingsSection>
+              <FieldContent>
+                <FieldLabel htmlFor="download-after-seed">
+                  Download backup after generation
+                </FieldLabel>
+              </FieldContent>
+            </Field>
 
-        <SettingsSection title="Danger zone" tone="danger">
-          <SettingsRow
-            title="Reset workspace"
-            description="Permanently remove transactions, accounts, categories, trips, and transaction items from this workspace."
-            last
-          >
-            <div className="flex w-full flex-col gap-3 md:ml-auto md:max-w-md">
-              {resetData.isError ? (
-                <Alert variant="destructive">
-                  <AlertTitle>Reset failed</AlertTitle>
-                  <AlertDescription>
-                    {getApiErrorMessage(
-                      resetData.error,
-                      "Unable to reset data."
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
+            {seedError ? (
+              <p className="text-sm text-destructive">{seedError}</p>
+            ) : null}
+          </FieldGroup>
 
-              <div className="flex justify-start md:justify-end">
-                <Button
-                  variant="destructive"
-                  onClick={() => setResetOpen(true)}
-                >
-                  Reset all data
-                </Button>
-              </div>
-            </div>
-          </SettingsRow>
-        </SettingsSection>
-      </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSeedOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSeed} disabled={seedButtonBusy}>
+              {seedButtonBusy ? <StatusIcon /> : null}
+              {seedButtonBusy
+                ? "Working"
+                : seedFeedback.state === "error"
+                  ? "Retry"
+                  : "Generate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent>
+      <Dialog
+        open={resetOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            resetResetState()
+            return
+          }
+
+          setResetOpen(true)
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Reset all data</DialogTitle>
+            <DialogTitle>Reset workspace</DialogTitle>
             <DialogDescription>
-              This permanently deletes transactions, accounts, categories,
-              trips, and transaction items while keeping your profile and
-              preferences.
+              This permanently deletes workspace data.
             </DialogDescription>
           </DialogHeader>
+
+          <FieldGroup className="gap-4">
+            <Field orientation="horizontal">
+              <Checkbox
+                id="reset-confirmation"
+                checked={resetConfirmed}
+                onCheckedChange={(checked) => {
+                  setResetError(null)
+                  resetFeedback.reset()
+                  setResetConfirmed(checked === true)
+                }}
+              />
+              <FieldContent>
+                <FieldLabel htmlFor="reset-confirmation">
+                  I want to remove all workspace data
+                </FieldLabel>
+              </FieldContent>
+            </Field>
+
+            {resetError ? (
+              <p className="text-sm text-destructive">{resetError}</p>
+            ) : null}
+          </FieldGroup>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setResetOpen(false)}>
+            <Button variant="outline" onClick={resetResetState}>
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={handleReset}
-              disabled={resetData.isPending}
+              disabled={!resetConfirmed || resetData.isPending}
             >
-              {resetData.isPending ? "Resetting" : "Reset data"}
+              {resetData.isPending ? <StatusIcon /> : null}
+              {resetData.isPending
+                ? "Resetting"
+                : resetFeedback.state === "error"
+                  ? "Retry"
+                  : "Reset"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -416,56 +677,117 @@ function SettingsPage() {
   )
 }
 
-type SettingsSectionProps = {
-  title: string
-  children: React.ReactNode
-  tone?: "default" | "danger"
-}
-
-function SettingsSection({
-  title,
-  children,
-  tone = "default",
-}: SettingsSectionProps) {
-  return (
-    <Card
-      className={cn(
-        "gap-0 overflow-hidden border-border/60 bg-card/90 py-0 shadow-sm",
-        tone === "danger" && "border-destructive/30"
-      )}
-    >
-      <CardHeader className="border-b border-border/60 px-5 pt-3 pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="px-0">{children}</CardContent>
-    </Card>
-  )
-}
-
-type SettingsRowProps = {
-  title: string
-  description: string
-  children: React.ReactNode
-  last?: boolean
-}
-
-function SettingsRow({
+function ActionRow({
   title,
   description,
-  children,
-  last = false,
-}: SettingsRowProps) {
+  action,
+}: {
+  title: string
+  description: string
+  action: React.ReactNode
+}) {
   return (
-    <div className={cn("px-5 py-4", !last && "border-b border-border/60")}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
-        <div className="max-w-xl space-y-0.5">
-          <h2 className="text-sm font-medium text-foreground">{title}</h2>
-          <p className="text-sm leading-5 text-muted-foreground">
-            {description}
-          </p>
-        </div>
-        <div className="w-full md:max-w-md md:flex-shrink-0">{children}</div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-0.5">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
+      <div className="flex shrink-0 items-center">{action}</div>
     </div>
   )
+}
+
+function StatusIcon({ success = false }: { success?: boolean }) {
+  return success ? (
+    <HugeiconsIcon
+      icon={CheckmarkCircle02Icon}
+      strokeWidth={2}
+      data-icon="inline-start"
+    />
+  ) : (
+    <HugeiconsIcon
+      icon={Loading03Icon}
+      strokeWidth={2}
+      data-icon="inline-start"
+      className="animate-spin"
+    />
+  )
+}
+
+function SettingsPageSkeleton() {
+  return (
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-40" />
+      </div>
+
+      <Card className="border-border/60 bg-card/90 shadow-sm">
+        <CardHeader className="gap-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-4 w-28" />
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-9 w-20" />
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/60 bg-card/90 shadow-sm">
+        <CardHeader className="gap-2">
+          <Skeleton className="h-5 w-14" />
+          <Skeleton className="h-4 w-36" />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-px w-full" />
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-px w-full" />
+          <Skeleton className="h-14 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function formatYearSummary(years: number) {
+  return `${years} ${years === 1 ? "year" : "years"}`
+}
+
+function useTransientFeedback() {
+  const [state, setState] = React.useState<"idle" | "success" | "error">("idle")
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearTimer = React.useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
+  const reset = React.useCallback(() => {
+    clearTimer()
+    setState("idle")
+  }, [clearTimer])
+
+  const show = React.useCallback(
+    (nextState: "success" | "error") => {
+      clearTimer()
+      setState(nextState)
+      timeoutRef.current = setTimeout(() => {
+        setState("idle")
+        timeoutRef.current = null
+      }, 2400)
+    },
+    [clearTimer]
+  )
+
+  React.useEffect(
+    () => () => {
+      clearTimer()
+    },
+    [clearTimer]
+  )
+
+  return { state, show, reset }
 }
