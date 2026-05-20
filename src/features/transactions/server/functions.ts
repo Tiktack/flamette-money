@@ -13,6 +13,7 @@ import {
   getTransactionData,
   listTransactionsData,
   searchTransactionsData,
+  searchTransactionsSummaryData,
   updateTransactionData,
 } from "./service.server"
 
@@ -35,6 +36,10 @@ export const getTransaction = createServerFn({ method: "GET" })
 export const searchTransactions = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
   .handler(async ({ data }) => searchTransactionsData(data))
+
+export const searchTransactionsSummary = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
+  .handler(async ({ data }) => searchTransactionsSummaryData(data))
 
 export const createTransaction = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => transactionRequestSchema.parse(data))

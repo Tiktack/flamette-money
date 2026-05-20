@@ -5,6 +5,7 @@ import { type ColumnDef } from "@tanstack/react-table"
 import {
   AddMoneyCircleIcon,
   Airplane01Icon,
+  CreditCardIcon,
   Delete02Icon,
   Edit01Icon,
   FilterIcon,
@@ -28,8 +29,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -55,6 +56,7 @@ import { getApiErrorMessage } from "@/features/shared/errors"
 import {
   useDeleteTransaction,
   useTransactionsSearch,
+  useTransactionsSummary,
 } from "@/features/transactions/hooks"
 import { useTrips } from "@/features/trips/hooks"
 import type { AccountType } from "@/features/accounts/types"
@@ -77,6 +79,7 @@ import {
   useSharedDateRangeFilters,
 } from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_protected/transactions")({
   component: TransactionsPage,
@@ -93,6 +96,14 @@ const accountTypeMeta: Record<AccountType, { label: string }> = {
   DebitCard: { label: "Debit card" },
   CreditCard: { label: "Credit card" },
   Savings: { label: "Savings" },
+}
+
+type AccountSummary = {
+  name: string
+  currency: string
+  color: string
+  icon: string
+  type: AccountType
 }
 
 function TransactionsPage() {
@@ -126,16 +137,7 @@ function TransactionsPage() {
   }, [categories])
 
   const accountMap = React.useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        name: string
-        currency: string
-        color: string
-        icon: string
-        type: AccountType
-      }
-    >()
+    const map = new Map<string, AccountSummary>()
     for (const account of accountsQuery.data ?? []) {
       map.set(account.id, {
         name: account.name,
@@ -217,6 +219,7 @@ function TransactionsPage() {
 
   const supportingTransactionsQuery = useTransactionsSearch(baseQuery)
   const transactionsQuery = useTransactionsSearch(query)
+  const transactionsSummaryQuery = useTransactionsSummary(query)
   const transactions = React.useMemo(
     () => transactionsQuery.data ?? [],
     [transactionsQuery.data]
@@ -376,36 +379,16 @@ function TransactionsPage() {
     [transactionTypeCounts]
   )
 
-  const resultCurrencies = React.useMemo(() => {
-    const values = new Set<string>()
-
-    for (const transaction of transactions) {
-      const currency =
-        transaction.currency ??
-        accountMap.get(transaction.accountId)?.currency ??
-        "USD"
-      values.add(currency.toUpperCase())
-    }
-
-    return Array.from(values)
-  }, [accountMap, transactions])
-
-  const summaryCurrency =
-    resultCurrencies.length === 1 ? resultCurrencies[0] : null
-  const incomeTotal = transactions
-    .filter((transaction) => transaction.type === "Income")
-    .reduce((sum, transaction) => sum + toNumber(transaction.amount), 0)
-  const expenseTotal = transactions
-    .filter((transaction) => transaction.type === "Expense")
-    .reduce((sum, transaction) => sum + toNumber(transaction.amount), 0)
+  const summary = transactionsSummaryQuery.data
+  const primaryCurrency = summary?.baseCurrency
   const formatAmountRangeLabel = React.useCallback(
     (value: number) =>
-      summaryCurrency
-        ? formatCurrency(value, summaryCurrency)
+      primaryCurrency
+        ? formatCurrency(value, primaryCurrency)
         : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
             value
           ),
-    [summaryCurrency]
+    [primaryCurrency]
   )
 
   const columns = React.useMemo<ColumnDef<TransactionListItem>[]>(
@@ -620,8 +603,10 @@ function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <SharedDateRangeToolbar />
+
       <div className="grid gap-4 md:grid-cols-3">
-        {transactionsQuery.isPending ? (
+        {transactionsQuery.isPending || transactionsSummaryQuery.isPending ? (
           <>
             <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
             <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
@@ -630,41 +615,45 @@ function TransactionsPage() {
         ) : (
           <>
             <MetricCard
-              label="Results"
-              value={String(transactions.length)}
-              helper="Transactions matching the active filters"
+              label="Transactions"
+              icon={TransactionIcon}
+              iconBgClassName="bg-primary/10"
+              iconColorClassName="text-primary"
+              value={String(summary?.transactionCount ?? transactions.length)}
             />
             <MetricCard
               label="Income"
-              value={
-                summaryCurrency
-                  ? formatCurrency(incomeTotal, summaryCurrency)
-                  : "Mixed"
+              icon={AddMoneyCircleIcon}
+              iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
+              iconColorClassName="text-blue-600 dark:text-blue-400"
+              badge={
+                <MetricCardBadge>
+                  {formatTransactionCount(summary?.incomeCount ?? 0)}
+                </MetricCardBadge>
               }
-              helper={
-                summaryCurrency
-                  ? "Gross income in the filtered result set"
-                  : `${resultCurrencies.length || 0} currencies in the filtered result set`
-              }
+              value={formatCurrency(
+                summary?.incomeTotal,
+                summary?.baseCurrency
+              )}
             />
             <MetricCard
-              label="Expense"
-              value={
-                summaryCurrency
-                  ? formatCurrency(expenseTotal, summaryCurrency)
-                  : "Mixed"
+              label="Expenses"
+              icon={CreditCardIcon}
+              iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
+              iconColorClassName="text-amber-600 dark:text-amber-400"
+              badge={
+                <MetricCardBadge>
+                  {formatTransactionCount(summary?.expenseCount ?? 0)}
+                </MetricCardBadge>
               }
-              helper={
-                summaryCurrency
-                  ? "Gross expense in the filtered result set"
-                  : `${resultCurrencies.length || 0} currencies in the filtered result set`
-              }
+              value={formatCurrency(
+                summary?.expenseTotal,
+                summary?.baseCurrency
+              )}
             />
           </>
         )}
       </div>
-
-      <SharedDateRangeToolbar />
 
       {transactionsQuery.isPending ? (
         <div className="space-y-4">
@@ -804,30 +793,71 @@ function TransactionsPage() {
 function MetricCard({
   label,
   value,
-  helper,
+  badge,
+  icon,
+  iconBgClassName,
+  iconColorClassName,
+  valueClassName,
 }: {
   label: string
-  value: string
-  helper: string
+  value: React.ReactNode
+  badge?: React.ReactNode
+  icon?: Parameters<typeof HugeiconsIcon>[0]["icon"]
+  iconBgClassName?: string
+  iconColorClassName?: string
+  valueClassName?: string
 }) {
   return (
     <Card
       size="sm"
-      className="border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm"
+      className="relative overflow-hidden border-border bg-card/95 shadow-none before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent"
     >
-      <CardHeader className="px-4 pb-1">
-        <CardTitle className="text-sm font-medium tracking-tight text-muted-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
+          {icon !== undefined ? (
+            <span
+              className={cn(
+                "flex size-6 shrink-0 items-center justify-center rounded-md",
+                iconBgClassName
+              )}
+            >
+              <HugeiconsIcon
+                icon={icon}
+                strokeWidth={2}
+                className={cn("size-3.5", iconColorClassName)}
+              />
+            </span>
+          ) : null}
           {label}
         </CardTitle>
-        <CardDescription className="text-xs leading-5">
-          {helper}
-        </CardDescription>
+        {badge !== undefined ? <CardAction>{badge}</CardAction> : null}
       </CardHeader>
-      <CardContent className="px-4 pt-0">
-        <p className="text-[2rem] leading-none font-semibold tracking-tight break-words text-foreground tabular-nums">
-          {value}
-        </p>
+      <CardContent className="pt-0">
+        {typeof value === "string" || typeof value === "number" ? (
+          <p
+            className={cn(
+              "text-[2rem] leading-none font-semibold tracking-[-0.035em] break-words text-foreground tabular-nums",
+              valueClassName
+            )}
+          >
+            {value}
+          </p>
+        ) : (
+          <div className={cn("min-w-0", valueClassName)}>{value}</div>
+        )}
       </CardContent>
     </Card>
   )
+}
+
+function MetricCardBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-border bg-background/80 px-2 py-1 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+      {children}
+    </span>
+  )
+}
+
+function formatTransactionCount(count: number) {
+  return `${count} txn${count === 1 ? "" : "s"}`
 }
