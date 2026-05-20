@@ -3,7 +3,12 @@ import { betterAuth } from "better-auth"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
 import { db } from "@/lib/db/client.server"
-import { getAppUrl, getBetterAuthSecret } from "@/lib/env.server"
+import {
+  getBetterAuthBaseUrl,
+  getBetterAuthSecret,
+  getBetterAuthTrustedOrigins,
+  getConfiguredSocialProviders,
+} from "@/lib/env.server"
 import {
   authAccounts,
   authSessions,
@@ -11,14 +16,18 @@ import {
   users,
 } from "@/lib/db/schema"
 
+const socialProviders = getConfiguredSocialProviders()
+const trustedOrigins = getBetterAuthTrustedOrigins()
+
 export const auth = betterAuth({
   appName: "Flamette Money",
-  baseURL: getAppUrl(),
+  baseURL: getBetterAuthBaseUrl(),
   secret: getBetterAuthSecret(),
   emailAndPassword: {
     enabled: true,
   },
-  trustedOrigins: [getAppUrl()],
+  ...(Object.keys(socialProviders).length > 0 ? { socialProviders } : {}),
+  ...(trustedOrigins.length > 0 ? { trustedOrigins } : {}),
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",
   },

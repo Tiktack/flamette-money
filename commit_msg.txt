@@ -1,0 +1,8 @@
+﻿Improve social auth: add .env.example, docs, branded social buttons, and auth helper fixes
+
+- Add .env.example and docs/social-auth-credentials.md
+- Inline branded Google/GitHub icons for social login buttons and fix hover/dark-mode styles
+- Tweak Better Auth helpers/providers for dynamic origins (dev)
+- Regenerate routeTree.gen.ts
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
