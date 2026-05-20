@@ -4,11 +4,15 @@ import {
   getTransaction,
   getTransactions,
   searchTransactions,
+  searchTransactionsSummary,
 } from "./server/functions"
 
 import { queryKeys } from "@/features/shared/query-keys"
 
-import type { GetApiTransactionsSearchData } from "./types"
+import type {
+  GetApiTransactionsSearchData,
+  TransactionSearchSummary,
+} from "./types"
 
 export const transactionsQueryOptions = (page = 1, pageSize = 50) =>
   queryOptions({
@@ -28,5 +32,14 @@ export const transactionsSearchQueryOptions = (
   queryOptions({
     queryKey: queryKeys.transactionsSearch(query),
     queryFn: () => searchTransactions({ data: query }),
+    placeholderData: keepPreviousData,
+  })
+
+export const transactionsSummaryQueryOptions = (
+  query?: GetApiTransactionsSearchData["query"]
+) =>
+  queryOptions<TransactionSearchSummary>({
+    queryKey: queryKeys.transactionsSummary(query),
+    queryFn: () => searchTransactionsSummary({ data: query }),
     placeholderData: keepPreviousData,
   })

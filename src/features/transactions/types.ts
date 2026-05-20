@@ -8,3 +8,12 @@ export type {
   TransactionType,
   UpdateTransactionRequest as TransactionUpdateRequest,
 } from "@/features/shared/types"
+
+export type TransactionSearchSummary = {
+  baseCurrency: string
+  transactionCount: number
+  incomeCount: number
+  incomeTotal: number
+  expenseCount: number
+  expenseTotal: number
+}

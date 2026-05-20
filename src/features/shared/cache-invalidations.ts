@@ -17,11 +17,13 @@ export const settingsMutationInvalidations = [
   { queryKey: queryKeys.settings() },
   { queryKey: queryKeys.authMe() },
   { queryKey: queryKeys.trips() },
+  { queryKey: ["transactions-summary"] },
   ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
 export const accountMutationInvalidations = [
   { queryKey: queryKeys.accounts() },
+  { queryKey: ["transactions-summary"] },
   { queryKey: ["reports-cashflow-series"] },
   { queryKey: ["reports-portfolio-balance-series"] },
 ] as const satisfies readonly QueryInvalidation[]
@@ -37,6 +39,7 @@ export const tripMutationInvalidations = [
 
 export const transactionMutationInvalidations = [
   { queryKey: ["transactions-search"] },
+  { queryKey: ["transactions-summary"] },
   { queryKey: ["transactions"] },
   { queryKey: queryKeys.trips() },
   ...reportInvalidations,
@@ -50,6 +53,7 @@ export const fullDataRefreshInvalidations = [
   { queryKey: queryKeys.trips() },
   { queryKey: ["transactions"] },
   { queryKey: ["transactions-search"] },
+  { queryKey: ["transactions-summary"] },
   ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 

@@ -70,6 +70,15 @@ type LoadedTransaction = TransactionRecord & {
   items: TransactionItemRecord[]
 }
 
+type TransactionSearchSummary = {
+  baseCurrency: string
+  transactionCount: number
+  incomeCount: number
+  incomeTotal: number
+  expenseCount: number
+  expenseTotal: number
+}
+
 function fail(message: string): never {
   throw new Error(message)
 }
@@ -108,6 +117,23 @@ function parseDateInput(value: string, fieldName: string) {
   }
 
   return parsed
+}
+
+function convertAmountToBase(
+  amount: number,
+  sourceCurrency: string | null | undefined,
+  baseCurrency: string,
+  ratesToBase: Record<string, number>
+) {
+  if (amount === 0) {
+    return 0
+  }
+
+  const normalizedSource = normalizeCurrencyOrDefault(
+    sourceCurrency,
+    baseCurrency
+  )
+  return amount * (ratesToBase[normalizedSource] ?? 1)
 }
 
 function normalizeTrimmed(value: string | null | undefined) {
@@ -393,6 +419,91 @@ function mapTransactionListItem(
     location: transaction.location,
     itemCount: transaction.items.length,
   }
+}
+
+function filterTransactions(
+  rows: LoadedTransaction[],
+  query?: GetApiTransactionsSearchData["query"]
+) {
+  const searchText = query?.SearchText?.trim().toLowerCase()
+  const start = query?.StartDate ? startOfDay(query.StartDate) : null
+  const end = query?.EndDate ? endOfDay(query.EndDate) : null
+  const accountIds = new Set(query?.AccountIds ?? [])
+  const tripIds = new Set(query?.TripIds ?? [])
+  const categoryIds = new Set(query?.CategoryIds ?? [])
+  const types = new Set(query?.Types ?? [])
+  const minAmount =
+    query?.MinAmount === undefined
+      ? null
+      : parseAmount(query.MinAmount, "MinAmount")
+  const maxAmount =
+    query?.MaxAmount === undefined
+      ? null
+      : parseAmount(query.MaxAmount, "MaxAmount")
+
+  return rows.filter((transaction) => {
+    if (start && transaction.date < start) {
+      return false
+    }
+
+    if (end && transaction.date > end) {
+      return false
+    }
+
+    if (
+      accountIds.size > 0 &&
+      !accountIds.has(transaction.accountId) &&
+      !(
+        transaction.targetAccountId &&
+        accountIds.has(transaction.targetAccountId)
+      )
+    ) {
+      return false
+    }
+
+    if (
+      tripIds.size > 0 &&
+      (!transaction.tripId || !tripIds.has(transaction.tripId))
+    ) {
+      return false
+    }
+
+    if (
+      categoryIds.size > 0 &&
+      (!transaction.categoryId || !categoryIds.has(transaction.categoryId))
+    ) {
+      return false
+    }
+
+    if (types.size > 0 && !types.has(transaction.type)) {
+      return false
+    }
+
+    if (minAmount !== null && transaction.amount < minAmount) {
+      return false
+    }
+
+    if (maxAmount !== null && transaction.amount > maxAmount) {
+      return false
+    }
+
+    if (searchText) {
+      const haystack = [
+        transaction.note,
+        transaction.merchantName,
+        transaction.location,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+
+      if (!haystack.includes(searchText)) {
+        return false
+      }
+    }
+
+    return true
+  })
 }
 
 function mapTransactionDetail(
@@ -1374,87 +1485,61 @@ export async function searchTransactionsData(
 ): Promise<TransactionListItemResponse[]> {
   const user = await requireUser()
   const rows = await listAllTransactions(user.id)
-  const searchText = query?.SearchText?.trim().toLowerCase()
-  const start = query?.StartDate ? startOfDay(query.StartDate) : null
-  const end = query?.EndDate ? endOfDay(query.EndDate) : null
-  const accountIds = new Set(query?.AccountIds ?? [])
-  const tripIds = new Set(query?.TripIds ?? [])
-  const categoryIds = new Set(query?.CategoryIds ?? [])
-  const types = new Set(query?.Types ?? [])
-  const minAmount =
-    query?.MinAmount === undefined
-      ? null
-      : parseAmount(query.MinAmount, "MinAmount")
-  const maxAmount =
-    query?.MaxAmount === undefined
-      ? null
-      : parseAmount(query.MaxAmount, "MaxAmount")
+  return filterTransactions(rows, query).map(mapTransactionListItem)
+}
 
-  return rows
-    .filter((transaction) => {
-      if (start && transaction.date < start) {
-        return false
-      }
+export async function searchTransactionsSummaryData(
+  query?: GetApiTransactionsSearchData["query"]
+): Promise<TransactionSearchSummary> {
+  const user = await requireUser()
+  const rows = filterTransactions(await listAllTransactions(user.id), query)
+  const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
+  const fx = await getRatesToBase(baseCurrency)
+  const accountRows = await db.query.accounts.findMany({
+    where: eq(accounts.userId, user.id),
+  })
+  const accountCurrencyById = new Map(
+    accountRows.map((account) => [account.id, account.currency])
+  )
 
-      if (end && transaction.date > end) {
-        return false
-      }
+  let incomeCount = 0
+  let incomeTotal = 0
+  let expenseCount = 0
+  let expenseTotal = 0
 
-      if (
-        accountIds.size > 0 &&
-        !accountIds.has(transaction.accountId) &&
-        !(
-          transaction.targetAccountId &&
-          accountIds.has(transaction.targetAccountId)
-        )
-      ) {
-        return false
-      }
+  for (const transaction of rows) {
+    const currency = normalizeCurrencyOrDefault(
+      transaction.currency ??
+        accountCurrencyById.get(transaction.accountId) ??
+        user.baseCurrency,
+      baseCurrency
+    )
+    const converted = convertAmountToBase(
+      transaction.amount,
+      currency,
+      baseCurrency,
+      fx.ratesToBase
+    )
 
-      if (
-        tripIds.size > 0 &&
-        (!transaction.tripId || !tripIds.has(transaction.tripId))
-      ) {
-        return false
-      }
+    if (transaction.type === "Income") {
+      incomeCount += 1
+      incomeTotal += converted
+    }
 
-      if (
-        categoryIds.size > 0 &&
-        (!transaction.categoryId || !categoryIds.has(transaction.categoryId))
-      ) {
-        return false
-      }
+    if (transaction.type === "Expense") {
+      expenseCount += 1
+      expenseTotal += converted
+    }
+  }
 
-      if (types.size > 0 && !types.has(transaction.type)) {
-        return false
-      }
-
-      if (minAmount !== null && transaction.amount < minAmount) {
-        return false
-      }
-
-      if (maxAmount !== null && transaction.amount > maxAmount) {
-        return false
-      }
-
-      if (searchText) {
-        const haystack = [
-          transaction.note,
-          transaction.merchantName,
-          transaction.location,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-
-        if (!haystack.includes(searchText)) {
-          return false
-        }
-      }
-
-      return true
-    })
-    .map(mapTransactionListItem)
+  return {
+    baseCurrency,
+    transactionCount: rows.length,
+    incomeCount,
+    incomeTotal: roundMoney(incomeTotal),
+    expenseCount,
+    expenseTotal: roundMoney(expenseTotal),
+  }
 }
 
 export async function createTransactionData(

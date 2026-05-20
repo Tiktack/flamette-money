@@ -4,6 +4,7 @@ import {
   transactionQueryOptions,
   transactionsQueryOptions,
   transactionsSearchQueryOptions,
+  transactionsSummaryQueryOptions,
 } from "./query-options"
 import {
   createTransaction,
@@ -30,6 +31,12 @@ export function useTransactionsSearch(
   query?: GetApiTransactionsSearchData["query"]
 ) {
   return useQuery(transactionsSearchQueryOptions(query))
+}
+
+export function useTransactionsSummary(
+  query?: GetApiTransactionsSearchData["query"]
+) {
+  return useQuery(transactionsSummaryQueryOptions(query))
 }
 
 export function useTransaction(id?: string) {
