@@ -184,8 +184,8 @@ function AnalyticsCategoriesPage() {
           <label
             className={
               isGroupTripsDisabled
-                ? "flex min-w-[100px] items-center gap-2 text-sm whitespace-nowrap text-muted-foreground opacity-55"
-                : "flex min-w-[100px] items-center gap-2 text-sm whitespace-nowrap text-muted-foreground"
+                ? "flex min-w-[100px] items-center gap-2 font-mono text-[11px] whitespace-nowrap tracking-[0.12em] text-muted-foreground uppercase opacity-55"
+                : "flex min-w-[100px] items-center gap-2 font-mono text-[11px] whitespace-nowrap tracking-[0.12em] text-muted-foreground uppercase"
             }
           >
             <Switch
@@ -241,7 +241,7 @@ function AnalyticsCategoriesPage() {
         <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
           <Card
             size="sm"
-            className="border-border/60 bg-card/80 shadow-sm xl:row-span-2"
+            className="border-border bg-card/95 shadow-none xl:row-span-2"
           >
             <CardHeader className="px-4 pt-4 pb-2">
               <CardTitle>Category mix</CardTitle>
@@ -280,15 +280,15 @@ function AnalyticsCategoriesPage() {
                           className="size-2.5 rounded-full"
                           style={{ backgroundColor: entry.color }}
                         />
-                        <span className="text-sm font-medium text-foreground">
+                        <span className="font-mono text-[12px] font-medium tracking-[0.04em] text-foreground">
                           {entry.label}
                         </span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="font-mono text-[12px] tracking-[0.04em] text-muted-foreground">
                         {formatCurrency(entry.total, report.baseCurrency)}
                       </span>
                     </div>
-                    <Progress value={entry.percent} className="h-2" />
+                    <Progress value={entry.percent} className="h-1" />
                   </div>
                 ))}
               </div>
@@ -309,7 +309,7 @@ function AnalyticsCategoriesPage() {
             ))}
           </div>
 
-          <Card className="border-border/60 bg-card/80 shadow-sm">
+          <Card className="border-border bg-card/95 shadow-none">
             <CardHeader className="px-4 pt-4 pb-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
@@ -399,10 +399,10 @@ function CategoryInsightCard({
   const isBetter = mode === "Expense" ? delta <= 0 : delta >= 0
   const isNeutral = delta === 0
   const trendClassName = isNeutral
-    ? "border-border/70 bg-muted/60 text-muted-foreground"
+    ? "border-border bg-muted/40 text-muted-foreground"
     : isBetter
-      ? "border-emerald-200/80 bg-emerald-500/10 text-emerald-700 dark:border-emerald-900 dark:text-emerald-300"
-      : "border-rose-200/80 bg-rose-500/10 text-rose-700 dark:border-rose-900 dark:text-rose-300"
+      ? "border-emerald-500/20 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300"
+      : "border-rose-500/20 bg-rose-500/6 text-rose-700 dark:text-rose-300"
   const trendIcon = isNeutral
     ? null
     : delta > 0
@@ -418,7 +418,7 @@ function CategoryInsightCard({
       value={value}
       badge={
         <div
-          className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] leading-none font-medium ${trendClassName}`}
+          className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10px] leading-none font-medium tracking-[0.14em] uppercase ${trendClassName}`}
         >
           {trendIcon ? (
             <HugeiconsIcon
@@ -433,7 +433,7 @@ function CategoryInsightCard({
       footer={
         <>
           <span>Prev</span>
-          <span className="tabular-nums">
+          <span className="font-mono tabular-nums">
             {formatCurrency(previousValue, currency)}
           </span>
         </>

@@ -139,6 +139,7 @@ export function SharedDateRangeToolbar() {
             variant={state.preset === preset.value ? "default" : "outline"}
             size="sm"
             onClick={() => state.setPreset(preset.value)}
+            className="font-mono text-[11px] tracking-[0.12em] uppercase"
           >
             {preset.label}
           </Button>
@@ -169,11 +170,11 @@ export function SharedDateRangeToolbar() {
         <Popover>
           <PopoverTrigger
             render={
-              <Button
-                variant="outline"
-                className="min-w-72 justify-start px-2.5 text-left font-normal"
-                disabled={!canPickRange}
-              />
+                <Button
+                  variant="outline"
+                  className="min-w-72 justify-start px-2.5 text-left font-mono text-[12px] font-normal tracking-[0.04em]"
+                  disabled={!canPickRange}
+                />
             }
           >
             <HugeiconsIcon
