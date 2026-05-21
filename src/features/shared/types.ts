@@ -789,6 +789,8 @@ export type GetApiTransactionsSearchData = {
     SearchText?: string
     MinAmount?: number | string
     MaxAmount?: number | string
+    Page?: number
+    PageSize?: number
   }
   url: "/api/transactions/search"
 }

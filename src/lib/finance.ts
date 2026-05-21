@@ -7,6 +7,10 @@ import type { CategoryHierarchy } from "@/features/categories/types"
 export const DEFAULT_ACCOUNT_COLOR = "#B9A88A"
 export const DEFAULT_CATEGORY_COLOR = "#D96B4F"
 
+export function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
 export function toNumber(value: number | string | null | undefined) {
   if (typeof value === "number") {
     return value

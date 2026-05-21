@@ -7,6 +7,7 @@ import {
   normalizeCurrencyOrNull,
 } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
+import { roundMoney } from "@/lib/finance"
 import {
   accounts,
   categories,
@@ -71,10 +72,6 @@ const yearColors = [
 
 function fail(message: string): never {
   throw new Error(message)
-}
-
-function roundMoney(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
 function parseDate(value: string, label: string) {

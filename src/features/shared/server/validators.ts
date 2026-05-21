@@ -102,6 +102,8 @@ export const searchTransactionsSchema = z
     SearchText: z.string().optional(),
     MinAmount: z.union([z.number(), z.string()]).optional(),
     MaxAmount: z.union([z.number(), z.string()]).optional(),
+    Page: z.number().optional(),
+    PageSize: z.number().optional(),
   })
   .optional()
 

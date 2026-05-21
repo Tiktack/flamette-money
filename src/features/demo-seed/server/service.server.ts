@@ -7,6 +7,7 @@ import {
   forEachChunkSync,
   SQLITE_INSERT_BATCH_SIZE,
 } from "@/lib/db/sqlite-batch.server"
+import { roundMoney } from "@/lib/finance"
 import {
   accounts,
   accountTypes,
@@ -87,10 +88,6 @@ function nextMoney(random: RandomSource, min: number, max: number) {
   const major = random.nextInt(min, max + 1)
   const minor = random.nextInt(0, 100)
   return roundMoney(major + minor / 100)
-}
-
-function roundMoney(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100
 }
 
 function getDailyTransactionCount(random: RandomSource, isTripDay: boolean) {
