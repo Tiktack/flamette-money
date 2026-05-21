@@ -1,9 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import {
-  fullDataRefreshInvalidations,
-  invalidateQueries,
-} from "@/features/shared/cache-invalidations"
+import { fullDataRefreshInvalidations, invalidateQueries } from "@/features/shared/cache-invalidations"
 
 import type { SeedDemoResponse } from "./types"
 
@@ -18,13 +15,10 @@ export function useSeedDemo() {
         searchParams.set("Seed", String(seed))
       }
 
-      const response = await fetch(
-        `/api/seed/demo?${searchParams.toString()}`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      )
+      const response = await fetch(`/api/seed/demo?${searchParams.toString()}`, {
+        method: "POST",
+        credentials: "include",
+      })
 
       if (!response.ok) {
         const message = await response.text()
@@ -33,7 +27,6 @@ export function useSeedDemo() {
 
       return (await response.json()) as SeedDemoResponse
     },
-    onSuccess: async () =>
-      invalidateQueries(queryClient, fullDataRefreshInvalidations),
+    onSuccess: async () => invalidateQueries(queryClient, fullDataRefreshInvalidations),
   })
 }

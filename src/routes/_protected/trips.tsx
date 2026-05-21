@@ -1,13 +1,6 @@
 import * as React from "react"
 
-import {
-  Airplane01Icon,
-  ArrowRight01Icon,
-  EarthIcon,
-  Edit01Icon,
-  PlusSignIcon,
-  Wallet01Icon,
-} from "@hugeicons/core-free-icons"
+import { Airplane01Icon, ArrowRight01Icon, EarthIcon, Edit01Icon, PlusSignIcon, Wallet01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
@@ -20,33 +13,16 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useSettings } from "@/features/settings/hooks"
 import { useCreateTrip, useTrips, useUpdateTrip } from "@/features/trips/hooks"
 import { COUNTRY_OPTIONS } from "@/lib/countries"
-import {
-  PAGE_ACTION_EVENT,
-  pageActionTypes,
-  type PageActionType,
-} from "@/lib/page-actions"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { TripListItem } from "@/features/trips/types"
 import { formatCurrency, formatDateLabel, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
@@ -83,8 +59,7 @@ function TripsPage() {
   const [view, setView] = React.useState<ViewMode>("cards")
   const [createOpen, setCreateOpen] = React.useState(false)
   const [editTrip, setEditTrip] = React.useState<TripListItem | null>(null)
-  const [createForm, setCreateForm] =
-    React.useState<TripFormState>(defaultTripForm)
+  const [createForm, setCreateForm] = React.useState<TripFormState>(defaultTripForm)
   const [editForm, setEditForm] = React.useState<TripFormState>(defaultTripForm)
   const [newTxTripId, setNewTxTripId] = React.useState<string | null>(null)
 
@@ -106,9 +81,7 @@ function TripsPage() {
     () =>
       [...(tripsQuery.data ?? [])].sort((left, right) => {
         const leftDate = left.startDate ? new Date(left.startDate).getTime() : 0
-        const rightDate = right.startDate
-          ? new Date(right.startDate).getTime()
-          : 0
+        const rightDate = right.startDate ? new Date(right.startDate).getTime() : 0
         return rightDate - leftDate
       }),
     [tripsQuery.data]
@@ -128,12 +101,8 @@ function TripsPage() {
     [trips]
   )
 
-  const totalSpent = trips.reduce(
-    (sum, trip) => sum + toNumber(trip.totalExpenseAmount),
-    0
-  )
-  const countriesVisited = new Set(trips.map((t) => t.country).filter(Boolean))
-    .size
+  const totalSpent = trips.reduce((sum, trip) => sum + toNumber(trip.totalExpenseAmount), 0)
+  const countriesVisited = new Set(trips.map((t) => t.country).filter(Boolean)).size
 
   const viewTransactions = async (tripId: string) => {
     setTripIds([tripId])
@@ -222,18 +191,13 @@ function TripsPage() {
       {tripsQuery.isPending ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-72 animate-pulse rounded-2xl bg-muted"
-            />
+            <div key={index} className="h-72 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
       ) : tripsQuery.isError ? (
         <Alert variant="destructive">
           <AlertTitle>Unable to load trips</AlertTitle>
-          <AlertDescription>
-            {getApiErrorMessage(tripsQuery.error, "Try again in a moment.")}
-          </AlertDescription>
+          <AlertDescription>{getApiErrorMessage(tripsQuery.error, "Try again in a moment.")}</AlertDescription>
         </Alert>
       ) : trips.length === 0 ? (
         <EmptyState
@@ -285,11 +249,7 @@ function TripsPage() {
         value={createForm}
         onChange={setCreateForm}
         pending={createTrip.isPending}
-        error={
-          createTrip.isError
-            ? getApiErrorMessage(createTrip.error, "Unable to create trip.")
-            : null
-        }
+        error={createTrip.isError ? getApiErrorMessage(createTrip.error, "Unable to create trip.") : null}
         onOpenChange={setCreateOpen}
         onSubmit={handleCreate}
         submitLabel="Create trip"
@@ -302,11 +262,7 @@ function TripsPage() {
         value={editForm}
         onChange={setEditForm}
         pending={updateTrip.isPending}
-        error={
-          updateTrip.isError
-            ? getApiErrorMessage(updateTrip.error, "Unable to update trip.")
-            : null
-        }
+        error={updateTrip.isError ? getApiErrorMessage(updateTrip.error, "Unable to update trip.") : null}
         onOpenChange={(open) => !open && setEditTrip(null)}
         onSubmit={handleEdit}
         submitLabel="Save changes"
@@ -343,23 +299,15 @@ function TripCard({
     <Card className="group gap-0 overflow-hidden border-border/60 p-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
       <div className="relative h-48 overflow-hidden">
         {trip.imageUrl ? (
-          <img
-            alt={trip.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            src={trip.imageUrl}
-          />
+          <img alt={trip.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" src={trip.imageUrl} />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
-            <span className="text-5xl">
-              {trip.country ? countryFlag(trip.country) : "✈️"}
-            </span>
+            <span className="text-5xl">{trip.country ? countryFlag(trip.country) : "✈️"}</span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-4">
-          <p className="text-base font-semibold tracking-tight text-white drop-shadow-sm">
-            {trip.name}
-          </p>
+          <p className="text-base font-semibold tracking-tight text-white drop-shadow-sm">{trip.name}</p>
           <p className="mt-0.5 text-sm text-white/80">
             {countryName ? `${countryName} · ` : ""}
             {formatDateLabel(trip.startDate)} – {formatDateLabel(trip.endDate)}
@@ -380,44 +328,14 @@ function TripCard({
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={onAddTransaction}
-            title="Add transaction"
-          >
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              strokeWidth={2}
-              className="size-4"
-            />
+          <Button variant="ghost" size="icon" className="size-8" onClick={onAddTransaction} title="Add transaction">
+            <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={onViewTransactions}
-            title="View transactions"
-          >
-            <HugeiconsIcon
-              icon={ArrowRight01Icon}
-              strokeWidth={2}
-              className="size-4"
-            />
+          <Button variant="ghost" size="icon" className="size-8" onClick={onViewTransactions} title="View transactions">
+            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            onClick={onEdit}
-            title="Edit trip"
-          >
-            <HugeiconsIcon
-              icon={Edit01Icon}
-              strokeWidth={2}
-              className="size-4"
-            />
+          <Button variant="ghost" size="icon" className="size-8" onClick={onEdit} title="Edit trip">
+            <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="size-4" />
           </Button>
         </div>
       </CardFooter>
@@ -428,9 +346,7 @@ function TripCard({
 function countryFlag(code: string) {
   const c = code.toUpperCase()
   if (c.length !== 2) return "🌍"
-  return String.fromCodePoint(
-    ...[...c].map((ch) => 0x1f1e6 - 65 + ch.charCodeAt(0))
-  )
+  return String.fromCodePoint(...[...c].map((ch) => 0x1f1e6 - 65 + ch.charCodeAt(0)))
 }
 
 function TripDialog({
@@ -468,21 +384,11 @@ function TripDialog({
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <Field className="md:col-span-2">
             <FieldLabel>Name</FieldLabel>
-            <Input
-              value={value.name}
-              onChange={(event) =>
-                onChange((state) => ({ ...state, name: event.target.value }))
-              }
-            />
+            <Input value={value.name} onChange={(event) => onChange((state) => ({ ...state, name: event.target.value }))} />
           </Field>
           <Field className="md:col-span-2">
             <FieldLabel>Country</FieldLabel>
-            <Select
-              value={value.country}
-              onValueChange={(val) =>
-                onChange((state) => ({ ...state, country: val as string }))
-              }
-            >
+            <Select value={value.country} onValueChange={(val) => onChange((state) => ({ ...state, country: val as string }))}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a country" />
               </SelectTrigger>
@@ -515,9 +421,7 @@ function TripDialog({
               type="date"
               min={value.startDate || undefined}
               value={value.endDate}
-              onChange={(event) =>
-                onChange((state) => ({ ...state, endDate: event.target.value }))
-              }
+              onChange={(event) => onChange((state) => ({ ...state, endDate: event.target.value }))}
             />
           </Field>
           <Field className="md:col-span-2">

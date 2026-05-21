@@ -3,16 +3,8 @@ import { and, asc, eq } from "drizzle-orm"
 import { db } from "@/lib/db/client.server"
 import { categories, transactions } from "@/lib/db/schema"
 
-import {
-  requireCategory,
-  requireUser,
-} from "@/features/shared/server/lookups.server"
-import {
-  normalizeCategoryColor,
-  normalizeCategoryType,
-  normalizeIcon,
-  normalizeRequiredName,
-} from "@/features/shared/server/normalizers.server"
+import { requireCategory, requireUser } from "@/features/shared/server/lookups.server"
+import { normalizeCategoryColor, normalizeCategoryType, normalizeIcon, normalizeRequiredName } from "@/features/shared/server/normalizers.server"
 
 import type {
   CategoryHierarchyResponse,
@@ -24,14 +16,9 @@ import type {
 
 type CategoryRecord = typeof categories.$inferSelect
 
-function mapCategoryTree(
-  rows: CategoryRecord[],
-  parentId: string | null
-): CategoryHierarchyResponse[] {
+function mapCategoryTree(rows: CategoryRecord[], parentId: string | null): CategoryHierarchyResponse[] {
   return rows
-    .filter((row) =>
-      parentId === null ? row.parentId === null : row.parentId === parentId
-    )
+    .filter((row) => (parentId === null ? row.parentId === null : row.parentId === parentId))
     .sort((left, right) => left.name.localeCompare(right.name))
     .map((row) => ({
       id: row.id,
@@ -44,9 +31,7 @@ function mapCategoryTree(
     }))
 }
 
-export async function listCategoriesData(): Promise<
-  CategoryHierarchyResponse[]
-> {
+export async function listCategoriesData(): Promise<CategoryHierarchyResponse[]> {
   const user = await requireUser()
   const rows = await db.query.categories.findMany({
     where: eq(categories.userId, user.id),
@@ -56,9 +41,7 @@ export async function listCategoriesData(): Promise<
   return mapCategoryTree(rows, null)
 }
 
-export async function createCategoryData(
-  request: CreateCategoryRequest
-): Promise<CreateCategoryResponse> {
+export async function createCategoryData(request: CreateCategoryRequest): Promise<CreateCategoryResponse> {
   const user = await requireUser()
   const name = normalizeRequiredName(request.name)
   const color = normalizeCategoryColor(request.color)
@@ -102,10 +85,7 @@ export async function createCategoryData(
   }
 }
 
-export async function updateCategoryData(
-  categoryId: string,
-  request: UpdateCategoryRequest
-): Promise<UpdateCategoryResponse> {
+export async function updateCategoryData(categoryId: string, request: UpdateCategoryRequest): Promise<UpdateCategoryResponse> {
   const user = await requireUser()
   const category = await requireCategory(user.id, categoryId)
   const name = normalizeRequiredName(request.name)
@@ -155,17 +135,11 @@ export async function deleteCategoryData(categoryId: string) {
   await requireCategory(user.id, categoryId)
 
   const hasTransactions = await db.query.transactions.findFirst({
-    where: and(
-      eq(transactions.userId, user.id),
-      eq(transactions.categoryId, categoryId)
-    ),
+    where: and(eq(transactions.userId, user.id), eq(transactions.categoryId, categoryId)),
     columns: { id: true },
   })
   const hasSubcategoryTransactions = await db.query.transactions.findFirst({
-    where: and(
-      eq(transactions.userId, user.id),
-      eq(transactions.subCategoryId, categoryId)
-    ),
+    where: and(eq(transactions.userId, user.id), eq(transactions.subCategoryId, categoryId)),
     columns: { id: true },
   })
 
@@ -173,7 +147,5 @@ export async function deleteCategoryData(categoryId: string) {
     throw new Error("Category cannot be deleted because it is used by transactions.")
   }
 
-  await db
-    .delete(categories)
-    .where(and(eq(categories.userId, user.id), eq(categories.id, categoryId)))
+  await db.delete(categories).where(and(eq(categories.userId, user.id), eq(categories.id, categoryId)))
 }

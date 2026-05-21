@@ -1,21 +1,11 @@
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
 
-import {
-  categoryCreateSchema,
-  categoryUpdateSchema,
-} from "@/features/shared/server/validators"
+import { categoryCreateSchema, categoryUpdateSchema } from "@/features/shared/server/validators"
 
-import {
-  createCategoryData,
-  deleteCategoryData,
-  listCategoriesData,
-  updateCategoryData,
-} from "./service.server"
+import { createCategoryData, deleteCategoryData, listCategoriesData, updateCategoryData } from "./service.server"
 
-export const getCategories = createServerFn({ method: "GET" }).handler(
-  async () => listCategoriesData()
-)
+export const getCategories = createServerFn({ method: "GET" }).handler(async () => listCategoriesData())
 
 export const createCategory = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => categoryCreateSchema.parse(data))

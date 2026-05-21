@@ -4,13 +4,7 @@ import type { ReceiptScanResult } from "./types"
 
 export function useScanReceipt() {
   return useMutation({
-    mutationFn: async ({
-      file,
-      accountId,
-    }: {
-      file: File
-      accountId: string
-    }) => {
+    mutationFn: async ({ file, accountId }: { file: File; accountId: string }) => {
       const formData = new FormData()
       formData.append("file", file)
       formData.append("accountId", accountId)

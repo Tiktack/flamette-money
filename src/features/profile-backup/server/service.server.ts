@@ -3,17 +3,9 @@ import * as XLSX from "xlsx"
 
 import { auth } from "@/lib/auth"
 import { ensureUserBootstrap } from "@/lib/bootstrap.server"
-import {
-  normalizeCurrencyOrDefault,
-  normalizeCurrencyOrNull,
-} from "@/lib/currency"
+import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
-import {
-  forEachChunk,
-  forEachChunkSync,
-  SQLITE_IN_CLAUSE_BATCH_SIZE,
-  SQLITE_INSERT_BATCH_SIZE,
-} from "@/lib/db/sqlite-batch.server"
+import { forEachChunk, forEachChunkSync, SQLITE_IN_CLAUSE_BATCH_SIZE, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import {
   accounts,
   accountTypes,
@@ -29,8 +21,7 @@ import {
 
 import type { ImportBackupResponse } from "@/features/shared/types"
 
-const backupMimeType =
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+const backupMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 const flametteBackupFormat = "flamette-money-backup"
 const flametteBackupVersion = 1
@@ -190,9 +181,7 @@ function formatIso(value: Date | null | undefined) {
 }
 
 function formatNumber(value: number | null | undefined) {
-  return typeof value === "number" && Number.isFinite(value)
-    ? String(value)
-    : ""
+  return typeof value === "number" && Number.isFinite(value) ? String(value) : ""
 }
 
 function formatBackupTimestamp(value: Date) {
@@ -210,20 +199,12 @@ function buildWorkbook() {
   return XLSX.utils.book_new()
 }
 
-function appendWorksheet(
-  workbook: XLSX.WorkBook,
-  name: string,
-  rows: Array<Array<string | number>>
-) {
+function appendWorksheet(workbook: XLSX.WorkBook, name: string, rows: Array<Array<string | number>>) {
   const sheet = XLSX.utils.aoa_to_sheet(rows)
   XLSX.utils.book_append_sheet(workbook, sheet, name)
 }
 
-function getSheetRows(
-  workbook: XLSX.WorkBook,
-  sheetName: string,
-  required = true
-) {
+function getSheetRows(workbook: XLSX.WorkBook, sheetName: string, required = true) {
   const sheet = workbook.Sheets[sheetName]
 
   if (!sheet) {
@@ -243,16 +224,10 @@ function getSheetRows(
 }
 
 function getHeaderMap(headerRow: string[]) {
-  return new Map(
-    headerRow.map((header, index) => [header.trim().toLowerCase(), index])
-  )
+  return new Map(headerRow.map((header, index) => [header.trim().toLowerCase(), index]))
 }
 
-function getRowValue(
-  row: string[],
-  headers: Map<string, number>,
-  name: string
-) {
+function getRowValue(row: string[], headers: Map<string, number>, name: string) {
   const index = headers.get(name.trim().toLowerCase())
   if (index === undefined) {
     return ""
@@ -261,11 +236,7 @@ function getRowValue(
   return String(row[index] ?? "").trim()
 }
 
-function requireRowValue(
-  row: string[],
-  headers: Map<string, number>,
-  name: string
-) {
+function requireRowValue(row: string[], headers: Map<string, number>, name: string) {
   const value = getRowValue(row, headers, name)
   if (!value) {
     fail(`${name} is required in backup file.`)
@@ -396,9 +367,7 @@ function parseFlametteSettings(workbook: XLSX.WorkBook): FlametteSettingsRow {
 
   return {
     baseCurrency,
-    subscriptionType: normalizeSubscriptionType(
-      normalizeText(values.get("SubscriptionType"))
-    ),
+    subscriptionType: normalizeSubscriptionType(normalizeText(values.get("SubscriptionType"))),
   }
 }
 
@@ -415,16 +384,10 @@ function parseFlametteAccounts(workbook: XLSX.WorkBook) {
       name: requireRowValue(row, headers, "Name"),
       description: normalizeText(getRowValue(row, headers, "Description")),
       currency: requireRowValue(row, headers, "Currency"),
-      color:
-        normalizeText(getRowValue(row, headers, "Color")) ??
-        defaultAccountColor,
-      icon:
-        normalizeText(getRowValue(row, headers, "Icon")) ?? defaultAccountIcon,
+      color: normalizeText(getRowValue(row, headers, "Color")) ?? defaultAccountColor,
+      icon: normalizeText(getRowValue(row, headers, "Icon")) ?? defaultAccountIcon,
       type: normalizeAccountType(requireRowValue(row, headers, "Type")),
-      currentBalance: parseNumber(
-        requireRowValue(row, headers, "CurrentBalance"),
-        "CurrentBalance"
-      ),
+      currentBalance: parseNumber(requireRowValue(row, headers, "CurrentBalance"), "CurrentBalance"),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
       updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
     }))
@@ -441,12 +404,8 @@ function parseFlametteCategories(workbook: XLSX.WorkBook) {
     .map<FlametteCategoryRow>((row) => ({
       id: requireRowValue(row, headers, "Id"),
       name: requireRowValue(row, headers, "Name"),
-      color:
-        normalizeText(getRowValue(row, headers, "Color")) ??
-        defaultCategoryColor,
-      icon:
-        normalizeText(getRowValue(row, headers, "Icon")) ??
-        defaultChildCategoryIcon,
+      color: normalizeText(getRowValue(row, headers, "Color")) ?? defaultCategoryColor,
+      icon: normalizeText(getRowValue(row, headers, "Icon")) ?? defaultChildCategoryIcon,
       parentId: normalizeText(getRowValue(row, headers, "ParentId")),
       type: normalizeCategoryType(requireRowValue(row, headers, "Type")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
@@ -497,19 +456,10 @@ function parseFlametteTransactions(workbook: XLSX.WorkBook) {
       accountId: requireRowValue(row, headers, "AccountId"),
       categoryId: normalizeText(getRowValue(row, headers, "CategoryId")),
       subCategoryId: normalizeText(getRowValue(row, headers, "SubCategoryId")),
-      targetAccountId: normalizeText(
-        getRowValue(row, headers, "TargetAccountId")
-      ),
-      relatedTransactionId: normalizeText(
-        getRowValue(row, headers, "RelatedTransactionId")
-      ),
-      originalTransactionId: normalizeText(
-        getRowValue(row, headers, "OriginalTransactionId")
-      ),
-      isRefund: parseBoolean(
-        requireRowValue(row, headers, "IsRefund"),
-        "IsRefund"
-      ),
+      targetAccountId: normalizeText(getRowValue(row, headers, "TargetAccountId")),
+      relatedTransactionId: normalizeText(getRowValue(row, headers, "RelatedTransactionId")),
+      originalTransactionId: normalizeText(getRowValue(row, headers, "OriginalTransactionId")),
+      isRefund: parseBoolean(requireRowValue(row, headers, "IsRefund"), "IsRefund"),
       note: normalizeText(getRowValue(row, headers, "Note")),
       merchantName: normalizeText(getRowValue(row, headers, "MerchantName")),
       location: normalizeText(getRowValue(row, headers, "Location")),
@@ -531,23 +481,11 @@ function parseFlametteTransactionItems(workbook: XLSX.WorkBook) {
       id: requireRowValue(row, headers, "Id"),
       transactionId: requireRowValue(row, headers, "TransactionId"),
       name: requireRowValue(row, headers, "Name"),
-      quantity: parseNumber(
-        requireRowValue(row, headers, "Quantity"),
-        "Quantity"
-      ),
+      quantity: parseNumber(requireRowValue(row, headers, "Quantity"), "Quantity"),
       unit: normalizeText(getRowValue(row, headers, "Unit")),
-      unitPrice: parseNumber(
-        requireRowValue(row, headers, "UnitPrice"),
-        "UnitPrice"
-      ),
-      promotionAmount: parseNumber(
-        requireRowValue(row, headers, "PromotionAmount"),
-        "PromotionAmount"
-      ),
-      finalAmount: parseNumber(
-        requireRowValue(row, headers, "FinalAmount"),
-        "FinalAmount"
-      ),
+      unitPrice: parseNumber(requireRowValue(row, headers, "UnitPrice"), "UnitPrice"),
+      promotionAmount: parseNumber(requireRowValue(row, headers, "PromotionAmount"), "PromotionAmount"),
+      finalAmount: parseNumber(requireRowValue(row, headers, "FinalAmount"), "FinalAmount"),
       categoryId: normalizeText(getRowValue(row, headers, "CategoryId")),
       subCategoryId: normalizeText(getRowValue(row, headers, "SubCategoryId")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
@@ -575,12 +513,7 @@ async function requireUserForRequest(request: Request) {
   return user
 }
 
-function clearUserScopedData(
-  tx: Parameters<typeof db.transaction>[0] extends (arg: infer T) => unknown
-    ? T
-    : never,
-  userId: string
-) {
+function clearUserScopedData(tx: Parameters<typeof db.transaction>[0] extends (arg: infer T) => unknown ? T : never, userId: string) {
   const existingTransactions = tx.query.transactions
     .findMany({
       where: eq(transactions.userId, userId),
@@ -588,9 +521,7 @@ function clearUserScopedData(
     })
     .sync()
 
-  const transactionIds = existingTransactions.map(
-    (transaction) => transaction.id
-  )
+  const transactionIds = existingTransactions.map((transaction) => transaction.id)
 
   tx.update(transactions)
     .set({
@@ -602,9 +533,7 @@ function clearUserScopedData(
 
   if (transactionIds.length > 0) {
     forEachChunkSync(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, (chunk) => {
-      tx.delete(transactionItems)
-        .where(inArray(transactionItems.transactionId, chunk))
-        .run()
+      tx.delete(transactionItems).where(inArray(transactionItems.transactionId, chunk)).run()
     })
   }
 
@@ -620,29 +549,13 @@ function clearUserScopedData(
 }
 
 function pickAccountColor(accountName: string) {
-  const palette = [
-    "#4C6EF5",
-    "#339AF0",
-    "#22B8CF",
-    "#20C997",
-    "#51CF66",
-    "#FCC419",
-    "#FF922B",
-    "#FF6B6B",
-    "#CC5DE8",
-  ]
-  const hash = Array.from(accountName.trim().toUpperCase()).reduce(
-    (total, character) => total * 31 + character.charCodeAt(0),
-    0
-  )
+  const palette = ["#4C6EF5", "#339AF0", "#22B8CF", "#20C997", "#51CF66", "#FCC419", "#FF922B", "#FF6B6B", "#CC5DE8"]
+  const hash = Array.from(accountName.trim().toUpperCase()).reduce((total, character) => total * 31 + character.charCodeAt(0), 0)
   return palette[Math.abs(hash) % palette.length] ?? defaultAccountColor
 }
 
 function pickCategoryColor(seed: string) {
-  const hash = Array.from(seed.trim().toUpperCase()).reduce(
-    (total, character) => total * 31 + character.charCodeAt(0),
-    17
-  )
+  const hash = Array.from(seed.trim().toUpperCase()).reduce((total, character) => total * 31 + character.charCodeAt(0), 17)
   const red = 48 + (Math.abs(hash) % 160)
   const green = 48 + (Math.abs(hash * 3) % 160)
   const blue = 48 + (Math.abs(hash * 7) % 160)
@@ -683,11 +596,7 @@ function parseCsvLine(line: string) {
 }
 
 function matchesCsvHeader(cells: string[], first: string, second: string) {
-  return (
-    cells.length >= 2 &&
-    cells[0]?.trim().toUpperCase() === first &&
-    cells[1]?.trim().toUpperCase() === second
-  )
+  return cells.length >= 2 && cells[0]?.trim().toUpperCase() === first && cells[1]?.trim().toUpperCase() === second
 }
 
 function tryParseOneMoneyDate(raw: string) {
@@ -825,10 +734,7 @@ function parseOneMoneyCsv(content: string): OneMoneyParseResult {
 }
 
 function buildOneMoneyNote(tags: string, notes: string) {
-  const parts = [
-    normalizeText(tags) ? `Tags: ${tags.trim()}` : null,
-    normalizeText(notes),
-  ].filter((value): value is string => Boolean(value))
+  const parts = [normalizeText(tags) ? `Tags: ${tags.trim()}` : null, normalizeText(notes)].filter((value): value is string => Boolean(value))
 
   return parts.length > 0 ? parts.join(" | ") : null
 }
@@ -854,11 +760,7 @@ function parseCategoryParts(rawValue: string) {
   return { parentName: value, childName: null as string | null }
 }
 
-function buildCategoryKey(
-  name: string,
-  type: CategoryType,
-  parentId: string | null
-) {
+function buildCategoryKey(name: string, type: CategoryType, parentId: string | null) {
   return `${name.trim()}|${type}|${parentId ?? "ROOT"}`
 }
 
@@ -868,11 +770,7 @@ function normalizeBackupType(rawType: string | null | undefined) {
     return "flamette" as const
   }
 
-  if (
-    normalized === "one-money" ||
-    normalized === "onemoney" ||
-    normalized === "1money"
-  ) {
+  if (normalized === "one-money" || normalized === "onemoney" || normalized === "1money") {
     return "one-money" as const
   }
 
@@ -887,11 +785,7 @@ async function exportFlametteBackup(user: UserRecord) {
 
   const userCategories = await db.query.categories.findMany({
     where: eq(categories.userId, user.id),
-    orderBy: (table, { asc }) => [
-      asc(table.parentId),
-      asc(table.name),
-      asc(table.id),
-    ],
+    orderBy: (table, { asc }) => [asc(table.parentId), asc(table.name), asc(table.id)],
   })
 
   const userTrips = await db.query.trips.findMany({
@@ -908,21 +802,14 @@ async function exportFlametteBackup(user: UserRecord) {
   const userTransactionItems: Array<typeof transactionItems.$inferSelect> = []
 
   if (transactionIds.length > 0) {
-    await forEachChunk(
-      transactionIds,
-      SQLITE_IN_CLAUSE_BATCH_SIZE,
-      async (chunk) => {
-        const items = await db.query.transactionItems.findMany({
-          where: inArray(transactionItems.transactionId, chunk),
-          orderBy: (table, { asc }) => [
-            asc(table.transactionId),
-            asc(table.id),
-          ],
-        })
+    await forEachChunk(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, async (chunk) => {
+      const items = await db.query.transactionItems.findMany({
+        where: inArray(transactionItems.transactionId, chunk),
+        orderBy: (table, { asc }) => [asc(table.transactionId), asc(table.id)],
+      })
 
-        userTransactionItems.push(...items)
-      }
-    )
+      userTransactionItems.push(...items)
+    })
   }
 
   const workbook = buildWorkbook()
@@ -937,18 +824,7 @@ async function exportFlametteBackup(user: UserRecord) {
   ])
 
   appendWorksheet(workbook, accountsSheetName, [
-    [
-      "Id",
-      "Name",
-      "Description",
-      "Currency",
-      "Color",
-      "Icon",
-      "Type",
-      "CurrentBalance",
-      "CreatedAt",
-      "UpdatedAt",
-    ],
+    ["Id", "Name", "Description", "Currency", "Color", "Icon", "Type", "CurrentBalance", "CreatedAt", "UpdatedAt"],
     ...userAccounts.map((account) => [
       account.id,
       account.name,
@@ -964,16 +840,7 @@ async function exportFlametteBackup(user: UserRecord) {
   ])
 
   appendWorksheet(workbook, categoriesSheetName, [
-    [
-      "Id",
-      "Name",
-      "Color",
-      "Icon",
-      "ParentId",
-      "Type",
-      "CreatedAt",
-      "UpdatedAt",
-    ],
+    ["Id", "Name", "Color", "Icon", "ParentId", "Type", "CreatedAt", "UpdatedAt"],
     ...userCategories.map((category) => [
       category.id,
       category.name,
@@ -987,16 +854,7 @@ async function exportFlametteBackup(user: UserRecord) {
   ])
 
   appendWorksheet(workbook, tripsSheetName, [
-    [
-      "Id",
-      "Name",
-      "Country",
-      "StartDate",
-      "EndDate",
-      "ImageUrl",
-      "CreatedAt",
-      "UpdatedAt",
-    ],
+    ["Id", "Name", "Country", "StartDate", "EndDate", "ImageUrl", "CreatedAt", "UpdatedAt"],
     ...userTrips.map((trip) => [
       trip.id,
       trip.name,
@@ -1057,20 +915,7 @@ async function exportFlametteBackup(user: UserRecord) {
   ])
 
   appendWorksheet(workbook, transactionItemsSheetName, [
-    [
-      "Id",
-      "TransactionId",
-      "Name",
-      "Quantity",
-      "Unit",
-      "UnitPrice",
-      "PromotionAmount",
-      "FinalAmount",
-      "CategoryId",
-      "SubCategoryId",
-      "CreatedAt",
-      "UpdatedAt",
-    ],
+    ["Id", "TransactionId", "Name", "Quantity", "Unit", "UnitPrice", "PromotionAmount", "FinalAmount", "CategoryId", "SubCategoryId", "CreatedAt", "UpdatedAt"],
     ...userTransactionItems.map((item) => [
       item.id,
       item.transactionId,
@@ -1103,10 +948,7 @@ async function exportFlametteBackup(user: UserRecord) {
   })
 }
 
-async function importFlametteBackup(
-  user: UserRecord,
-  file: File
-): Promise<ImportBackupResponse> {
+async function importFlametteBackup(user: UserRecord, file: File): Promise<ImportBackupResponse> {
   const workbook = XLSX.read(Buffer.from(await file.arrayBuffer()), {
     type: "buffer",
   })
@@ -1140,11 +982,7 @@ async function importFlametteBackup(
       }))
 
     const accountIds = new Set(importedAccounts.map((row) => row.id))
-    const categoryRowsById = new Map(
-      categoryRows
-        .filter((row) => row.id && row.name.trim())
-        .map((row) => [row.id, row])
-    )
+    const categoryRowsById = new Map(categoryRows.filter((row) => row.id && row.name.trim()).map((row) => [row.id, row]))
     const insertedCategoryIds = new Set<string>()
     const importedCategories: Array<typeof categories.$inferInsert> = []
     let skippedRows = 0
@@ -1166,11 +1004,7 @@ async function importFlametteBackup(
           userId: user.id,
           name: row.name.trim(),
           color: row.color || defaultCategoryColor,
-          icon:
-            row.icon ||
-            (row.parentId
-              ? defaultChildCategoryIcon
-              : defaultParentCategoryIcon),
+          icon: row.icon || (row.parentId ? defaultChildCategoryIcon : defaultParentCategoryIcon),
           parentId: row.parentId,
           type: row.type,
           createdAt: row.createdAt ?? now,
@@ -1267,12 +1101,8 @@ async function importFlametteBackup(
       })
     }
 
-    const importedTransactionIds = new Set(
-      importedTransactions.map((row) => row.id)
-    )
-    const importedTransactionItems: Array<
-      typeof transactionItems.$inferInsert
-    > = []
+    const importedTransactionIds = new Set(importedTransactions.map((row) => row.id))
+    const importedTransactionItems: Array<typeof transactionItems.$inferInsert> = []
 
     for (const row of transactionItemRows) {
       if (!importedTransactionIds.has(row.transactionId)) {
@@ -1313,13 +1143,9 @@ async function importFlametteBackup(
     }
 
     if (importedCategories.length > 0) {
-      forEachChunkSync(
-        importedCategories,
-        SQLITE_INSERT_BATCH_SIZE,
-        (chunk) => {
-          tx.insert(categories).values(chunk).run()
-        }
-      )
+      forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+        tx.insert(categories).values(chunk).run()
+      })
     }
 
     if (importedTrips.length > 0) {
@@ -1329,26 +1155,15 @@ async function importFlametteBackup(
     }
 
     if (importedTransactions.length > 0) {
-      forEachChunkSync(
-        importedTransactions,
-        SQLITE_INSERT_BATCH_SIZE,
-        (chunk) => {
-          tx.insert(transactions).values(chunk).run()
-        }
-      )
+      forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+        tx.insert(transactions).values(chunk).run()
+      })
     }
 
     for (const reference of relatedReferences) {
-      const nextRelatedId =
-        reference.relatedTransactionId &&
-        importedTransactionIds.has(reference.relatedTransactionId)
-          ? reference.relatedTransactionId
-          : null
+      const nextRelatedId = reference.relatedTransactionId && importedTransactionIds.has(reference.relatedTransactionId) ? reference.relatedTransactionId : null
       const nextOriginalId =
-        reference.originalTransactionId &&
-        importedTransactionIds.has(reference.originalTransactionId)
-          ? reference.originalTransactionId
-          : null
+        reference.originalTransactionId && importedTransactionIds.has(reference.originalTransactionId) ? reference.originalTransactionId : null
 
       if (!nextRelatedId && !nextOriginalId) {
         continue
@@ -1364,24 +1179,14 @@ async function importFlametteBackup(
     }
 
     if (importedTransactionItems.length > 0) {
-      forEachChunkSync(
-        importedTransactionItems,
-        SQLITE_INSERT_BATCH_SIZE,
-        (chunk) => {
-          tx.insert(transactionItems).values(chunk).run()
-        }
-      )
+      forEachChunkSync(importedTransactionItems, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+        tx.insert(transactionItems).values(chunk).run()
+      })
     }
 
-    const nextBaseCurrency = normalizeCurrencyOrDefault(
-      settings.baseCurrency,
-      user.baseCurrency
-    )
-    const nextSubscriptionType =
-      settings.subscriptionType ?? user.subscriptionType
-    const settingsChanged =
-      nextBaseCurrency !== user.baseCurrency ||
-      nextSubscriptionType !== user.subscriptionType
+    const nextBaseCurrency = normalizeCurrencyOrDefault(settings.baseCurrency, user.baseCurrency)
+    const nextSubscriptionType = settings.subscriptionType ?? user.subscriptionType
+    const settingsChanged = nextBaseCurrency !== user.baseCurrency || nextSubscriptionType !== user.subscriptionType
 
     if (settingsChanged) {
       tx.update(users)
@@ -1399,8 +1204,7 @@ async function importFlametteBackup(
       importedTransactions: importedTransactions.length,
       importedAccounts: importedAccounts.length,
       importedCategories: importedCategories.length,
-      importedSubCategories: importedCategories.filter((row) => row.parentId)
-        .length,
+      importedSubCategories: importedCategories.filter((row) => row.parentId).length,
       importedTransactionItems: importedTransactionItems.length,
       updatedBalanceSnapshots: importedAccounts.length,
       updatedSettings: settingsChanged ? 1 : 0,
@@ -1409,10 +1213,7 @@ async function importFlametteBackup(
   })
 }
 
-async function importOneMoneyBackup(
-  user: UserRecord,
-  file: File
-): Promise<ImportBackupResponse> {
+async function importOneMoneyBackup(user: UserRecord, file: File): Promise<ImportBackupResponse> {
   const parsed = parseOneMoneyCsv(await file.text())
 
   if (parsed.transactions.length === 0) {
@@ -1424,10 +1225,7 @@ async function importOneMoneyBackup(
 
   for (const balance of parsed.balances) {
     allAccountNames.add(balance.name.trim())
-    const normalized =
-      normalizeCurrencyOrNull(balance.currency) ??
-      normalizeText(balance.currency)?.toUpperCase() ??
-      null
+    const normalized = normalizeCurrencyOrNull(balance.currency) ?? normalizeText(balance.currency)?.toUpperCase() ?? null
     if (normalized) {
       accountCurrencyHints.set(balance.name.trim(), normalized)
     }
@@ -1436,28 +1234,16 @@ async function importOneMoneyBackup(
   for (const transaction of parsed.transactions) {
     if (transaction.fromAccount.trim()) {
       allAccountNames.add(transaction.fromAccount.trim())
-      const sourceCurrency =
-        normalizeCurrencyOrNull(transaction.currency) ??
-        normalizeText(transaction.currency)?.toUpperCase() ??
-        null
-      if (
-        sourceCurrency &&
-        !accountCurrencyHints.has(transaction.fromAccount.trim())
-      ) {
+      const sourceCurrency = normalizeCurrencyOrNull(transaction.currency) ?? normalizeText(transaction.currency)?.toUpperCase() ?? null
+      if (sourceCurrency && !accountCurrencyHints.has(transaction.fromAccount.trim())) {
         accountCurrencyHints.set(transaction.fromAccount.trim(), sourceCurrency)
       }
     }
 
     if (transaction.type === "Transfer" && transaction.target.trim()) {
       allAccountNames.add(transaction.target.trim())
-      const targetCurrency =
-        normalizeCurrencyOrNull(transaction.currency2) ??
-        normalizeText(transaction.currency2)?.toUpperCase() ??
-        null
-      if (
-        targetCurrency &&
-        !accountCurrencyHints.has(transaction.target.trim())
-      ) {
+      const targetCurrency = normalizeCurrencyOrNull(transaction.currency2) ?? normalizeText(transaction.currency2)?.toUpperCase() ?? null
+      if (targetCurrency && !accountCurrencyHints.has(transaction.target.trim())) {
         accountCurrencyHints.set(transaction.target.trim(), targetCurrency)
       }
     }
@@ -1471,24 +1257,18 @@ async function importOneMoneyBackup(
     const accountsByName = new Map<string, typeof accounts.$inferInsert>()
     const importedAccounts: Array<typeof accounts.$inferInsert> = []
 
-    for (const accountName of Array.from(allAccountNames).sort((left, right) =>
-      left.localeCompare(right)
-    )) {
+    for (const accountName of Array.from(allAccountNames).sort((left, right) => left.localeCompare(right))) {
       if (!accountName) {
         continue
       }
 
-      const currencyHint =
-        accountCurrencyHints.get(accountName) ?? defaultOneMoneyCurrency
+      const currencyHint = accountCurrencyHints.get(accountName) ?? defaultOneMoneyCurrency
       const account = {
         id: crypto.randomUUID(),
         userId: user.id,
         name: accountName,
         description: null,
-        currency: normalizeCurrencyOrDefault(
-          currencyHint,
-          defaultOneMoneyCurrency
-        ),
+        currency: normalizeCurrencyOrDefault(currencyHint, defaultOneMoneyCurrency),
         color: pickAccountColor(accountName),
         icon: defaultAccountIcon,
         type: defaultOneMoneyAccountType as AccountType,
@@ -1506,11 +1286,7 @@ async function importOneMoneyBackup(
     let createdCategories = 0
     let createdSubCategories = 0
 
-    const ensureCategory = (
-      name: string,
-      type: CategoryType,
-      parentId: string | null
-    ) => {
+    const ensureCategory = (name: string, type: CategoryType, parentId: string | null) => {
       const key = buildCategoryKey(name, type, parentId)
       const existing = categoriesByKey.get(key)
       if (existing) {
@@ -1522,11 +1298,7 @@ async function importOneMoneyBackup(
         userId: user.id,
         name: name.trim(),
         color: pickCategoryColor(key),
-        icon: parentId
-          ? defaultChildCategoryIcon
-          : type === "Income"
-            ? "IconCoins"
-            : defaultParentCategoryIcon,
+        icon: parentId ? defaultChildCategoryIcon : type === "Income" ? "IconCoins" : defaultParentCategoryIcon,
         parentId,
         type,
         createdAt: now,
@@ -1554,8 +1326,7 @@ async function importOneMoneyBackup(
         continue
       }
 
-      const categoryType: CategoryType =
-        row.type === "Income" ? "Income" : "Expense"
+      const categoryType: CategoryType = row.type === "Income" ? "Income" : "Expense"
       const { parentName, childName } = parseCategoryParts(row.target)
       const parent = ensureCategory(parentName, categoryType, null)
 
@@ -1567,9 +1338,7 @@ async function importOneMoneyBackup(
     const importedTransactions: Array<typeof transactions.$inferInsert> = []
     let skippedRows = parsed.skippedRows
 
-    for (const row of [...parsed.transactions].sort(
-      (left, right) => left.date.getTime() - right.date.getTime()
-    )) {
+    for (const row of [...parsed.transactions].sort((left, right) => left.date.getTime() - right.date.getTime())) {
       const sourceAccount = accountsByName.get(row.fromAccount.trim())
 
       if (!sourceAccount || row.amount <= 0) {
@@ -1578,23 +1347,16 @@ async function importOneMoneyBackup(
       }
 
       if (row.type === "Expense" || row.type === "Income") {
-        const categoryType: CategoryType =
-          row.type === "Income" ? "Income" : "Expense"
+        const categoryType: CategoryType = row.type === "Income" ? "Income" : "Expense"
         const { parentName, childName } = parseCategoryParts(row.target)
-        const parent = categoriesByKey.get(
-          buildCategoryKey(parentName, categoryType, null)
-        )
+        const parent = categoriesByKey.get(buildCategoryKey(parentName, categoryType, null))
 
         if (!parent) {
           skippedRows += 1
           continue
         }
 
-        const child = childName
-          ? (categoriesByKey.get(
-              buildCategoryKey(childName, categoryType, parent.id)
-            ) ?? null)
-          : null
+        const child = childName ? (categoriesByKey.get(buildCategoryKey(childName, categoryType, parent.id)) ?? null) : null
 
         importedTransactions.push({
           id: crypto.randomUUID(),
@@ -1603,8 +1365,7 @@ async function importOneMoneyBackup(
           type: row.type,
           amount: row.amount,
           amount2: row.amount2 > 0 ? row.amount2 : null,
-          currency:
-            normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
+          currency: normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
           currency2: normalizeCurrencyOrNull(row.currency2),
           accountId: sourceAccount.id,
           categoryId: parent.id,
@@ -1621,9 +1382,7 @@ async function importOneMoneyBackup(
           updatedAt: now,
         })
 
-        sourceAccount.currentBalance =
-          (sourceAccount.currentBalance ?? 0) +
-          (row.type === "Income" ? row.amount : -row.amount)
+        sourceAccount.currentBalance = (sourceAccount.currentBalance ?? 0) + (row.type === "Income" ? row.amount : -row.amount)
         continue
       }
 
@@ -1643,10 +1402,8 @@ async function importOneMoneyBackup(
           type: "Transfer",
           amount: row.amount,
           amount2: targetAmount,
-          currency:
-            normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
-          currency2:
-            normalizeCurrencyOrNull(row.currency2) ?? targetAccount.currency,
+          currency: normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
+          currency2: normalizeCurrencyOrNull(row.currency2) ?? targetAccount.currency,
           accountId: sourceAccount.id,
           categoryId: null,
           subCategoryId: null,
@@ -1662,10 +1419,8 @@ async function importOneMoneyBackup(
           updatedAt: now,
         })
 
-        sourceAccount.currentBalance =
-          (sourceAccount.currentBalance ?? 0) - row.amount
-        targetAccount.currentBalance =
-          (targetAccount.currentBalance ?? 0) + targetAmount
+        sourceAccount.currentBalance = (sourceAccount.currentBalance ?? 0) - row.amount
+        targetAccount.currentBalance = (targetAccount.currentBalance ?? 0) + targetAmount
         continue
       }
 
@@ -1696,23 +1451,15 @@ async function importOneMoneyBackup(
     }
 
     if (importedCategories.length > 0) {
-      forEachChunkSync(
-        importedCategories,
-        SQLITE_INSERT_BATCH_SIZE,
-        (chunk) => {
-          tx.insert(categories).values(chunk).run()
-        }
-      )
+      forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+        tx.insert(categories).values(chunk).run()
+      })
     }
 
     if (importedTransactions.length > 0) {
-      forEachChunkSync(
-        importedTransactions,
-        SQLITE_INSERT_BATCH_SIZE,
-        (chunk) => {
-          tx.insert(transactions).values(chunk).run()
-        }
-      )
+      forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+        tx.insert(transactions).values(chunk).run()
+      })
     }
 
     return {
@@ -1747,9 +1494,7 @@ export async function handleImportBackupRequest(request: Request) {
 
   const typeValue = formData.get("type")
   const fileValue = formData.get("file")
-  const type = normalizeBackupType(
-    typeof typeValue === "string" ? typeValue : null
-  )
+  const type = normalizeBackupType(typeof typeValue === "string" ? typeValue : null)
 
   if (!(fileValue instanceof File) || fileValue.size === 0) {
     fail("Backup file is required.")
@@ -1772,7 +1517,6 @@ export function toBackupErrorResponse(error: unknown) {
   }
 
   console.error("backup request failed", error)
-  const message =
-    error instanceof Error ? error.message : "Unexpected backup error."
+  const message = error instanceof Error ? error.message : "Unexpected backup error."
   return new Response(message, { status: 500 })
 }

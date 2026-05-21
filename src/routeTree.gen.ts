@@ -8,238 +8,234 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as ProtectedRouteImport } from './routes/_protected'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProtectedTripsRouteImport } from './routes/_protected/trips'
-import { Route as ProtectedTransactionsRouteImport } from './routes/_protected/transactions'
-import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
-import { Route as ProtectedCategoriesRouteImport } from './routes/_protected/categories'
-import { Route as ProtectedAnalyticsRouteImport } from './routes/_protected/analytics'
-import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts'
-import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
-import { Route as ApiReceiptsScanRouteImport } from './routes/api/receipts/scan'
-import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
-import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ProtectedAnalyticsPortfolioRouteImport } from './routes/_protected/analytics.portfolio'
-import { Route as ProtectedAnalyticsComparisonRouteImport } from './routes/_protected/analytics.comparison'
-import { Route as ProtectedAnalyticsCategoriesRouteImport } from './routes/_protected/analytics.categories'
-import { Route as ProtectedAnalyticsCashflowRouteImport } from './routes/_protected/analytics.cashflow'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as SignInRouteImport } from "./routes/sign-in"
+import { Route as ProtectedRouteImport } from "./routes/_protected"
+import { Route as IndexRouteImport } from "./routes/index"
+import { Route as ProtectedTripsRouteImport } from "./routes/_protected/trips"
+import { Route as ProtectedTransactionsRouteImport } from "./routes/_protected/transactions"
+import { Route as ProtectedSettingsRouteImport } from "./routes/_protected/settings"
+import { Route as ProtectedCategoriesRouteImport } from "./routes/_protected/categories"
+import { Route as ProtectedAnalyticsRouteImport } from "./routes/_protected/analytics"
+import { Route as ProtectedAccountsRouteImport } from "./routes/_protected/accounts"
+import { Route as ApiSeedDemoRouteImport } from "./routes/api/seed/demo"
+import { Route as ApiReceiptsScanRouteImport } from "./routes/api/receipts/scan"
+import { Route as ApiProfileImportBackupRouteImport } from "./routes/api/profile/import-backup"
+import { Route as ApiProfileExportBackupRouteImport } from "./routes/api/profile/export-backup"
+import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$"
+import { Route as ProtectedAnalyticsPortfolioRouteImport } from "./routes/_protected/analytics.portfolio"
+import { Route as ProtectedAnalyticsComparisonRouteImport } from "./routes/_protected/analytics.comparison"
+import { Route as ProtectedAnalyticsCategoriesRouteImport } from "./routes/_protected/analytics.categories"
+import { Route as ProtectedAnalyticsCashflowRouteImport } from "./routes/_protected/analytics.cashflow"
 
 const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
+  id: "/sign-in",
+  path: "/sign-in",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedRoute = ProtectedRouteImport.update({
-  id: '/_protected',
+  id: "/_protected",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedTripsRoute = ProtectedTripsRouteImport.update({
-  id: '/trips',
-  path: '/trips',
+  id: "/trips",
+  path: "/trips",
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedTransactionsRoute = ProtectedTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
+  id: "/transactions",
+  path: "/transactions",
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedCategoriesRoute = ProtectedCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
+  id: "/categories",
+  path: "/categories",
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedAnalyticsRoute = ProtectedAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+  id: "/analytics",
+  path: "/analytics",
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedAccountsRoute = ProtectedAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
+  id: "/accounts",
+  path: "/accounts",
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ApiSeedDemoRoute = ApiSeedDemoRouteImport.update({
-  id: '/api/seed/demo',
-  path: '/api/seed/demo',
+  id: "/api/seed/demo",
+  path: "/api/seed/demo",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiReceiptsScanRoute = ApiReceiptsScanRouteImport.update({
-  id: '/api/receipts/scan',
-  path: '/api/receipts/scan',
+  id: "/api/receipts/scan",
+  path: "/api/receipts/scan",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiProfileImportBackupRoute = ApiProfileImportBackupRouteImport.update({
-  id: '/api/profile/import-backup',
-  path: '/api/profile/import-backup',
+  id: "/api/profile/import-backup",
+  path: "/api/profile/import-backup",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiProfileExportBackupRoute = ApiProfileExportBackupRouteImport.update({
-  id: '/api/profile/export-backup',
-  path: '/api/profile/export-backup',
+  id: "/api/profile/export-backup",
+  path: "/api/profile/export-backup",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
+  id: "/api/auth/$",
+  path: "/api/auth/$",
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProtectedAnalyticsPortfolioRoute =
-  ProtectedAnalyticsPortfolioRouteImport.update({
-    id: '/portfolio',
-    path: '/portfolio',
-    getParentRoute: () => ProtectedAnalyticsRoute,
-  } as any)
-const ProtectedAnalyticsComparisonRoute =
-  ProtectedAnalyticsComparisonRouteImport.update({
-    id: '/comparison',
-    path: '/comparison',
-    getParentRoute: () => ProtectedAnalyticsRoute,
-  } as any)
-const ProtectedAnalyticsCategoriesRoute =
-  ProtectedAnalyticsCategoriesRouteImport.update({
-    id: '/categories',
-    path: '/categories',
-    getParentRoute: () => ProtectedAnalyticsRoute,
-  } as any)
-const ProtectedAnalyticsCashflowRoute =
-  ProtectedAnalyticsCashflowRouteImport.update({
-    id: '/cashflow',
-    path: '/cashflow',
-    getParentRoute: () => ProtectedAnalyticsRoute,
-  } as any)
+const ProtectedAnalyticsPortfolioRoute = ProtectedAnalyticsPortfolioRouteImport.update({
+  id: "/portfolio",
+  path: "/portfolio",
+  getParentRoute: () => ProtectedAnalyticsRoute,
+} as any)
+const ProtectedAnalyticsComparisonRoute = ProtectedAnalyticsComparisonRouteImport.update({
+  id: "/comparison",
+  path: "/comparison",
+  getParentRoute: () => ProtectedAnalyticsRoute,
+} as any)
+const ProtectedAnalyticsCategoriesRoute = ProtectedAnalyticsCategoriesRouteImport.update({
+  id: "/categories",
+  path: "/categories",
+  getParentRoute: () => ProtectedAnalyticsRoute,
+} as any)
+const ProtectedAnalyticsCashflowRoute = ProtectedAnalyticsCashflowRouteImport.update({
+  id: "/cashflow",
+  path: "/cashflow",
+  getParentRoute: () => ProtectedAnalyticsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/sign-in': typeof SignInRoute
-  '/accounts': typeof ProtectedAccountsRoute
-  '/analytics': typeof ProtectedAnalyticsRouteWithChildren
-  '/categories': typeof ProtectedCategoriesRoute
-  '/settings': typeof ProtectedSettingsRoute
-  '/transactions': typeof ProtectedTransactionsRoute
-  '/trips': typeof ProtectedTripsRoute
-  '/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
-  '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
-  '/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
-  '/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
-  '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
-  '/api/receipts/scan': typeof ApiReceiptsScanRoute
-  '/api/seed/demo': typeof ApiSeedDemoRoute
+  "/": typeof IndexRoute
+  "/sign-in": typeof SignInRoute
+  "/accounts": typeof ProtectedAccountsRoute
+  "/analytics": typeof ProtectedAnalyticsRouteWithChildren
+  "/categories": typeof ProtectedCategoriesRoute
+  "/settings": typeof ProtectedSettingsRoute
+  "/transactions": typeof ProtectedTransactionsRoute
+  "/trips": typeof ProtectedTripsRoute
+  "/analytics/cashflow": typeof ProtectedAnalyticsCashflowRoute
+  "/analytics/categories": typeof ProtectedAnalyticsCategoriesRoute
+  "/analytics/comparison": typeof ProtectedAnalyticsComparisonRoute
+  "/analytics/portfolio": typeof ProtectedAnalyticsPortfolioRoute
+  "/api/auth/$": typeof ApiAuthSplatRoute
+  "/api/profile/export-backup": typeof ApiProfileExportBackupRoute
+  "/api/profile/import-backup": typeof ApiProfileImportBackupRoute
+  "/api/receipts/scan": typeof ApiReceiptsScanRoute
+  "/api/seed/demo": typeof ApiSeedDemoRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/sign-in': typeof SignInRoute
-  '/accounts': typeof ProtectedAccountsRoute
-  '/analytics': typeof ProtectedAnalyticsRouteWithChildren
-  '/categories': typeof ProtectedCategoriesRoute
-  '/settings': typeof ProtectedSettingsRoute
-  '/transactions': typeof ProtectedTransactionsRoute
-  '/trips': typeof ProtectedTripsRoute
-  '/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
-  '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
-  '/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
-  '/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
-  '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
-  '/api/receipts/scan': typeof ApiReceiptsScanRoute
-  '/api/seed/demo': typeof ApiSeedDemoRoute
+  "/": typeof IndexRoute
+  "/sign-in": typeof SignInRoute
+  "/accounts": typeof ProtectedAccountsRoute
+  "/analytics": typeof ProtectedAnalyticsRouteWithChildren
+  "/categories": typeof ProtectedCategoriesRoute
+  "/settings": typeof ProtectedSettingsRoute
+  "/transactions": typeof ProtectedTransactionsRoute
+  "/trips": typeof ProtectedTripsRoute
+  "/analytics/cashflow": typeof ProtectedAnalyticsCashflowRoute
+  "/analytics/categories": typeof ProtectedAnalyticsCategoriesRoute
+  "/analytics/comparison": typeof ProtectedAnalyticsComparisonRoute
+  "/analytics/portfolio": typeof ProtectedAnalyticsPortfolioRoute
+  "/api/auth/$": typeof ApiAuthSplatRoute
+  "/api/profile/export-backup": typeof ApiProfileExportBackupRoute
+  "/api/profile/import-backup": typeof ApiProfileImportBackupRoute
+  "/api/receipts/scan": typeof ApiReceiptsScanRoute
+  "/api/seed/demo": typeof ApiSeedDemoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_protected': typeof ProtectedRouteWithChildren
-  '/sign-in': typeof SignInRoute
-  '/_protected/accounts': typeof ProtectedAccountsRoute
-  '/_protected/analytics': typeof ProtectedAnalyticsRouteWithChildren
-  '/_protected/categories': typeof ProtectedCategoriesRoute
-  '/_protected/settings': typeof ProtectedSettingsRoute
-  '/_protected/transactions': typeof ProtectedTransactionsRoute
-  '/_protected/trips': typeof ProtectedTripsRoute
-  '/_protected/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
-  '/_protected/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
-  '/_protected/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
-  '/_protected/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
-  '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
-  '/api/receipts/scan': typeof ApiReceiptsScanRoute
-  '/api/seed/demo': typeof ApiSeedDemoRoute
+  "/": typeof IndexRoute
+  "/_protected": typeof ProtectedRouteWithChildren
+  "/sign-in": typeof SignInRoute
+  "/_protected/accounts": typeof ProtectedAccountsRoute
+  "/_protected/analytics": typeof ProtectedAnalyticsRouteWithChildren
+  "/_protected/categories": typeof ProtectedCategoriesRoute
+  "/_protected/settings": typeof ProtectedSettingsRoute
+  "/_protected/transactions": typeof ProtectedTransactionsRoute
+  "/_protected/trips": typeof ProtectedTripsRoute
+  "/_protected/analytics/cashflow": typeof ProtectedAnalyticsCashflowRoute
+  "/_protected/analytics/categories": typeof ProtectedAnalyticsCategoriesRoute
+  "/_protected/analytics/comparison": typeof ProtectedAnalyticsComparisonRoute
+  "/_protected/analytics/portfolio": typeof ProtectedAnalyticsPortfolioRoute
+  "/api/auth/$": typeof ApiAuthSplatRoute
+  "/api/profile/export-backup": typeof ApiProfileExportBackupRoute
+  "/api/profile/import-backup": typeof ApiProfileImportBackupRoute
+  "/api/receipts/scan": typeof ApiReceiptsScanRoute
+  "/api/seed/demo": typeof ApiSeedDemoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/sign-in'
-    | '/accounts'
-    | '/analytics'
-    | '/categories'
-    | '/settings'
-    | '/transactions'
-    | '/trips'
-    | '/analytics/cashflow'
-    | '/analytics/categories'
-    | '/analytics/comparison'
-    | '/analytics/portfolio'
-    | '/api/auth/$'
-    | '/api/profile/export-backup'
-    | '/api/profile/import-backup'
-    | '/api/receipts/scan'
-    | '/api/seed/demo'
+    | "/"
+    | "/sign-in"
+    | "/accounts"
+    | "/analytics"
+    | "/categories"
+    | "/settings"
+    | "/transactions"
+    | "/trips"
+    | "/analytics/cashflow"
+    | "/analytics/categories"
+    | "/analytics/comparison"
+    | "/analytics/portfolio"
+    | "/api/auth/$"
+    | "/api/profile/export-backup"
+    | "/api/profile/import-backup"
+    | "/api/receipts/scan"
+    | "/api/seed/demo"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/sign-in'
-    | '/accounts'
-    | '/analytics'
-    | '/categories'
-    | '/settings'
-    | '/transactions'
-    | '/trips'
-    | '/analytics/cashflow'
-    | '/analytics/categories'
-    | '/analytics/comparison'
-    | '/analytics/portfolio'
-    | '/api/auth/$'
-    | '/api/profile/export-backup'
-    | '/api/profile/import-backup'
-    | '/api/receipts/scan'
-    | '/api/seed/demo'
+    | "/"
+    | "/sign-in"
+    | "/accounts"
+    | "/analytics"
+    | "/categories"
+    | "/settings"
+    | "/transactions"
+    | "/trips"
+    | "/analytics/cashflow"
+    | "/analytics/categories"
+    | "/analytics/comparison"
+    | "/analytics/portfolio"
+    | "/api/auth/$"
+    | "/api/profile/export-backup"
+    | "/api/profile/import-backup"
+    | "/api/receipts/scan"
+    | "/api/seed/demo"
   id:
-    | '__root__'
-    | '/'
-    | '/_protected'
-    | '/sign-in'
-    | '/_protected/accounts'
-    | '/_protected/analytics'
-    | '/_protected/categories'
-    | '/_protected/settings'
-    | '/_protected/transactions'
-    | '/_protected/trips'
-    | '/_protected/analytics/cashflow'
-    | '/_protected/analytics/categories'
-    | '/_protected/analytics/comparison'
-    | '/_protected/analytics/portfolio'
-    | '/api/auth/$'
-    | '/api/profile/export-backup'
-    | '/api/profile/import-backup'
-    | '/api/receipts/scan'
-    | '/api/seed/demo'
+    | "__root__"
+    | "/"
+    | "/_protected"
+    | "/sign-in"
+    | "/_protected/accounts"
+    | "/_protected/analytics"
+    | "/_protected/categories"
+    | "/_protected/settings"
+    | "/_protected/transactions"
+    | "/_protected/trips"
+    | "/_protected/analytics/cashflow"
+    | "/_protected/analytics/categories"
+    | "/_protected/analytics/comparison"
+    | "/_protected/analytics/portfolio"
+    | "/api/auth/$"
+    | "/api/profile/export-backup"
+    | "/api/profile/import-backup"
+    | "/api/receipts/scan"
+    | "/api/seed/demo"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -253,131 +249,131 @@ export interface RootRouteChildren {
   ApiSeedDemoRoute: typeof ApiSeedDemoRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
+    "/sign-in": {
+      id: "/sign-in"
+      path: "/sign-in"
+      fullPath: "/sign-in"
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected': {
-      id: '/_protected'
-      path: ''
-      fullPath: '/'
+    "/_protected": {
+      id: "/_protected"
+      path: ""
+      fullPath: "/"
       preLoaderRoute: typeof ProtectedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected/trips': {
-      id: '/_protected/trips'
-      path: '/trips'
-      fullPath: '/trips'
+    "/_protected/trips": {
+      id: "/_protected/trips"
+      path: "/trips"
+      fullPath: "/trips"
       preLoaderRoute: typeof ProtectedTripsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/transactions': {
-      id: '/_protected/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
+    "/_protected/transactions": {
+      id: "/_protected/transactions"
+      path: "/transactions"
+      fullPath: "/transactions"
       preLoaderRoute: typeof ProtectedTransactionsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/settings': {
-      id: '/_protected/settings'
-      path: '/settings'
-      fullPath: '/settings'
+    "/_protected/settings": {
+      id: "/_protected/settings"
+      path: "/settings"
+      fullPath: "/settings"
       preLoaderRoute: typeof ProtectedSettingsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/categories': {
-      id: '/_protected/categories'
-      path: '/categories'
-      fullPath: '/categories'
+    "/_protected/categories": {
+      id: "/_protected/categories"
+      path: "/categories"
+      fullPath: "/categories"
       preLoaderRoute: typeof ProtectedCategoriesRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/analytics': {
-      id: '/_protected/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
+    "/_protected/analytics": {
+      id: "/_protected/analytics"
+      path: "/analytics"
+      fullPath: "/analytics"
       preLoaderRoute: typeof ProtectedAnalyticsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/accounts': {
-      id: '/_protected/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
+    "/_protected/accounts": {
+      id: "/_protected/accounts"
+      path: "/accounts"
+      fullPath: "/accounts"
       preLoaderRoute: typeof ProtectedAccountsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/api/seed/demo': {
-      id: '/api/seed/demo'
-      path: '/api/seed/demo'
-      fullPath: '/api/seed/demo'
+    "/api/seed/demo": {
+      id: "/api/seed/demo"
+      path: "/api/seed/demo"
+      fullPath: "/api/seed/demo"
       preLoaderRoute: typeof ApiSeedDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/receipts/scan': {
-      id: '/api/receipts/scan'
-      path: '/api/receipts/scan'
-      fullPath: '/api/receipts/scan'
+    "/api/receipts/scan": {
+      id: "/api/receipts/scan"
+      path: "/api/receipts/scan"
+      fullPath: "/api/receipts/scan"
       preLoaderRoute: typeof ApiReceiptsScanRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/profile/import-backup': {
-      id: '/api/profile/import-backup'
-      path: '/api/profile/import-backup'
-      fullPath: '/api/profile/import-backup'
+    "/api/profile/import-backup": {
+      id: "/api/profile/import-backup"
+      path: "/api/profile/import-backup"
+      fullPath: "/api/profile/import-backup"
       preLoaderRoute: typeof ApiProfileImportBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/profile/export-backup': {
-      id: '/api/profile/export-backup'
-      path: '/api/profile/export-backup'
-      fullPath: '/api/profile/export-backup'
+    "/api/profile/export-backup": {
+      id: "/api/profile/export-backup"
+      path: "/api/profile/export-backup"
+      fullPath: "/api/profile/export-backup"
       preLoaderRoute: typeof ApiProfileExportBackupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
+    "/api/auth/$": {
+      id: "/api/auth/$"
+      path: "/api/auth/$"
+      fullPath: "/api/auth/$"
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_protected/analytics/portfolio': {
-      id: '/_protected/analytics/portfolio'
-      path: '/portfolio'
-      fullPath: '/analytics/portfolio'
+    "/_protected/analytics/portfolio": {
+      id: "/_protected/analytics/portfolio"
+      path: "/portfolio"
+      fullPath: "/analytics/portfolio"
       preLoaderRoute: typeof ProtectedAnalyticsPortfolioRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
-    '/_protected/analytics/comparison': {
-      id: '/_protected/analytics/comparison'
-      path: '/comparison'
-      fullPath: '/analytics/comparison'
+    "/_protected/analytics/comparison": {
+      id: "/_protected/analytics/comparison"
+      path: "/comparison"
+      fullPath: "/analytics/comparison"
       preLoaderRoute: typeof ProtectedAnalyticsComparisonRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
-    '/_protected/analytics/categories': {
-      id: '/_protected/analytics/categories'
-      path: '/categories'
-      fullPath: '/analytics/categories'
+    "/_protected/analytics/categories": {
+      id: "/_protected/analytics/categories"
+      path: "/categories"
+      fullPath: "/analytics/categories"
       preLoaderRoute: typeof ProtectedAnalyticsCategoriesRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
-    '/_protected/analytics/cashflow': {
-      id: '/_protected/analytics/cashflow'
-      path: '/cashflow'
-      fullPath: '/analytics/cashflow'
+    "/_protected/analytics/cashflow": {
+      id: "/_protected/analytics/cashflow"
+      path: "/cashflow"
+      fullPath: "/analytics/cashflow"
       preLoaderRoute: typeof ProtectedAnalyticsCashflowRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
@@ -398,8 +394,7 @@ const ProtectedAnalyticsRouteChildren: ProtectedAnalyticsRouteChildren = {
   ProtectedAnalyticsPortfolioRoute: ProtectedAnalyticsPortfolioRoute,
 }
 
-const ProtectedAnalyticsRouteWithChildren =
-  ProtectedAnalyticsRoute._addFileChildren(ProtectedAnalyticsRouteChildren)
+const ProtectedAnalyticsRouteWithChildren = ProtectedAnalyticsRoute._addFileChildren(ProtectedAnalyticsRouteChildren)
 
 interface ProtectedRouteChildren {
   ProtectedAccountsRoute: typeof ProtectedAccountsRoute
@@ -419,9 +414,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedTripsRoute: ProtectedTripsRoute,
 }
 
-const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
-  ProtectedRouteChildren,
-)
+const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(ProtectedRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -433,13 +426,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReceiptsScanRoute: ApiReceiptsScanRoute,
   ApiSeedDemoRoute: ApiSeedDemoRoute,
 }
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx"
+import type { createStart } from "@tanstack/react-start"
+declare module "@tanstack/react-start" {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import {
-  handleSeedDemoRequest,
-  toSeedErrorResponse,
-} from "@/features/demo-seed/server/service.server"
+import { handleSeedDemoRequest, toSeedErrorResponse } from "@/features/demo-seed/server/service.server"
 
 export const Route = createFileRoute("/api/seed/demo")({
   server: {

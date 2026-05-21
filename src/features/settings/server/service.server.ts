@@ -1,26 +1,13 @@
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm"
 
 import { db } from "@/lib/db/client.server"
-import {
-  forEachChunkSync,
-  SQLITE_IN_CLAUSE_BATCH_SIZE,
-} from "@/lib/db/sqlite-batch.server"
-import {
-  accounts,
-  categories,
-  transactionItems,
-  transactions,
-  trips,
-  users,
-} from "@/lib/db/schema"
+import { forEachChunkSync, SQLITE_IN_CLAUSE_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
 
 import { requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeSupportedCurrency } from "@/features/shared/server/normalizers.server"
 
-import type {
-  ResetUserDataResponse,
-  UserSettingsResponse,
-} from "@/features/shared/types"
+import type { ResetUserDataResponse, UserSettingsResponse } from "@/features/shared/types"
 
 export async function getSettingsData(): Promise<UserSettingsResponse> {
   const user = await requireUser()
@@ -30,14 +17,9 @@ export async function getSettingsData(): Promise<UserSettingsResponse> {
   }
 }
 
-export async function updateSettingsData(request: {
-  baseCurrency: string
-}): Promise<UserSettingsResponse> {
+export async function updateSettingsData(request: { baseCurrency: string }): Promise<UserSettingsResponse> {
   const user = await requireUser()
-  const baseCurrency = normalizeSupportedCurrency(
-    request.baseCurrency,
-    "BaseCurrency"
-  )
+  const baseCurrency = normalizeSupportedCurrency(request.baseCurrency, "BaseCurrency")
   const now = new Date()
 
   await db
@@ -93,9 +75,7 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
       deletedTransactionItems = transactionItemsForUser.length
 
       forEachChunkSync(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, (chunk) => {
-        tx.delete(transactionItems)
-          .where(inArray(transactionItems.transactionId, chunk))
-          .run()
+        tx.delete(transactionItems).where(inArray(transactionItems.transactionId, chunk)).run()
       })
 
       tx.delete(transactions).where(eq(transactions.userId, user.id)).run()
@@ -103,10 +83,7 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
 
     const childCategories = tx.query.categories
       .findMany({
-        where: and(
-          eq(categories.userId, user.id),
-          isNotNull(categories.parentId)
-        ),
+        where: and(eq(categories.userId, user.id), isNotNull(categories.parentId)),
         columns: { id: true },
       })
       .sync()

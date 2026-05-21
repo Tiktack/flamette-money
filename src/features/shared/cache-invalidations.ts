@@ -2,9 +2,7 @@ import type { QueryClient } from "@tanstack/react-query"
 
 import { queryKeys } from "./query-keys"
 
-type QueryInvalidation = NonNullable<
-  Parameters<QueryClient["invalidateQueries"]>[0]
->
+type QueryInvalidation = NonNullable<Parameters<QueryClient["invalidateQueries"]>[0]>
 
 const reportInvalidations = [
   { queryKey: ["reports-cashflow-series"] },
@@ -57,13 +55,6 @@ export const fullDataRefreshInvalidations = [
   ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
-export async function invalidateQueries(
-  queryClient: QueryClient,
-  invalidations: readonly QueryInvalidation[]
-) {
-  await Promise.all(
-    invalidations.map((invalidation) =>
-      queryClient.invalidateQueries(invalidation)
-    )
-  )
+export async function invalidateQueries(queryClient: QueryClient, invalidations: readonly QueryInvalidation[]) {
+  await Promise.all(invalidations.map((invalidation) => queryClient.invalidateQueries(invalidation)))
 }

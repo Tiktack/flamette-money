@@ -10,9 +10,7 @@ const TransactionEditorDialog = React.lazy(() =>
   }))
 )
 
-export function LazyTransactionEditorDialog(
-  props: TransactionEditorDialogProps
-) {
+export function LazyTransactionEditorDialog(props: TransactionEditorDialogProps) {
   if (!props.open) {
     return null
   }

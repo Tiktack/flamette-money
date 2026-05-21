@@ -58,14 +58,7 @@ const getCurrentYearRange = () => {
 
 const buildDefaultState = (): Omit<
   SharedDateRangeState,
-  | "setPreset"
-  | "setMonthAnchor"
-  | "shiftMonth"
-  | "setYearAnchor"
-  | "shiftYear"
-  | "setCustomStartDate"
-  | "setCustomEndDate"
-  | "shiftCustomRange"
+  "setPreset" | "setMonthAnchor" | "shiftMonth" | "setYearAnchor" | "shiftYear" | "setCustomStartDate" | "setCustomEndDate" | "shiftCustomRange"
 > => {
   const monthRange = getCurrentMonthRange()
   const now = new Date()
@@ -79,102 +72,86 @@ const buildDefaultState = (): Omit<
   }
 }
 
-export const useSharedDateRangeFilters = create<SharedDateRangeState>(
-  (set) => ({
-    ...buildDefaultState(),
-    setPreset: (preset) =>
-      set((state) => {
-        const now = new Date()
-        if (preset === "month") {
-          const monthRange = getCurrentMonthRange()
-          return {
-            ...state,
-            preset,
-            monthAnchor: state.monthAnchor || formatMonthAnchor(now),
-            customStartDate: monthRange.start,
-            customEndDate: monthRange.end,
-          }
-        }
-
-        if (preset === "year") {
-          const yearRange = getCurrentYearRange()
-          return {
-            ...state,
-            preset,
-            yearAnchor: state.yearAnchor || now.getFullYear(),
-            customStartDate: yearRange.start,
-            customEndDate: yearRange.end,
-          }
-        }
-
+export const useSharedDateRangeFilters = create<SharedDateRangeState>((set) => ({
+  ...buildDefaultState(),
+  setPreset: (preset) =>
+    set((state) => {
+      const now = new Date()
+      if (preset === "month") {
+        const monthRange = getCurrentMonthRange()
         return {
           ...state,
           preset,
+          monthAnchor: state.monthAnchor || formatMonthAnchor(now),
+          customStartDate: monthRange.start,
+          customEndDate: monthRange.end,
         }
-      }),
-    setMonthAnchor: (value) =>
-      set((state) => ({ ...state, monthAnchor: value })),
-    shiftMonth: (delta) =>
-      set((state) => {
-        const current = state.monthAnchor
-          ? new Date(`${state.monthAnchor}T00:00:00`)
-          : new Date()
-        const next = new Date(
-          current.getFullYear(),
-          current.getMonth() + delta,
-          1
-        )
+      }
+
+      if (preset === "year") {
+        const yearRange = getCurrentYearRange()
         return {
           ...state,
-          monthAnchor: formatMonthAnchor(next),
+          preset,
+          yearAnchor: state.yearAnchor || now.getFullYear(),
+          customStartDate: yearRange.start,
+          customEndDate: yearRange.end,
         }
-      }),
-    setYearAnchor: (value) => set((state) => ({ ...state, yearAnchor: value })),
-    shiftYear: (delta) =>
-      set((state) => ({
+      }
+
+      return {
         ...state,
-        yearAnchor: state.yearAnchor + delta,
-      })),
-    setCustomStartDate: (value) =>
-      set((state) => ({ ...state, customStartDate: value })),
-    setCustomEndDate: (value) =>
-      set((state) => ({ ...state, customEndDate: value })),
-    shiftCustomRange: (delta) =>
-      set((state) => {
-        const start = parseDateInput(state.customStartDate)
-        const end = parseDateInput(state.customEndDate)
+        preset,
+      }
+    }),
+  setMonthAnchor: (value) => set((state) => ({ ...state, monthAnchor: value })),
+  shiftMonth: (delta) =>
+    set((state) => {
+      const current = state.monthAnchor ? new Date(`${state.monthAnchor}T00:00:00`) : new Date()
+      const next = new Date(current.getFullYear(), current.getMonth() + delta, 1)
+      return {
+        ...state,
+        monthAnchor: formatMonthAnchor(next),
+      }
+    }),
+  setYearAnchor: (value) => set((state) => ({ ...state, yearAnchor: value })),
+  shiftYear: (delta) =>
+    set((state) => ({
+      ...state,
+      yearAnchor: state.yearAnchor + delta,
+    })),
+  setCustomStartDate: (value) => set((state) => ({ ...state, customStartDate: value })),
+  setCustomEndDate: (value) => set((state) => ({ ...state, customEndDate: value })),
+  shiftCustomRange: (delta) =>
+    set((state) => {
+      const start = parseDateInput(state.customStartDate)
+      const end = parseDateInput(state.customEndDate)
 
-        if (!start && !end) {
-          return state
-        }
+      if (!start && !end) {
+        return state
+      }
 
-        const safeStart = start ?? end
-        const safeEnd = end ?? start
+      const safeStart = start ?? end
+      const safeEnd = end ?? start
 
-        if (!safeStart || !safeEnd) {
-          return state
-        }
+      if (!safeStart || !safeEnd) {
+        return state
+      }
 
-        const dayCount = Math.max(
-          1,
-          Math.round(
-            (safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)
-          ) + 1
-        )
-        const offset = delta * dayCount
-        const nextStart = new Date(safeStart)
-        const nextEnd = new Date(safeEnd)
-        nextStart.setDate(nextStart.getDate() + offset)
-        nextEnd.setDate(nextEnd.getDate() + offset)
+      const dayCount = Math.max(1, Math.round((safeEnd.getTime() - safeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+      const offset = delta * dayCount
+      const nextStart = new Date(safeStart)
+      const nextEnd = new Date(safeEnd)
+      nextStart.setDate(nextStart.getDate() + offset)
+      nextEnd.setDate(nextEnd.getDate() + offset)
 
-        return {
-          ...state,
-          customStartDate: formatDateInput(nextStart),
-          customEndDate: formatDateInput(nextEnd),
-        }
-      }),
-  })
-)
+      return {
+        ...state,
+        customStartDate: formatDateInput(nextStart),
+        customEndDate: formatDateInput(nextEnd),
+      }
+    }),
+}))
 
 /**
  * Formats a Date as a local ISO 8601 datetime string WITHOUT UTC conversion.
@@ -195,19 +172,9 @@ export function resolveSharedDateRange(state: SharedDateRangeState): {
   end: Date | null
 } {
   if (state.preset === "month") {
-    const anchor = state.monthAnchor
-      ? new Date(`${state.monthAnchor}T00:00:00`)
-      : new Date()
+    const anchor = state.monthAnchor ? new Date(`${state.monthAnchor}T00:00:00`) : new Date()
     const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1)
-    const end = new Date(
-      anchor.getFullYear(),
-      anchor.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-      999
-    )
+    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 23, 59, 59, 999)
     return { start, end }
   }
 
@@ -219,12 +186,8 @@ export function resolveSharedDateRange(state: SharedDateRangeState): {
   }
 
   if (state.preset === "custom") {
-    const start = state.customStartDate
-      ? new Date(`${state.customStartDate}T00:00:00`)
-      : null
-    const end = state.customEndDate
-      ? new Date(`${state.customEndDate}T23:59:59`)
-      : null
+    const start = state.customStartDate ? new Date(`${state.customStartDate}T00:00:00`) : null
+    const end = state.customEndDate ? new Date(`${state.customEndDate}T23:59:59`) : null
     return { start, end }
   }
 

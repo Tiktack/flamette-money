@@ -3,14 +3,7 @@ import { and, asc, eq } from "drizzle-orm"
 import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { requireSessionData } from "@/lib/auth/session.server"
 import { db } from "@/lib/db/client.server"
-import {
-  accounts,
-  categories,
-  transactionItems,
-  transactions,
-  trips,
-  users,
-} from "@/lib/db/schema"
+import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
 
 export async function requireUser() {
   const session = await requireSessionData()
@@ -64,10 +57,7 @@ export async function requireTrip(userId: string, tripId: string) {
 
 export async function requireTransaction(userId: string, transactionId: string) {
   const transaction = await db.query.transactions.findFirst({
-    where: and(
-      eq(transactions.userId, userId),
-      eq(transactions.id, transactionId)
-    ),
+    where: and(eq(transactions.userId, userId), eq(transactions.id, transactionId)),
     with: {
       items: {
         orderBy: [asc(transactionItems.createdAt)],

@@ -1,21 +1,14 @@
 export const supportedCurrencies = ["PLN", "USD", "EUR", "GBP", "CAD"] as const
 
-export function isSupportedCurrency(
-  currency: string | null | undefined
-): currency is (typeof supportedCurrencies)[number] {
+export function isSupportedCurrency(currency: string | null | undefined): currency is (typeof supportedCurrencies)[number] {
   if (!currency) {
     return false
   }
 
-  return supportedCurrencies.includes(
-    currency.trim().toUpperCase() as (typeof supportedCurrencies)[number]
-  )
+  return supportedCurrencies.includes(currency.trim().toUpperCase() as (typeof supportedCurrencies)[number])
 }
 
-export function normalizeCurrencyOrDefault(
-  currency: string | null | undefined,
-  fallback: string
-) {
+export function normalizeCurrencyOrDefault(currency: string | null | undefined, fallback: string) {
   if (!currency) {
     return fallback
   }

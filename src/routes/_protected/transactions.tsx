@@ -18,66 +18,25 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { DataTable } from "@/components/data-table"
-import {
-  DataTableFacetedFilter,
-  DataTableRangeFilter,
-  type FacetedFilterOption,
-} from "@/components/data-table-faceted-filter"
+import { DataTableFacetedFilter, DataTableRangeFilter, type FacetedFilterOption } from "@/components/data-table-faceted-filter"
 import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-editor-dialog"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getAccountIconDefinition } from "@/lib/account-icons"
 import { useAccounts } from "@/features/accounts/hooks"
 import { useCategories } from "@/features/categories/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
-import {
-  useDeleteTransaction,
-  useTransactionsSearch,
-  useTransactionsSummary,
-} from "@/features/transactions/hooks"
+import { useDeleteTransaction, useTransactionsSearch, useTransactionsSummary } from "@/features/transactions/hooks"
 import { useTrips } from "@/features/trips/hooks"
 import type { AccountType } from "@/features/accounts/types"
 import type { CategoryHierarchy } from "@/features/categories/types"
-import type {
-  TransactionListItem,
-  TransactionType,
-} from "@/features/transactions/types"
-import {
-  formatCurrency,
-  formatDateLabel,
-  getCategoryLabel,
-  normalizeHexColor,
-  toNumber,
-  transactionTone,
-} from "@/lib/finance"
-import {
-  resolveSharedDateRange,
-  toApiDateString,
-  useSharedDateRangeFilters,
-} from "@/lib/state/sharedDateRangeFilters"
+import type { TransactionListItem, TransactionType } from "@/features/transactions/types"
+import { formatCurrency, formatDateLabel, getCategoryLabel, normalizeHexColor, toNumber, transactionTone } from "@/lib/finance"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 import { cn } from "@/lib/utils"
 
@@ -85,12 +44,7 @@ export const Route = createFileRoute("/_protected/transactions")({
   component: TransactionsPage,
 })
 
-const transactionTypeOptions: TransactionType[] = [
-  "Expense",
-  "Income",
-  "Transfer",
-  "Refund",
-]
+const transactionTypeOptions: TransactionType[] = ["Expense", "Income", "Transfer", "Refund"]
 const accountTypeMeta: Record<AccountType, { label: string }> = {
   Cash: { label: "Cash" },
   DebitCard: { label: "Debit card" },
@@ -118,13 +72,9 @@ function TransactionsPage() {
     mode: "new" | "edit"
     id?: string
   } | null>(null)
-  const [deleteTarget, setDeleteTarget] =
-    React.useState<TransactionListItem | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<TransactionListItem | null>(null)
 
-  const categories = React.useMemo(
-    () => categoriesQuery.data ?? [],
-    [categoriesQuery.data]
-  )
+  const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const categoryMap = React.useMemo(() => {
     const map = new Map<string, CategoryHierarchy>()
     for (const category of categories) {
@@ -150,10 +100,7 @@ function TransactionsPage() {
     return map
   }, [accountsQuery.data])
 
-  const resolvedDateRange = React.useMemo(
-    () => resolveSharedDateRange(dateFilters),
-    [dateFilters]
-  )
+  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
 
   const baseQuery = React.useMemo(() => {
     const value: {
@@ -191,15 +138,7 @@ function TransactionsPage() {
     }
 
     return value
-  }, [
-    filters.accountIds,
-    filters.categoryIds,
-    filters.tripIds,
-    filters.transactionTypes,
-    resolvedDateRange.end,
-    resolvedDateRange.start,
-    searchText,
-  ])
+  }, [filters.accountIds, filters.categoryIds, filters.tripIds, filters.transactionTypes, resolvedDateRange.end, resolvedDateRange.start, searchText])
 
   const query = React.useMemo(() => {
     const value: typeof baseQuery & {
@@ -220,14 +159,8 @@ function TransactionsPage() {
   const supportingTransactionsQuery = useTransactionsSearch(baseQuery)
   const transactionsQuery = useTransactionsSearch(query)
   const transactionsSummaryQuery = useTransactionsSummary(query)
-  const transactions = React.useMemo(
-    () => transactionsQuery.data ?? [],
-    [transactionsQuery.data]
-  )
-  const supportingTransactions = React.useMemo(
-    () => supportingTransactionsQuery.data ?? transactions,
-    [supportingTransactionsQuery.data, transactions]
-  )
+  const transactions = React.useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data])
+  const supportingTransactions = React.useMemo(() => supportingTransactionsQuery.data ?? transactions, [supportingTransactionsQuery.data, transactions])
 
   const hasActiveFilters =
     filters.accountIds.length > 0 ||
@@ -242,16 +175,10 @@ function TransactionsPage() {
     const counts = new Map<string, number>()
 
     for (const transaction of supportingTransactions) {
-      counts.set(
-        transaction.accountId,
-        (counts.get(transaction.accountId) ?? 0) + 1
-      )
+      counts.set(transaction.accountId, (counts.get(transaction.accountId) ?? 0) + 1)
 
       if (transaction.targetAccountId) {
-        counts.set(
-          transaction.targetAccountId,
-          (counts.get(transaction.targetAccountId) ?? 0) + 1
-        )
+        counts.set(transaction.targetAccountId, (counts.get(transaction.targetAccountId) ?? 0) + 1)
       }
     }
 
@@ -266,10 +193,7 @@ function TransactionsPage() {
         continue
       }
 
-      counts.set(
-        transaction.categoryId,
-        (counts.get(transaction.categoryId) ?? 0) + 1
-      )
+      counts.set(transaction.categoryId, (counts.get(transaction.categoryId) ?? 0) + 1)
     }
 
     return counts
@@ -359,22 +283,8 @@ function TransactionsPage() {
         label: type,
         value: type,
         count: transactionTypeCounts.get(type) ?? 0,
-        icon:
-          type === "Income"
-            ? AddMoneyCircleIcon
-            : type === "Transfer"
-              ? TransactionIcon
-              : type === "Refund"
-                ? FilterResetIcon
-                : Tag01Icon,
-        color:
-          type === "Income"
-            ? "#059669"
-            : type === "Transfer"
-              ? "#d97706"
-              : type === "Refund"
-                ? "#2563eb"
-                : "#dc2626",
+        icon: type === "Income" ? AddMoneyCircleIcon : type === "Transfer" ? TransactionIcon : type === "Refund" ? FilterResetIcon : Tag01Icon,
+        color: type === "Income" ? "#059669" : type === "Transfer" ? "#d97706" : type === "Refund" ? "#2563eb" : "#dc2626",
       })),
     [transactionTypeCounts]
   )
@@ -383,11 +293,7 @@ function TransactionsPage() {
   const primaryCurrency = summary?.baseCurrency
   const formatAmountRangeLabel = React.useCallback(
     (value: number) =>
-      primaryCurrency
-        ? formatCurrency(value, primaryCurrency)
-        : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
-            value
-          ),
+      primaryCurrency ? formatCurrency(value, primaryCurrency) : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value),
     [primaryCurrency]
   )
 
@@ -408,19 +314,11 @@ function TransactionsPage() {
                 className="flex size-10 items-center justify-center rounded-2xl text-sm font-semibold text-white"
                 style={{ backgroundColor: account?.color ?? "#B9A88A" }}
               >
-                <HugeiconsIcon
-                  icon={iconDefinition.icon}
-                  strokeWidth={2}
-                  className="size-5"
-                />
+                <HugeiconsIcon icon={iconDefinition.icon} strokeWidth={2} className="size-5" />
               </div>
               <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">
-                  {account?.name ?? "Account"}
-                </p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {transaction.type}
-                </p>
+                <p className="truncate font-medium text-foreground">{account?.name ?? "Account"}</p>
+                <p className="truncate text-sm text-muted-foreground">{transaction.type}</p>
               </div>
             </div>
           )
@@ -429,11 +327,7 @@ function TransactionsPage() {
       {
         accessorKey: "categoryId",
         header: "Category",
-        cell: ({ row }) => (
-          <span className="text-sm text-foreground">
-            {getCategoryLabel(row.original, categoryMap)}
-          </span>
-        ),
+        cell: ({ row }) => <span className="text-sm text-foreground">{getCategoryLabel(row.original, categoryMap)}</span>,
       },
       {
         accessorFn: (row) => toNumber(row.amount),
@@ -445,13 +339,8 @@ function TransactionsPage() {
           const account = accountMap.get(transaction.accountId)
 
           return (
-            <div
-              className={`text-right font-medium ${transactionTone(transaction.type, transaction.isRefund)}`}
-            >
-              {formatCurrency(
-                transaction.amount,
-                transaction.currency ?? account?.currency ?? "USD"
-              )}
+            <div className={`text-right font-medium ${transactionTone(transaction.type, transaction.isRefund)}`}>
+              {formatCurrency(transaction.amount, transaction.currency ?? account?.currency ?? "USD")}
             </div>
           )
         },
@@ -462,23 +351,13 @@ function TransactionsPage() {
         header: "Details",
         cell: ({ row }) => {
           const transaction = row.original
-          const summary =
-            transaction.note ||
-            transaction.merchantName ||
-            transaction.location ||
-            "-"
-          const secondary = [transaction.merchantName, transaction.location]
-            .filter((value) => value && value !== summary)
-            .join(" • ")
+          const summary = transaction.note || transaction.merchantName || transaction.location || "-"
+          const secondary = [transaction.merchantName, transaction.location].filter((value) => value && value !== summary).join(" • ")
 
           return (
             <div className="max-w-[320px] min-w-0">
               <p className="truncate text-foreground">{summary}</p>
-              {secondary ? (
-                <p className="truncate text-sm text-muted-foreground">
-                  {secondary}
-                </p>
-              ) : null}
+              {secondary ? <p className="truncate text-sm text-muted-foreground">{secondary}</p> : null}
             </div>
           )
         },
@@ -492,14 +371,8 @@ function TransactionsPage() {
 
           return (
             <div>
-              <p className="text-foreground">
-                {formatDateLabel(transaction.date)}
-              </p>
-              {itemCount > 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {itemCount} items
-                </p>
-              ) : null}
+              <p className="text-foreground">{formatDateLabel(transaction.date)}</p>
+              {itemCount > 0 ? <p className="text-sm text-muted-foreground">{itemCount} items</p> : null}
             </div>
           )
         },
@@ -514,53 +387,23 @@ function TransactionsPage() {
 
           return (
             <div className="flex justify-end gap-1">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setEditor({ mode: "edit", id: transaction.id })}
-              >
+              <Button variant="ghost" size="icon-sm" onClick={() => setEditor({ mode: "edit", id: transaction.id })}>
                 <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
                 <span className="sr-only">Edit transaction</span>
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-muted-foreground data-open:bg-muted"
-                    />
-                  }
-                >
-                  <HugeiconsIcon
-                    icon={MoreHorizontalCircle01Icon}
-                    strokeWidth={2}
-                  />
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground data-open:bg-muted" />}>
+                  <HugeiconsIcon icon={MoreHorizontalCircle01Icon} strokeWidth={2} />
                   <span className="sr-only">More actions</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onClick={() => setDeleteTarget(transaction)}
-                  >
-                    <HugeiconsIcon
-                      icon={Delete02Icon}
-                      strokeWidth={2}
-                      className="text-destructive"
-                    />
+                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(transaction)}>
+                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="text-destructive" />
                     <span>Delete transaction</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      setEditor({ mode: "edit", id: transaction.id })
-                    }
-                  >
-                    <HugeiconsIcon
-                      icon={Edit01Icon}
-                      strokeWidth={2}
-                      className="text-muted-foreground"
-                    />
+                  <DropdownMenuItem onClick={() => setEditor({ mode: "edit", id: transaction.id })}>
+                    <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="text-muted-foreground" />
                     <span>Edit transaction</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -583,9 +426,7 @@ function TransactionsPage() {
     const normalizedMax = Math.max(nextMin, nextMax)
 
     filters.setAmountMin(nextMin <= 0 ? null : nextMin)
-    filters.setAmountMax(
-      normalizedMax >= maxAvailableAmount ? null : normalizedMax
-    )
+    filters.setAmountMax(normalizedMax >= maxAvailableAmount ? null : normalizedMax)
   }
 
   const handleDelete = async () => {
@@ -626,30 +467,16 @@ function TransactionsPage() {
               icon={AddMoneyCircleIcon}
               iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
               iconColorClassName="text-blue-600 dark:text-blue-400"
-              badge={
-                <MetricCardBadge>
-                  {formatTransactionCount(summary?.incomeCount ?? 0)}
-                </MetricCardBadge>
-              }
-              value={formatCurrency(
-                summary?.incomeTotal,
-                summary?.baseCurrency
-              )}
+              badge={<MetricCardBadge>{formatTransactionCount(summary?.incomeCount ?? 0)}</MetricCardBadge>}
+              value={formatCurrency(summary?.incomeTotal, summary?.baseCurrency)}
             />
             <MetricCard
               label="Expenses"
               icon={CreditCardIcon}
               iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
               iconColorClassName="text-amber-600 dark:text-amber-400"
-              badge={
-                <MetricCardBadge>
-                  {formatTransactionCount(summary?.expenseCount ?? 0)}
-                </MetricCardBadge>
-              }
-              value={formatCurrency(
-                summary?.expenseTotal,
-                summary?.baseCurrency
-              )}
+              badge={<MetricCardBadge>{formatTransactionCount(summary?.expenseCount ?? 0)}</MetricCardBadge>}
+              value={formatCurrency(summary?.expenseTotal, summary?.baseCurrency)}
             />
           </>
         )}
@@ -668,12 +495,7 @@ function TransactionsPage() {
       ) : transactionsQuery.isError ? (
         <Alert variant="destructive">
           <AlertTitle>Unable to load transactions</AlertTitle>
-          <AlertDescription>
-            {getApiErrorMessage(
-              transactionsQuery.error,
-              "Try another filter combination."
-            )}
-          </AlertDescription>
+          <AlertDescription>{getApiErrorMessage(transactionsQuery.error, "Try another filter combination.")}</AlertDescription>
         </Alert>
       ) : (
         <DataTable
@@ -742,38 +564,23 @@ function TransactionsPage() {
         />
       )}
 
-      <Dialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete transaction</DialogTitle>
-            <DialogDescription>
-              This permanently removes the transaction and updates the related
-              balances on the backend.
-            </DialogDescription>
+            <DialogDescription>This permanently removes the transaction and updates the related balances on the backend.</DialogDescription>
           </DialogHeader>
           {deleteTransaction.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Delete failed</AlertTitle>
-              <AlertDescription>
-                {getApiErrorMessage(
-                  deleteTransaction.error,
-                  "Unable to delete transaction."
-                )}
-              </AlertDescription>
+              <AlertDescription>{getApiErrorMessage(deleteTransaction.error, "Unable to delete transaction.")}</AlertDescription>
             </Alert>
           ) : null}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteTransaction.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteTransaction.isPending}>
               {deleteTransaction.isPending ? "Deleting" : "Delete"}
             </Button>
           </DialogFooter>
@@ -815,17 +622,8 @@ function MetricCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
           {icon !== undefined ? (
-            <span
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-md",
-                iconBgClassName
-              )}
-            >
-              <HugeiconsIcon
-                icon={icon}
-                strokeWidth={2}
-                className={cn("size-3.5", iconColorClassName)}
-              />
+            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", iconBgClassName)}>
+              <HugeiconsIcon icon={icon} strokeWidth={2} className={cn("size-3.5", iconColorClassName)} />
             </span>
           ) : null}
           {label}
@@ -834,14 +632,7 @@ function MetricCard({
       </CardHeader>
       <CardContent className="pt-0">
         {typeof value === "string" || typeof value === "number" ? (
-          <p
-            className={cn(
-              "text-[2rem] leading-none font-semibold tracking-[-0.035em] break-words text-foreground tabular-nums",
-              valueClassName
-            )}
-          >
-            {value}
-          </p>
+          <p className={cn("text-[2rem] leading-none font-semibold tracking-[-0.035em] break-words text-foreground tabular-nums", valueClassName)}>{value}</p>
         ) : (
           <div className={cn("min-w-0", valueClassName)}>{value}</div>
         )}

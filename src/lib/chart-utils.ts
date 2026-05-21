@@ -35,19 +35,11 @@ export function formatTimeSeriesAxisLabel(options: {
 }) {
   const { interval, rangeStart, rangeEnd, bucketStart } = options
   const isSameMonth =
-    rangeStart !== null &&
-    rangeEnd !== null &&
-    rangeStart.getFullYear() === rangeEnd.getFullYear() &&
-    rangeStart.getMonth() === rangeEnd.getMonth()
-  const isSameYear =
-    rangeStart !== null &&
-    rangeEnd !== null &&
-    rangeStart.getFullYear() === rangeEnd.getFullYear()
+    rangeStart !== null && rangeEnd !== null && rangeStart.getFullYear() === rangeEnd.getFullYear() && rangeStart.getMonth() === rangeEnd.getMonth()
+  const isSameYear = rangeStart !== null && rangeEnd !== null && rangeStart.getFullYear() === rangeEnd.getFullYear()
 
   if (interval === "Month") {
-    return isSameYear
-      ? monthFormatter.format(bucketStart)
-      : `${monthFormatter.format(bucketStart)}, ${yearFormatter.format(bucketStart)}`
+    return isSameYear ? monthFormatter.format(bucketStart) : `${monthFormatter.format(bucketStart)}, ${yearFormatter.format(bucketStart)}`
   }
 
   if (interval === "Day" || interval === "Week") {
@@ -71,9 +63,7 @@ export function computeNiceDomainTicks(
 ): { domain: [number, number] | undefined; ticks?: number[] } {
   const tickCount = options?.tickCount ?? 4
   const paddingFraction = options?.paddingFraction ?? 0.08
-  const cleaned = (values || []).filter(
-    (v) => typeof v === "number" && !Number.isNaN(v) && isFinite(v)
-  )
+  const cleaned = (values || []).filter((v) => typeof v === "number" && !Number.isNaN(v) && isFinite(v))
 
   if (cleaned.length === 0) {
     return { domain: undefined, ticks: undefined }
@@ -90,11 +80,7 @@ export function computeNiceDomainTicks(
     const range = niceMax - niceMin
     const spacing = niceNum(range / (tickCount - 1 || 1), true)
     const ticks: number[] = []
-    for (
-      let t = niceMin;
-      t <= niceMax + spacing / 2;
-      t = Number((t + spacing).toFixed(12))
-    ) {
+    for (let t = niceMin; t <= niceMax + spacing / 2; t = Number((t + spacing).toFixed(12))) {
       ticks.push(Number(t.toPrecision(15)))
     }
 
@@ -109,11 +95,7 @@ export function computeNiceDomainTicks(
   const niceMin = Math.floor(minP / spacing) * spacing
   const niceMax = Math.ceil(maxP / spacing) * spacing
   const ticks: number[] = []
-  for (
-    let t = niceMin;
-    t <= niceMax + spacing / 2;
-    t = Number((t + spacing).toFixed(12))
-  ) {
+  for (let t = niceMin; t <= niceMax + spacing / 2; t = Number((t + spacing).toFixed(12))) {
     ticks.push(Number(t.toPrecision(15)))
   }
 

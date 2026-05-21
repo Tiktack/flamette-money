@@ -75,4 +75,3 @@ If you want a production base URL, also set:
 ```bash
 BETTER_AUTH_URL=https://your-app.example.com
 ```
-

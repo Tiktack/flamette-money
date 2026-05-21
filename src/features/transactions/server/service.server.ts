@@ -1,33 +1,13 @@
 import { and, asc, desc, eq } from "drizzle-orm"
 
-import {
-  normalizeCurrencyOrDefault,
-  normalizeCurrencyOrNull,
-} from "@/lib/currency"
+import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
-import {
-  accounts,
-  transactionItems,
-  transactions,
-  transactionTypes,
-} from "@/lib/db/schema"
+import { accounts, transactionItems, transactions, transactionTypes } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { roundMoney } from "@/lib/finance"
-import {
-  endOfDay,
-  parseAmount,
-  parseDateInput,
-  parsePositiveAmount,
-  startOfDay,
-} from "@/lib/server/parsing.server"
+import { endOfDay, parseAmount, parseDateInput, parsePositiveAmount, startOfDay } from "@/lib/server/parsing.server"
 
-import {
-  requireAccount,
-  requireCategory,
-  requireTransaction,
-  requireTrip,
-  requireUser,
-} from "@/features/shared/server/lookups.server"
+import { requireAccount, requireCategory, requireTransaction, requireTrip, requireUser } from "@/features/shared/server/lookups.server"
 import {
   normalizeLocation,
   normalizeMerchantName,
@@ -69,27 +49,16 @@ type TransactionSearchSummary = {
   expenseTotal: number
 }
 
-function convertAmountToBase(
-  amount: number,
-  sourceCurrency: string | null | undefined,
-  baseCurrency: string,
-  ratesToBase: Record<string, number>
-) {
+function convertAmountToBase(amount: number, sourceCurrency: string | null | undefined, baseCurrency: string, ratesToBase: Record<string, number>) {
   if (amount === 0) {
     return 0
   }
 
-  const normalizedSource = normalizeCurrencyOrDefault(
-    sourceCurrency,
-    baseCurrency
-  )
+  const normalizedSource = normalizeCurrencyOrDefault(sourceCurrency, baseCurrency)
   return amount * (ratesToBase[normalizedSource] ?? 1)
 }
 
-function typeMatches(
-  categoryType: "Income" | "Expense",
-  transactionType: TransactionType
-) {
+function typeMatches(categoryType: "Income" | "Expense", transactionType: TransactionType) {
   if (categoryType === "Income") {
     return transactionType === "Income"
   }
@@ -97,11 +66,7 @@ function typeMatches(
   return transactionType === "Expense" || transactionType === "Refund"
 }
 
-function getBalanceDeltas(
-  type: TransactionType,
-  amount: number,
-  amount2: number | null
-) {
+function getBalanceDeltas(type: TransactionType, amount: number, amount2: number | null) {
   switch (type) {
     case "Expense":
       return { sourceDelta: -amount, targetDelta: null as number | null }
@@ -115,11 +80,7 @@ function getBalanceDeltas(
   }
 }
 
-function normalizeAmount2(
-  type: TransactionType,
-  amount: number,
-  amount2: number | null | undefined
-) {
+function normalizeAmount2(type: TransactionType, amount: number, amount2: number | null | undefined) {
   if (type === "Transfer") {
     return amount2 && amount2 > 0 ? amount2 : amount
   }
@@ -127,9 +88,7 @@ function normalizeAmount2(
   return amount2 ?? null
 }
 
-function mapTransactionItems(
-  items: TransactionItemRecord[]
-): TransactionItemResponse[] {
+function mapTransactionItems(items: TransactionItemRecord[]): TransactionItemResponse[] {
   return items.map((item) => ({
     id: item.id,
     name: item.name,
@@ -143,9 +102,7 @@ function mapTransactionItems(
   }))
 }
 
-function mapTransactionListItem(
-  transaction: LoadedTransaction
-): TransactionListItemResponse {
+function mapTransactionListItem(transaction: LoadedTransaction): TransactionListItemResponse {
   return {
     id: transaction.id,
     date: transaction.date.toISOString(),
@@ -168,11 +125,7 @@ function mapTransactionListItem(
   }
 }
 
-function mapTransactionDetail(
-  transaction: LoadedTransaction
-): GetTransactionResponse &
-  CreateTransactionResponse &
-  UpdateTransactionResponse {
+function mapTransactionDetail(transaction: LoadedTransaction): GetTransactionResponse & CreateTransactionResponse & UpdateTransactionResponse {
   return {
     id: transaction.id,
     date: transaction.date.toISOString(),
@@ -195,10 +148,7 @@ function mapTransactionDetail(
   }
 }
 
-function filterTransactions(
-  rows: LoadedTransaction[],
-  query?: GetApiTransactionsSearchData["query"]
-) {
+function filterTransactions(rows: LoadedTransaction[], query?: GetApiTransactionsSearchData["query"]) {
   const searchText = query?.SearchText?.trim().toLowerCase()
   const start = query?.StartDate ? startOfDay(query.StartDate) : null
   const end = query?.EndDate ? endOfDay(query.EndDate) : null
@@ -206,14 +156,8 @@ function filterTransactions(
   const tripIds = new Set(query?.TripIds ?? [])
   const categoryIds = new Set(query?.CategoryIds ?? [])
   const types = new Set(query?.Types ?? [])
-  const minAmount =
-    query?.MinAmount === undefined
-      ? null
-      : parseAmount(query.MinAmount, "MinAmount")
-  const maxAmount =
-    query?.MaxAmount === undefined
-      ? null
-      : parseAmount(query.MaxAmount, "MaxAmount")
+  const minAmount = query?.MinAmount === undefined ? null : parseAmount(query.MinAmount, "MinAmount")
+  const maxAmount = query?.MaxAmount === undefined ? null : parseAmount(query.MaxAmount, "MaxAmount")
 
   return rows.filter((transaction) => {
     if (start && transaction.date < start) {
@@ -224,28 +168,15 @@ function filterTransactions(
       return false
     }
 
-    if (
-      accountIds.size > 0 &&
-      !accountIds.has(transaction.accountId) &&
-      !(
-        transaction.targetAccountId &&
-        accountIds.has(transaction.targetAccountId)
-      )
-    ) {
+    if (accountIds.size > 0 && !accountIds.has(transaction.accountId) && !(transaction.targetAccountId && accountIds.has(transaction.targetAccountId))) {
       return false
     }
 
-    if (
-      tripIds.size > 0 &&
-      (!transaction.tripId || !tripIds.has(transaction.tripId))
-    ) {
+    if (tripIds.size > 0 && (!transaction.tripId || !tripIds.has(transaction.tripId))) {
       return false
     }
 
-    if (
-      categoryIds.size > 0 &&
-      (!transaction.categoryId || !categoryIds.has(transaction.categoryId))
-    ) {
+    if (categoryIds.size > 0 && (!transaction.categoryId || !categoryIds.has(transaction.categoryId))) {
       return false
     }
 
@@ -262,14 +193,7 @@ function filterTransactions(
     }
 
     if (searchText) {
-      const haystack = [
-        transaction.note,
-        transaction.merchantName,
-        transaction.location,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
+      const haystack = [transaction.note, transaction.merchantName, transaction.location].filter(Boolean).join(" ").toLowerCase()
 
       if (!haystack.includes(searchText)) {
         return false
@@ -292,24 +216,15 @@ async function listAllTransactions(userId: string) {
   })
 }
 
-async function buildTransactionItems(
-  itemsInput:
-    | CreateTransactionRequest["items"]
-    | UpdateTransactionRequest["items"],
-  transactionId: string
-) {
+async function buildTransactionItems(itemsInput: CreateTransactionRequest["items"] | UpdateTransactionRequest["items"], transactionId: string) {
   const rows: (typeof transactionItems.$inferInsert)[] = []
 
   for (const item of itemsInput ?? []) {
     const name = normalizeRequiredName(item.name, "Item name")
     const quantity = item.quantity ? parseAmount(item.quantity, "Quantity") : 1
     const unitPrice = parseAmount(item.unitPrice, "Unit price")
-    const promotionAmount = parseAmount(
-      item.promotionAmount,
-      "Promotion amount"
-    )
-    const finalAmount =
-      unitPrice * (quantity > 0 ? quantity : 1) - promotionAmount
+    const promotionAmount = parseAmount(item.promotionAmount, "Promotion amount")
+    const finalAmount = unitPrice * (quantity > 0 ? quantity : 1) - promotionAmount
 
     rows.push({
       id: crypto.randomUUID(),
@@ -330,16 +245,10 @@ async function buildTransactionItems(
   return rows
 }
 
-async function validateTransactionRequest(
-  user: UserRecord,
-  request: CreateTransactionRequest | UpdateTransactionRequest
-) {
+async function validateTransactionRequest(user: UserRecord, request: CreateTransactionRequest | UpdateTransactionRequest) {
   const type = normalizeTransactionType(request.type)
   const amount = parsePositiveAmount(request.amount, "Amount")
-  const amount2 =
-    request.amount2 === null || request.amount2 === undefined
-      ? null
-      : parsePositiveAmount(request.amount2, "Amount2")
+  const amount2 = request.amount2 === null || request.amount2 === undefined ? null : parsePositiveAmount(request.amount2, "Amount2")
   const date = parseDateInput(request.date, "Date")
   const note = normalizeNote(request.note)
   const merchantName = normalizeMerchantName(request.merchantName)
@@ -379,19 +288,12 @@ async function validateTransactionRequest(
     tripId = null
 
     const sourceCurrency = normalizeCurrencyOrNull(request.currency)
-    if (
-      sourceCurrency &&
-      sourceCurrency !== normalizeCurrencyOrDefault(account.currency, "USD")
-    ) {
+    if (sourceCurrency && sourceCurrency !== normalizeCurrencyOrDefault(account.currency, "USD")) {
       throw new Error("Transfer source currency must match source account currency.")
     }
 
     const targetCurrency = normalizeCurrencyOrNull(request.currency2)
-    if (
-      targetCurrency &&
-      targetCurrency !==
-        normalizeCurrencyOrDefault(targetAccount.currency, "USD")
-    ) {
+    if (targetCurrency && targetCurrency !== normalizeCurrencyOrDefault(targetAccount.currency, "USD")) {
       throw new Error("Transfer target currency must match target account currency.")
     }
   } else if (type === "Refund") {
@@ -407,10 +309,7 @@ async function validateTransactionRequest(
       throw new Error("Trip is inherited from the original expense for refunds.")
     }
 
-    const originalTransaction = await requireTransaction(
-      user.id,
-      request.originalTransactionId
-    )
+    const originalTransaction = await requireTransaction(user.id, request.originalTransactionId)
 
     if (originalTransaction.type !== "Expense") {
       throw new Error("Refunds can only reference expense transactions.")
@@ -420,17 +319,11 @@ async function validateTransactionRequest(
       throw new Error("Refunds must use the same account as the original transaction.")
     }
 
-    if (
-      request.categoryId &&
-      request.categoryId !== originalTransaction.categoryId
-    ) {
+    if (request.categoryId && request.categoryId !== originalTransaction.categoryId) {
       throw new Error("Refund category must match the original transaction.")
     }
 
-    if (
-      request.subCategoryId &&
-      request.subCategoryId !== originalTransaction.subCategoryId
-    ) {
+    if (request.subCategoryId && request.subCategoryId !== originalTransaction.subCategoryId) {
       throw new Error("Refund subcategory must match the original transaction.")
     }
 
@@ -508,26 +401,18 @@ async function validateTransactionRequest(
     currency:
       type === "Transfer"
         ? normalizeCurrencyOrDefault(account.currency, "USD")
-        : (normalizeOptionalSupportedCurrency(request.currency) ??
-          normalizeCurrencyOrDefault(account.currency, "USD")),
-    currency2:
-      type === "Transfer"
-        ? normalizeCurrencyOrDefault(targetAccount?.currency, "USD")
-        : normalizeCurrencyOrNull(request.currency2),
+        : (normalizeOptionalSupportedCurrency(request.currency) ?? normalizeCurrencyOrDefault(account.currency, "USD")),
+    currency2: type === "Transfer" ? normalizeCurrencyOrDefault(targetAccount?.currency, "USD") : normalizeCurrencyOrNull(request.currency2),
   }
 }
 
-export async function getTransactionData(
-  transactionId: string
-): Promise<GetTransactionResponse> {
+export async function getTransactionData(transactionId: string): Promise<GetTransactionResponse> {
   const user = await requireUser()
   const transaction = await requireTransaction(user.id, transactionId)
   return mapTransactionDetail(transaction)
 }
 
-export async function searchTransactionsData(
-  query?: GetApiTransactionsSearchData["query"]
-): Promise<TransactionListItemResponse[]> {
+export async function searchTransactionsData(query?: GetApiTransactionsSearchData["query"]): Promise<TransactionListItemResponse[]> {
   const user = await requireUser()
   const rows = await listAllTransactions(user.id)
   const filtered = filterTransactions(rows, query)
@@ -537,8 +422,7 @@ export async function searchTransactionsData(
 
   if (page !== undefined || pageSize !== undefined) {
     const currentPage = !page || page <= 0 ? 1 : page
-    const currentSize =
-      !pageSize || pageSize <= 0 || pageSize > 200 ? 25 : pageSize
+    const currentSize = !pageSize || pageSize <= 0 || pageSize > 200 ? 25 : pageSize
     const offset = (currentPage - 1) * currentSize
     return filtered.slice(offset, offset + currentSize).map(mapTransactionListItem)
   }
@@ -546,9 +430,7 @@ export async function searchTransactionsData(
   return filtered.map(mapTransactionListItem)
 }
 
-export async function searchTransactionsSummaryData(
-  query?: GetApiTransactionsSearchData["query"]
-): Promise<TransactionSearchSummary> {
+export async function searchTransactionsSummaryData(query?: GetApiTransactionsSearchData["query"]): Promise<TransactionSearchSummary> {
   const user = await requireUser()
   const rows = filterTransactions(await listAllTransactions(user.id), query)
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
@@ -556,9 +438,7 @@ export async function searchTransactionsSummaryData(
   const accountRows = await db.query.accounts.findMany({
     where: eq(accounts.userId, user.id),
   })
-  const accountCurrencyById = new Map(
-    accountRows.map((account) => [account.id, account.currency])
-  )
+  const accountCurrencyById = new Map(accountRows.map((account) => [account.id, account.currency]))
 
   let incomeCount = 0
   let incomeTotal = 0
@@ -566,18 +446,8 @@ export async function searchTransactionsSummaryData(
   let expenseTotal = 0
 
   for (const transaction of rows) {
-    const currency = normalizeCurrencyOrDefault(
-      transaction.currency ??
-        accountCurrencyById.get(transaction.accountId) ??
-        user.baseCurrency,
-      baseCurrency
-    )
-    const converted = convertAmountToBase(
-      transaction.amount,
-      currency,
-      baseCurrency,
-      fx.ratesToBase
-    )
+    const currency = normalizeCurrencyOrDefault(transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? user.baseCurrency, baseCurrency)
+    const converted = convertAmountToBase(transaction.amount, currency, baseCurrency, fx.ratesToBase)
 
     if (transaction.type === "Income") {
       incomeCount += 1
@@ -600,9 +470,7 @@ export async function searchTransactionsSummaryData(
   }
 }
 
-export async function createTransactionData(
-  request: CreateTransactionRequest
-): Promise<CreateTransactionResponse> {
+export async function createTransactionData(request: CreateTransactionRequest): Promise<CreateTransactionResponse> {
   const user = await requireUser()
   const validated = await validateTransactionRequest(user, request)
   const id = crypto.randomUUID()
@@ -612,10 +480,7 @@ export async function createTransactionData(
   db.transaction((tx) => {
     const sourceAccount = tx.query.accounts
       .findFirst({
-        where: and(
-          eq(accounts.userId, user.id),
-          eq(accounts.id, validated.account.id)
-        ),
+        where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.account.id)),
       })
       .sync()
 
@@ -629,10 +494,7 @@ export async function createTransactionData(
       targetAccount =
         tx.query.accounts
           .findFirst({
-            where: and(
-              eq(accounts.userId, user.id),
-              eq(accounts.id, validated.targetAccount.id)
-            ),
+            where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.targetAccount.id)),
           })
           .sync() ?? null
 
@@ -641,17 +503,11 @@ export async function createTransactionData(
       }
     }
 
-    const deltas = getBalanceDeltas(
-      validated.type,
-      validated.amount,
-      validated.amount2
-    )
+    const deltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
 
     tx.update(accounts)
       .set({
-        currentBalance: roundMoney(
-          sourceAccount.currentBalance + deltas.sourceDelta
-        ),
+        currentBalance: roundMoney(sourceAccount.currentBalance + deltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, sourceAccount.id))
@@ -660,9 +516,7 @@ export async function createTransactionData(
     if (targetAccount && deltas.targetDelta !== null) {
       tx.update(accounts)
         .set({
-          currentBalance: roundMoney(
-            targetAccount.currentBalance + deltas.targetDelta
-          ),
+          currentBalance: roundMoney(targetAccount.currentBalance + deltas.targetDelta),
           updatedAt: now,
         })
         .where(eq(accounts.id, targetAccount.id))
@@ -703,10 +557,7 @@ export async function createTransactionData(
   return mapTransactionDetail(created)
 }
 
-export async function updateTransactionData(
-  transactionId: string,
-  request: UpdateTransactionRequest
-): Promise<UpdateTransactionResponse> {
+export async function updateTransactionData(transactionId: string, request: UpdateTransactionRequest): Promise<UpdateTransactionResponse> {
   const user = await requireUser()
   const existing = await requireTransaction(user.id, transactionId)
   const validated = await validateTransactionRequest(user, request)
@@ -716,10 +567,7 @@ export async function updateTransactionData(
   db.transaction((tx) => {
     const sourceAccount = tx.query.accounts
       .findFirst({
-        where: and(
-          eq(accounts.userId, user.id),
-          eq(accounts.id, existing.accountId)
-        ),
+        where: and(eq(accounts.userId, user.id), eq(accounts.id, existing.accountId)),
       })
       .sync()
 
@@ -732,10 +580,7 @@ export async function updateTransactionData(
       oldTargetAccount =
         tx.query.accounts
           .findFirst({
-            where: and(
-              eq(accounts.userId, user.id),
-              eq(accounts.id, existing.targetAccountId)
-            ),
+            where: and(eq(accounts.userId, user.id), eq(accounts.id, existing.targetAccountId)),
           })
           .sync() ?? null
     }
@@ -745,10 +590,7 @@ export async function updateTransactionData(
         ? sourceAccount
         : tx.query.accounts
             .findFirst({
-              where: and(
-                eq(accounts.userId, user.id),
-                eq(accounts.id, validated.account.id)
-              ),
+              where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.account.id)),
             })
             .sync()
 
@@ -763,25 +605,16 @@ export async function updateTransactionData(
           ? oldTargetAccount
           : (tx.query.accounts
               .findFirst({
-                where: and(
-                  eq(accounts.userId, user.id),
-                  eq(accounts.id, validated.targetAccount.id)
-                ),
+                where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.targetAccount.id)),
               })
               .sync() ?? null)
     }
 
-    const oldDeltas = getBalanceDeltas(
-      existing.type,
-      existing.amount,
-      existing.amount2
-    )
+    const oldDeltas = getBalanceDeltas(existing.type, existing.amount, existing.amount2)
 
     tx.update(accounts)
       .set({
-        currentBalance: roundMoney(
-          sourceAccount.currentBalance - oldDeltas.sourceDelta
-        ),
+        currentBalance: roundMoney(sourceAccount.currentBalance - oldDeltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, sourceAccount.id))
@@ -790,9 +623,7 @@ export async function updateTransactionData(
     if (oldTargetAccount && oldDeltas.targetDelta !== null) {
       tx.update(accounts)
         .set({
-          currentBalance: roundMoney(
-            oldTargetAccount.currentBalance - oldDeltas.targetDelta
-          ),
+          currentBalance: roundMoney(oldTargetAccount.currentBalance - oldDeltas.targetDelta),
           updatedAt: now,
         })
         .where(eq(accounts.id, oldTargetAccount.id))
@@ -809,17 +640,11 @@ export async function updateTransactionData(
       throw new Error("Account was not found.")
     }
 
-    const newDeltas = getBalanceDeltas(
-      validated.type,
-      validated.amount,
-      validated.amount2
-    )
+    const newDeltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
 
     tx.update(accounts)
       .set({
-        currentBalance: roundMoney(
-          refreshedSourceAccount.currentBalance + newDeltas.sourceDelta
-        ),
+        currentBalance: roundMoney(refreshedSourceAccount.currentBalance + newDeltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, refreshedSourceAccount.id))
@@ -838,9 +663,7 @@ export async function updateTransactionData(
 
       tx.update(accounts)
         .set({
-          currentBalance: roundMoney(
-            refreshedTargetAccount.currentBalance + newDeltas.targetDelta
-          ),
+          currentBalance: roundMoney(refreshedTargetAccount.currentBalance + newDeltas.targetDelta),
           updatedAt: now,
         })
         .where(eq(accounts.id, refreshedTargetAccount.id))
@@ -870,9 +693,7 @@ export async function updateTransactionData(
       .where(eq(transactions.id, existing.id))
       .run()
 
-    tx.delete(transactionItems)
-      .where(eq(transactionItems.transactionId, existing.id))
-      .run()
+    tx.delete(transactionItems).where(eq(transactionItems.transactionId, existing.id)).run()
 
     if (nextItems.length > 0) {
       tx.insert(transactionItems).values(nextItems).run()
@@ -891,10 +712,7 @@ export async function deleteTransactionData(transactionId: string) {
   db.transaction((tx) => {
     const sourceAccount = tx.query.accounts
       .findFirst({
-        where: and(
-          eq(accounts.userId, user.id),
-          eq(accounts.id, transaction.accountId)
-        ),
+        where: and(eq(accounts.userId, user.id), eq(accounts.id, transaction.accountId)),
       })
       .sync()
 
@@ -902,17 +720,11 @@ export async function deleteTransactionData(transactionId: string) {
       throw new Error("Account was not found.")
     }
 
-    const deltas = getBalanceDeltas(
-      transaction.type,
-      transaction.amount,
-      transaction.amount2
-    )
+    const deltas = getBalanceDeltas(transaction.type, transaction.amount, transaction.amount2)
 
     tx.update(accounts)
       .set({
-        currentBalance: roundMoney(
-          sourceAccount.currentBalance - deltas.sourceDelta
-        ),
+        currentBalance: roundMoney(sourceAccount.currentBalance - deltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, sourceAccount.id))
@@ -921,19 +733,14 @@ export async function deleteTransactionData(transactionId: string) {
     if (transaction.targetAccountId && deltas.targetDelta !== null) {
       const targetAccount = tx.query.accounts
         .findFirst({
-          where: and(
-            eq(accounts.userId, user.id),
-            eq(accounts.id, transaction.targetAccountId)
-          ),
+          where: and(eq(accounts.userId, user.id), eq(accounts.id, transaction.targetAccountId)),
         })
         .sync()
 
       if (targetAccount) {
         tx.update(accounts)
           .set({
-            currentBalance: roundMoney(
-              targetAccount.currentBalance - deltas.targetDelta
-            ),
+            currentBalance: roundMoney(targetAccount.currentBalance - deltas.targetDelta),
             updatedAt: now,
           })
           .where(eq(accounts.id, targetAccount.id))
@@ -941,9 +748,7 @@ export async function deleteTransactionData(transactionId: string) {
       }
     }
 
-    tx.delete(transactionItems)
-      .where(eq(transactionItems.transactionId, transaction.id))
-      .run()
+    tx.delete(transactionItems).where(eq(transactionItems.transactionId, transaction.id)).run()
     tx.delete(transactions).where(eq(transactions.id, transaction.id)).run()
   })
 }

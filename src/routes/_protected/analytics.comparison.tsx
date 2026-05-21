@@ -1,29 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useMonthlyYoyReport } from "@/features/reports/hooks"
@@ -53,10 +33,7 @@ function AnalyticsComparisonPage() {
   const reportQuery = useMonthlyYoyReport(query)
   const baseCurrency = reportQuery.data?.baseCurrency ?? "USD"
 
-  const yearOptions = React.useMemo(
-    () => Array.from({ length: 8 }, (_, index) => String(currentYear - index)),
-    [currentYear]
-  )
+  const yearOptions = React.useMemo(() => Array.from({ length: 8 }, (_, index) => String(currentYear - index)), [currentYear])
 
   const chartData = React.useMemo(
     () =>
@@ -89,9 +66,7 @@ function AnalyticsComparisonPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <CardTitle>Year-over-year monthly comparison</CardTitle>
-              <CardDescription>
-                Compare full calendar years by month for income or expenses.
-              </CardDescription>
+              <CardDescription>Compare full calendar years by month for income or expenses.</CardDescription>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="flex rounded-full border border-border bg-muted/60 p-1">
@@ -110,18 +85,8 @@ function AnalyticsComparisonPage() {
                   </button>
                 ))}
               </div>
-              <YearSelect
-                label="From"
-                value={startYear}
-                options={yearOptions}
-                onChange={setStartYear}
-              />
-              <YearSelect
-                label="To"
-                value={endYear}
-                options={yearOptions}
-                onChange={setEndYear}
-              />
+              <YearSelect label="From" value={startYear} options={yearOptions} onChange={setStartYear} />
+              <YearSelect label="To" value={endYear} options={yearOptions} onChange={setEndYear} />
             </div>
           </div>
         </CardHeader>
@@ -132,10 +97,7 @@ function AnalyticsComparisonPage() {
             <EmptyState
               eyebrow="Report"
               title="Unable to load the comparison report"
-              description={getApiErrorMessage(
-                reportQuery.error,
-                "Try another year range or refresh the page."
-              )}
+              description={getApiErrorMessage(reportQuery.error, "Try another year range or refresh the page.")}
             />
           ) : chartData.length === 0 ? (
             <EmptyState
@@ -145,23 +107,13 @@ function AnalyticsComparisonPage() {
             />
           ) : (
             <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-              <BarChart
-                data={chartData}
-                margin={{ left: 8, right: 8, top: 12 }}
-              >
+              <BarChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
                 <CartesianGrid vertical={false} />
                 <XAxis axisLine={false} dataKey="month" tickLine={false} />
-                <ChartTooltip
-                  content={<ChartTooltipContent indicator="line" />}
-                />
+                <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                 <ChartLegend content={<ChartLegendContent />} />
                 {(reportQuery.data?.series ?? []).map((series) => (
-                  <Bar
-                    key={series.key}
-                    dataKey={series.key}
-                    fill={`var(--color-${series.key})`}
-                    radius={[6, 6, 0, 0]}
-                  />
+                  <Bar key={series.key} dataKey={series.key} fill={`var(--color-${series.key})`} radius={[6, 6, 0, 0]} />
                 ))}
               </BarChart>
             </ChartContainer>
@@ -170,25 +122,11 @@ function AnalyticsComparisonPage() {
       </Card>
 
       <div className="grid gap-4 self-start">
-        <SummaryCard
-          label="Total"
-          value={formatCurrency(reportQuery.data?.summary.total, baseCurrency)}
-          helper="Across the latest selected year"
-        />
-        <SummaryCard
-          label="Previous year"
-          value={formatCurrency(
-            reportQuery.data?.summary.previousYearTotal,
-            baseCurrency
-          )}
-          helper="Reference period total"
-        />
+        <SummaryCard label="Total" value={formatCurrency(reportQuery.data?.summary.total, baseCurrency)} helper="Across the latest selected year" />
+        <SummaryCard label="Previous year" value={formatCurrency(reportQuery.data?.summary.previousYearTotal, baseCurrency)} helper="Reference period total" />
         <SummaryCard
           label="Average per month"
-          value={formatCurrency(
-            reportQuery.data?.summary.averagePerMonth,
-            baseCurrency
-          )}
+          value={formatCurrency(reportQuery.data?.summary.averagePerMonth, baseCurrency)}
           helper="Latest year monthly average"
         />
       </div>
@@ -196,22 +134,10 @@ function AnalyticsComparisonPage() {
   )
 }
 
-function YearSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: string
-  options: string[]
-  onChange: (value: string) => void
-}) {
+function YearSelect({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   return (
     <div className="flex min-w-28 flex-col gap-2">
-      <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-        {label}
-      </span>
+      <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">{label}</span>
       <Select
         value={value}
         onValueChange={(nextValue) => {
@@ -237,22 +163,12 @@ function YearSelect({
   )
 }
 
-function SummaryCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string
-  value: string
-  helper: string
-}) {
+function SummaryCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
     <Card className="border-border/60 bg-card/80 shadow-sm">
       <CardContent className="space-y-2 p-5">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">
-          {value}
-        </p>
+        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
         <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
       </CardContent>
     </Card>

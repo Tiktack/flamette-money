@@ -1,7 +1,4 @@
-export function parseAmount(
-  value: number | string | null | undefined,
-  fieldName: string
-) {
+export function parseAmount(value: number | string | null | undefined, fieldName: string) {
   const parsed = typeof value === "number" ? value : Number(value)
 
   if (!Number.isFinite(parsed)) {
@@ -11,10 +8,7 @@ export function parseAmount(
   return parsed
 }
 
-export function parsePositiveAmount(
-  value: number | string | null | undefined,
-  fieldName: string
-) {
+export function parsePositiveAmount(value: number | string | null | undefined, fieldName: string) {
   const parsed = parseAmount(value, fieldName)
 
   if (parsed <= 0) {

@@ -5,26 +5,19 @@ import { db } from "@/lib/db/client.server"
 import { categories } from "@/lib/db/schema"
 
 export async function ensureUserBootstrap(userId: string) {
-  const existing = await db
-    .select({ value: count() })
-    .from(categories)
-    .where(eq(categories.userId, userId))
+  const existing = await db.select({ value: count() }).from(categories).where(eq(categories.userId, userId))
 
   if ((existing[0]?.value ?? 0) > 0) {
     return
   }
 
-  const idMap = new Map(
-    categorySeeds.map((category) => [category.id, crypto.randomUUID()])
-  )
+  const idMap = new Map(categorySeeds.map((category) => [category.id, crypto.randomUUID()]))
 
   await db.insert(categories).values(
     categorySeeds.map((category) => ({
       ...category,
       id: idMap.get(category.id) ?? crypto.randomUUID(),
-      parentId: category.parentId
-        ? (idMap.get(category.parentId) ?? null)
-        : null,
+      parentId: category.parentId ? (idMap.get(category.parentId) ?? null) : null,
       userId,
     }))
   )

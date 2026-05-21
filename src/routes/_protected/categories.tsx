@@ -7,72 +7,26 @@ import { EmptyState } from "@/components/empty-state"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { getApiErrorMessage } from "@/features/shared/errors"
-import {
-  useCategories,
-  useCreateCategory,
-  useDeleteCategory,
-  useUpdateCategory,
-} from "@/features/categories/hooks"
+import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/features/categories/hooks"
 import { useCategorySeriesReport } from "@/features/reports/hooks"
-import {
-  PAGE_ACTION_EVENT,
-  pageActionTypes,
-  type PageActionType,
-} from "@/lib/page-actions"
-import type {
-  CategoryHierarchy,
-  CategoryType,
-} from "@/features/categories/types"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
+import type { CategoryHierarchy, CategoryType } from "@/features/categories/types"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
-import {
-  resolveSharedDateRange,
-  toApiDateString,
-  useSharedDateRangeFilters,
-} from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
 export const Route = createFileRoute("/_protected/categories")({
   component: CategoriesPage,
 })
 
-const iconOptions = [
-  "IconShoppingCart",
-  "IconHome",
-  "IconCoin",
-  "IconBriefcase",
-]
+const iconOptions = ["IconShoppingCart", "IconHome", "IconCoin", "IconBriefcase"]
 
 type CategoryFormState = {
   name: string
@@ -98,14 +52,10 @@ function CategoriesPage() {
   const dateFilters = useSharedDateRangeFilters()
   const [typeFilter, setTypeFilter] = React.useState<CategoryType>("Expense")
   const [createOpen, setCreateOpen] = React.useState(false)
-  const [editCategory, setEditCategory] =
-    React.useState<CategoryHierarchy | null>(null)
-  const [deleteTarget, setDeleteTarget] =
-    React.useState<CategoryHierarchy | null>(null)
-  const [createForm, setCreateForm] =
-    React.useState<CategoryFormState>(defaultCategoryForm)
-  const [editForm, setEditForm] =
-    React.useState<CategoryFormState>(defaultCategoryForm)
+  const [editCategory, setEditCategory] = React.useState<CategoryHierarchy | null>(null)
+  const [deleteTarget, setDeleteTarget] = React.useState<CategoryHierarchy | null>(null)
+  const [createForm, setCreateForm] = React.useState<CategoryFormState>(defaultCategoryForm)
+  const [editForm, setEditForm] = React.useState<CategoryFormState>(defaultCategoryForm)
 
   React.useEffect(() => {
     const handlePageAction = (event: Event) => {
@@ -120,22 +70,10 @@ function CategoriesPage() {
     return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
   }, [])
 
-  const categories = React.useMemo(
-    () => categoriesQuery.data ?? [],
-    [categoriesQuery.data]
-  )
-  const parentCategories = React.useMemo(
-    () => categories.filter((category) => category.parentId === null),
-    [categories]
-  )
-  const visibleParents = React.useMemo(
-    () => parentCategories.filter((category) => category.type === typeFilter),
-    [parentCategories, typeFilter]
-  )
-  const resolvedDateRange = React.useMemo(
-    () => resolveSharedDateRange(dateFilters),
-    [dateFilters]
-  )
+  const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
+  const parentCategories = React.useMemo(() => categories.filter((category) => category.parentId === null), [categories])
+  const visibleParents = React.useMemo(() => parentCategories.filter((category) => category.type === typeFilter), [parentCategories, typeFilter])
+  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
 
   const reportQuery = useCategorySeriesReport(
     React.useMemo(() => {
@@ -192,10 +130,7 @@ function CategoriesPage() {
   )
 
   const parentOptions = React.useMemo(
-    () =>
-      parentCategories
-        .filter((category) => category.type === typeFilter)
-        .map((category) => ({ value: category.id, label: category.name })),
+    () => parentCategories.filter((category) => category.type === typeFilter).map((category) => ({ value: category.id, label: category.name })),
     [parentCategories, typeFilter]
   )
 
@@ -271,11 +206,7 @@ function CategoriesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-2">
         {(["Expense", "Income"] as const).map((value) => (
-          <Button
-            key={value}
-            variant={typeFilter === value ? "default" : "outline"}
-            onClick={() => setTypeFilter(value)}
-          >
+          <Button key={value} variant={typeFilter === value ? "default" : "outline"} onClick={() => setTypeFilter(value)}>
             {value === "Expense" ? "Expenses" : "Income"}
           </Button>
         ))}
@@ -290,28 +221,18 @@ function CategoriesPage() {
           ) : categoriesQuery.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Unable to load categories</AlertTitle>
-              <AlertDescription>
-                {getApiErrorMessage(
-                  categoriesQuery.error,
-                  "Try again in a moment."
-                )}
-              </AlertDescription>
+              <AlertDescription>{getApiErrorMessage(categoriesQuery.error, "Try again in a moment.")}</AlertDescription>
             </Alert>
           ) : visibleParents.length === 0 ? (
             <EmptyState
               eyebrow="Categories"
               title={`No ${typeFilter.toLowerCase()} categories yet`}
               description="Create a parent category and optionally nest subcategories underneath it."
-              action={
-                <Button onClick={() => openCreate()}>Create category</Button>
-              }
+              action={<Button onClick={() => openCreate()}>Create category</Button>}
             />
           ) : (
             visibleParents.map((category) => (
-              <Card
-                key={category.id}
-                className="border-border/60 bg-card/80 shadow-sm"
-              >
+              <Card key={category.id} className="border-border/60 bg-card/80 shadow-sm">
                 <CardContent className="grid gap-4 p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex items-start gap-3">
@@ -322,37 +243,20 @@ function CategoriesPage() {
                         }}
                       />
                       <div>
-                        <p className="text-lg font-semibold tracking-tight text-foreground">
-                          {category.name}
-                        </p>
+                        <p className="text-lg font-semibold tracking-tight text-foreground">{category.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {formatCurrency(
-                            amountsByCategory.get(category.id) ?? 0,
-                            reportQuery.data?.baseCurrency ?? "USD"
-                          )}
+                          {formatCurrency(amountsByCategory.get(category.id) ?? 0, reportQuery.data?.baseCurrency ?? "USD")}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openCreate(category)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openCreate(category)}>
                         Add child
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(category)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openEdit(category)}>
                         Edit
                       </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setDeleteTarget(category)}
-                      >
+                      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(category)}>
                         Delete
                       </Button>
                     </div>
@@ -372,9 +276,7 @@ function CategoriesPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No subcategories yet.
-                    </p>
+                    <p className="text-sm text-muted-foreground">No subcategories yet.</p>
                   )}
                 </CardContent>
               </Card>
@@ -385,9 +287,7 @@ function CategoriesPage() {
         <Card className="border-border/60 bg-card/80 shadow-sm">
           <CardHeader>
             <CardTitle>{typeFilter} overview</CardTitle>
-            <CardDescription>
-              Distribution by parent category within the selected range.
-            </CardDescription>
+            <CardDescription>Distribution by parent category within the selected range.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
             {reportQuery.isPending ? (
@@ -395,9 +295,7 @@ function CategoriesPage() {
             ) : reportQuery.isError ? (
               <Alert variant="destructive">
                 <AlertTitle>Unable to load category report</AlertTitle>
-                <AlertDescription>
-                  {getApiErrorMessage(reportQuery.error, "Try another range.")}
-                </AlertDescription>
+                <AlertDescription>{getApiErrorMessage(reportQuery.error, "Try another range.")}</AlertDescription>
               </Alert>
             ) : chartData.length === 0 ? (
               <EmptyState
@@ -407,19 +305,10 @@ function CategoriesPage() {
               />
             ) : (
               <>
-                <ChartContainer
-                  className="mx-auto h-[240px] w-full max-w-[300px]"
-                  config={chartConfig}
-                >
+                <ChartContainer className="mx-auto h-[240px] w-full max-w-[300px]" config={chartConfig}>
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={chartData}
-                      dataKey="value"
-                      innerRadius={64}
-                      outerRadius={96}
-                      strokeWidth={0}
-                    >
+                    <Pie data={chartData} dataKey="value" innerRadius={64} outerRadius={96} strokeWidth={0}>
                       {chartData.map((entry) => (
                         <Cell key={entry.id} fill={entry.color} />
                       ))}
@@ -429,30 +318,16 @@ function CategoriesPage() {
 
                 <div className="grid gap-4">
                   {chartData.map((entry) => {
-                    const total = chartData.reduce(
-                      (sum, item) => sum + item.value,
-                      0
-                    )
-                    const percent =
-                      total === 0 ? 0 : (entry.value / total) * 100
+                    const total = chartData.reduce((sum, item) => sum + item.value, 0)
+                    const percent = total === 0 ? 0 : (entry.value / total) * 100
                     return (
                       <div key={entry.id} className="grid gap-2">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
-                            <span
-                              className="size-2.5 rounded-full"
-                              style={{ backgroundColor: entry.color }}
-                            />
-                            <span className="text-sm font-medium text-foreground">
-                              {entry.name}
-                            </span>
+                            <span className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                            <span className="text-sm font-medium text-foreground">{entry.name}</span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            {formatCurrency(
-                              entry.value,
-                              reportQuery.data?.baseCurrency ?? "USD"
-                            )}
-                          </span>
+                          <span className="text-sm text-muted-foreground">{formatCurrency(entry.value, reportQuery.data?.baseCurrency ?? "USD")}</span>
                         </div>
                         <Progress value={percent} className="h-2" />
                       </div>
@@ -473,14 +348,7 @@ function CategoriesPage() {
         value={createForm}
         onChange={setCreateForm}
         pending={createCategory.isPending}
-        error={
-          createCategory.isError
-            ? getApiErrorMessage(
-                createCategory.error,
-                "Unable to create category."
-              )
-            : null
-        }
+        error={createCategory.isError ? getApiErrorMessage(createCategory.error, "Unable to create category.") : null}
         onOpenChange={setCreateOpen}
         onSubmit={handleCreate}
         submitLabel="Create category"
@@ -490,57 +358,33 @@ function CategoriesPage() {
         open={Boolean(editCategory)}
         title="Edit category"
         description="Update naming, visuals, or parent assignment."
-        parentOptions={parentOptions.filter(
-          (option) => option.value !== editCategory?.id
-        )}
+        parentOptions={parentOptions.filter((option) => option.value !== editCategory?.id)}
         value={editForm}
         onChange={setEditForm}
         pending={updateCategory.isPending}
-        error={
-          updateCategory.isError
-            ? getApiErrorMessage(
-                updateCategory.error,
-                "Unable to update category."
-              )
-            : null
-        }
+        error={updateCategory.isError ? getApiErrorMessage(updateCategory.error, "Unable to update category.") : null}
         onOpenChange={(open) => !open && setEditCategory(null)}
         onSubmit={handleEdit}
         submitLabel="Save changes"
       />
 
-      <Dialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete category</DialogTitle>
-            <DialogDescription>
-              Deleting a category can fail if transactions or children still
-              depend on it.
-            </DialogDescription>
+            <DialogDescription>Deleting a category can fail if transactions or children still depend on it.</DialogDescription>
           </DialogHeader>
           {deleteCategory.isError ? (
             <Alert variant="destructive">
               <AlertTitle>Delete failed</AlertTitle>
-              <AlertDescription>
-                {getApiErrorMessage(
-                  deleteCategory.error,
-                  "Unable to delete category."
-                )}
-              </AlertDescription>
+              <AlertDescription>{getApiErrorMessage(deleteCategory.error, "Unable to delete category.")}</AlertDescription>
             </Alert>
           ) : null}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteCategory.isPending}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteCategory.isPending}>
               {deleteCategory.isPending ? "Deleting" : "Delete"}
             </Button>
           </DialogFooter>
@@ -585,13 +429,7 @@ function CategoryDialog({
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <Field>
             <FieldLabel htmlFor={`${title}-name`}>Name</FieldLabel>
-            <Input
-              id={`${title}-name`}
-              value={value.name}
-              onChange={(event) =>
-                onChange((state) => ({ ...state, name: event.target.value }))
-              }
-            />
+            <Input id={`${title}-name`} value={value.name} onChange={(event) => onChange((state) => ({ ...state, name: event.target.value }))} />
           </Field>
           <Field>
             <FieldLabel>Type</FieldLabel>
@@ -647,12 +485,7 @@ function CategoryDialog({
           </Field>
           <Field>
             <FieldLabel>Icon token</FieldLabel>
-            <Select
-              value={value.icon}
-              onValueChange={(next) =>
-                onChange((state) => ({ ...state, icon: next ?? state.icon }))
-              }
-            >
+            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next ?? state.icon }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Icon" />
               </SelectTrigger>
@@ -669,14 +502,7 @@ function CategoryDialog({
           </Field>
           <Field className="md:col-span-2">
             <FieldLabel>Accent color</FieldLabel>
-            <Input
-              type="color"
-              value={value.color}
-              onChange={(event) =>
-                onChange((state) => ({ ...state, color: event.target.value }))
-              }
-              className="h-11 p-1"
-            />
+            <Input type="color" value={value.color} onChange={(event) => onChange((state) => ({ ...state, color: event.target.value }))} className="h-11 p-1" />
           </Field>
         </FieldGroup>
         {error ? (

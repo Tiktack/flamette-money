@@ -7,10 +7,7 @@ import { db } from "@/lib/db/client.server"
 import { categories } from "@/lib/db/schema"
 import { getOpenRouterApiKey, getOpenRouterModel } from "@/lib/env.server"
 
-import type {
-  ReceiptItemResponse,
-  ScanReceiptResponse,
-} from "@/features/shared/types"
+import type { ReceiptItemResponse, ScanReceiptResponse } from "@/features/shared/types"
 type CategoryRow = typeof categories.$inferSelect
 
 type AiReceiptItem = {
@@ -58,9 +55,7 @@ async function requireUserIdForRequest(request: Request) {
 }
 
 function buildCategoryPromptList(values: CategoryRow[]) {
-  const parentCategories = values.filter(
-    (category) => category.parentId === null
-  )
+  const parentCategories = values.filter((category) => category.parentId === null)
   const childrenByParent = new Map<string, CategoryRow[]>()
 
   for (const category of values) {
@@ -158,10 +153,7 @@ function toNumber(value: number | string | null | undefined, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
-function normalizeItemResponse(
-  item: AiReceiptItem,
-  categoryLookup: Map<string, { id: string; parentId: string | null }>
-): ReceiptItemResponse {
+function normalizeItemResponse(item: AiReceiptItem, categoryLookup: Map<string, { id: string; parentId: string | null }>): ReceiptItemResponse {
   let categoryId: string | null = null
   let subCategoryId: string | null = null
 
@@ -200,39 +192,33 @@ function normalizeItemResponse(
 async function completeReceiptPrompt(file: File, prompt: string) {
   const apiKey = getOpenRouterApiKey()
   if (!apiKey) {
-    fail(
-      "Receipt scanning is not configured. Set OPENROUTER_API_KEY to enable it.",
-      400
-    )
+    fail("Receipt scanning is not configured. Set OPENROUTER_API_KEY to enable it.", 400)
   }
 
   const bytes = Buffer.from(await file.arrayBuffer())
   const dataUrl = `data:${file.type};base64,${bytes.toString("base64")}`
 
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: getOpenRouterModel(),
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "image_url", image_url: { url: dataUrl } },
-            ],
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 4096,
-      }),
-    }
-  )
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: getOpenRouterModel(),
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 4096,
+    }),
+  })
 
   const bodyText = await response.text()
   if (!response.ok) {
@@ -248,12 +234,7 @@ async function completeReceiptPrompt(file: File, prompt: string) {
   }
 
   const content = parsed.choices?.[0]?.message?.content
-  const rawContent =
-    typeof content === "string"
-      ? content
-      : Array.isArray(content)
-        ? content.map((part) => part.text ?? "").join("\n")
-        : ""
+  const rawContent = typeof content === "string" ? content : Array.isArray(content) ? content.map((part) => part.text ?? "").join("\n") : ""
 
   if (!rawContent.trim()) {
     fail("AI processing failed: empty response received.")
@@ -272,12 +253,7 @@ export async function handleReceiptScanRequest(request: Request) {
     fail("No image file was uploaded.")
   }
 
-  const allowedTypes = new Set([
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/heic",
-  ])
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/heic"])
   if (!allowedTypes.has(file.type.toLowerCase())) {
     fail("Only JPEG, PNG, WebP, and HEIC images are supported.")
   }
@@ -288,8 +264,7 @@ export async function handleReceiptScanRequest(request: Request) {
 
   const [account, categoryRows] = await Promise.all([
     db.query.accounts.findFirst({
-      where: (table, { and }) =>
-        and(eq(table.id, accountId), eq(table.userId, userId)),
+      where: (table, { and }) => and(eq(table.id, accountId), eq(table.userId, userId)),
     }),
     db.query.categories.findMany({ where: eq(categories.userId, userId) }),
   ])
@@ -298,10 +273,7 @@ export async function handleReceiptScanRequest(request: Request) {
     fail("Account not found.")
   }
 
-  const categoryLookup = new Map<
-    string,
-    { id: string; parentId: string | null }
-  >()
+  const categoryLookup = new Map<string, { id: string; parentId: string | null }>()
   for (const category of categoryRows) {
     categoryLookup.set(category.name.toLowerCase(), {
       id: category.id,
@@ -309,13 +281,8 @@ export async function handleReceiptScanRequest(request: Request) {
     })
   }
 
-  const aiResult = await completeReceiptPrompt(
-    file,
-    buildPrompt(buildCategoryPromptList(categoryRows))
-  )
-  const items = (aiResult.items ?? []).map((item) =>
-    normalizeItemResponse(item, categoryLookup)
-  )
+  const aiResult = await completeReceiptPrompt(file, buildPrompt(buildCategoryPromptList(categoryRows)))
+  const items = (aiResult.items ?? []).map((item) => normalizeItemResponse(item, categoryLookup))
   const parsedDate = aiResult.date ? new Date(aiResult.date) : null
   const totalAmount = toNumber(
     aiResult.amount,
@@ -324,15 +291,9 @@ export async function handleReceiptScanRequest(request: Request) {
 
   const response: ScanReceiptResponse = {
     merchant: aiResult.merchant?.trim() || null,
-    date:
-      parsedDate && !Number.isNaN(parsedDate.getTime())
-        ? parsedDate.toISOString()
-        : new Date().toISOString(),
+    date: parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : new Date().toISOString(),
     amount: totalAmount,
-    currency: normalizeCurrencyOrDefault(
-      aiResult.currency ?? null,
-      account.currency
-    ),
+    currency: normalizeCurrencyOrDefault(aiResult.currency ?? null, account.currency),
     items,
   }
 
