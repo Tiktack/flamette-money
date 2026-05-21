@@ -23,12 +23,13 @@
       "source": "nutlope/hallmark",
       "sourceType": "github",
       "skillPath": "SKILL.md",
-      "computedHash": "0a6839d1519a71f773923fccd0f0357ea94af0c31d248787f0d481a3240a1ef2"
+      "computedHash": "a5c828f76d82801993fe9d9826720af459360720235e1a68e10290bcb1f6491e"
     },
     "shadcn": {
       "source": "shadcn-ui/ui",
       "sourceType": "github",
-      "computedHash": "b1cc1defe03f0e8f78652b7d20e4d4e6421babc2b45835d4f361afe684dc47a2"
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "f0fdd03f4755cbb3b57e20fe6fd4a97c00d34e6780187b6559316986e8d848db"
     },
     "tanstack-integration-best-practices": {
       "source": "DeckardGer/tanstack-agent-skills",
