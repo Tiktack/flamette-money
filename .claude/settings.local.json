@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"R:\\\\Personal\\\\flamette-money\\\\.claude\\\\worktrees\\\\strange-snyder-a6341d\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm build *)",
+      "Bash(git add *)"
+    ]
+  }
+}

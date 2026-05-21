@@ -7,6 +7,7 @@ import {
   normalizeCurrencyOrNull,
 } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
+import { roundMoney } from "@/lib/finance"
 import {
   accounts,
   categories,
@@ -69,19 +70,11 @@ const yearColors = [
   "indigo.6",
 ] as const
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-
-function roundMoney(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100
-}
-
 function parseDate(value: string, label: string) {
   const parsed = new Date(value)
 
   if (Number.isNaN(parsed.getTime())) {
-    fail(`${label} must be a valid date.`)
+    throw new Error(`${label} must be a valid date.`)
   }
 
   return parsed
@@ -107,7 +100,7 @@ async function requireUser() {
   const session = await getSessionData()
 
   if (!session) {
-    fail("Unauthorized")
+    throw new Error("Unauthorized")
   }
 
   await ensureUserBootstrap(session.user.id)
@@ -117,7 +110,7 @@ async function requireUser() {
   })
 
   if (!user) {
-    fail("User was not found.")
+    throw new Error("User was not found.")
   }
 
   return user
@@ -523,7 +516,7 @@ export async function getCashflowSeriesReportData(
     : null
 
   if (startDateFilter && endDateFilter && startDateFilter > endDateFilter) {
-    fail("StartDate cannot be after EndDate.")
+    throw new Error("StartDate cannot be after EndDate.")
   }
 
   const allTransactions = await db.query.transactions.findMany({
@@ -804,7 +797,7 @@ export async function getCategorySeriesReportData(
     type === "Expense" && Boolean(query?.GroupTripsAsCategory)
 
   if (startDateFilter && endDateFilter && startDateFilter > endDateFilter) {
-    fail("StartDate cannot be after EndDate.")
+    throw new Error("StartDate cannot be after EndDate.")
   }
 
   const categoryRows = await db.query.categories.findMany({
@@ -1109,12 +1102,12 @@ export async function getMonthlyYoyReportData(
   const tripId = query?.TripId ?? null
 
   if (startYear > endYear) {
-    fail("StartYear cannot be greater than EndYear.")
+    throw new Error("StartYear cannot be greater than EndYear.")
   }
 
   const yearCount = endYear - startYear + 1
   if (yearCount > 10) {
-    fail("Year range cannot be greater than 10 years.")
+    throw new Error("Year range cannot be greater than 10 years.")
   }
 
   const rangeStart = new Date(startYear, 0, 1)
@@ -1300,7 +1293,7 @@ export async function getPortfolioBalanceSeriesReportData(
   )
 
   if (query?.BaseCurrency && !normalizeCurrencyOrNull(query.BaseCurrency)) {
-    fail("BaseCurrency must be one of the supported currencies.")
+    throw new Error("BaseCurrency must be one of the supported currencies.")
   }
 
   const fx = await getRatesToBase(baseCurrency)
@@ -1358,7 +1351,7 @@ export async function getPortfolioBalanceSeriesReportData(
       : endDateFilter
 
   if (startDateFilter > endDateFilter) {
-    fail("StartDate cannot be after EndDate.")
+    throw new Error("StartDate cannot be after EndDate.")
   }
 
   const interval = resolvePortfolioInterval(
