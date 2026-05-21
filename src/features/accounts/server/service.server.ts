@@ -6,10 +6,7 @@ import { accounts, transactions } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { parseAmount } from "@/lib/server/parsing.server"
 
-import {
-  requireAccount,
-  requireUser,
-} from "@/features/shared/server/lookups.server"
+import { requireAccount, requireUser } from "@/features/shared/server/lookups.server"
 import {
   normalizeAccountType,
   normalizeColor,
@@ -46,11 +43,7 @@ export async function listAccountsData(): Promise<AccountListItemResponse[]> {
       icon: account.icon,
       type: account.type,
       currentBalance: account.currentBalance,
-      sortBalance:
-        account.currentBalance *
-        (fx.ratesToBase[
-          normalizeCurrencyOrDefault(account.currency, baseCurrency)
-        ] ?? 1),
+      sortBalance: account.currentBalance * (fx.ratesToBase[normalizeCurrencyOrDefault(account.currency, baseCurrency)] ?? 1),
     }))
     .sort((left, right) => {
       if (right.sortBalance !== left.sortBalance) {
@@ -62,9 +55,7 @@ export async function listAccountsData(): Promise<AccountListItemResponse[]> {
     .map(({ sortBalance: _ignoredSortBalance, ...account }) => account)
 }
 
-export async function getAccountData(
-  accountId: string
-): Promise<GetAccountResponse> {
+export async function getAccountData(accountId: string): Promise<GetAccountResponse> {
   const user = await requireUser()
   const account = await requireAccount(user.id, accountId)
 
@@ -80,9 +71,7 @@ export async function getAccountData(
   }
 }
 
-export async function createAccountData(
-  request: CreateAccountRequest
-): Promise<CreateAccountResponse> {
+export async function createAccountData(request: CreateAccountRequest): Promise<CreateAccountResponse> {
   const user = await requireUser()
   const name = normalizeRequiredName(request.name)
   const description = normalizeDescription(request.description)
@@ -120,10 +109,7 @@ export async function createAccountData(
   }
 }
 
-export async function updateAccountData(
-  accountId: string,
-  request: UpdateAccountRequest
-): Promise<UpdateAccountResponse> {
+export async function updateAccountData(accountId: string, request: UpdateAccountRequest): Promise<UpdateAccountResponse> {
   const user = await requireUser()
   const account = await requireAccount(user.id, accountId)
   const name = normalizeRequiredName(request.name)
@@ -164,10 +150,7 @@ export async function deleteAccountData(accountId: string) {
   await requireAccount(user.id, accountId)
 
   const hasTransactions = await db.query.transactions.findFirst({
-    where: and(
-      eq(transactions.userId, user.id),
-      eq(transactions.accountId, accountId)
-    ),
+    where: and(eq(transactions.userId, user.id), eq(transactions.accountId, accountId)),
     columns: { id: true },
   })
 
@@ -175,7 +158,5 @@ export async function deleteAccountData(accountId: string) {
     throw new Error("Account cannot be deleted because it has transactions.")
   }
 
-  await db
-    .delete(accounts)
-    .where(and(eq(accounts.userId, user.id), eq(accounts.id, accountId)))
+  await db.delete(accounts).where(and(eq(accounts.userId, user.id), eq(accounts.id, accountId)))
 }

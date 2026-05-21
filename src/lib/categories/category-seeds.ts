@@ -2,10 +2,7 @@ import type { InferInsertModel } from "drizzle-orm"
 
 import { categories } from "@/lib/db/schema"
 
-type CategorySeed = Pick<
-  InferInsertModel<typeof categories>,
-  "id" | "name" | "color" | "icon" | "parentId" | "type"
->
+type CategorySeed = Pick<InferInsertModel<typeof categories>, "id" | "name" | "color" | "icon" | "parentId" | "type">
 
 export const categorySeeds: CategorySeed[] = [
   {

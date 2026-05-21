@@ -3,16 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { settingsQueryOptions } from "./query-options"
 import { postResetUserData, updateSettings } from "./server/functions"
 
-import {
-  fullDataRefreshInvalidations,
-  invalidateQueries,
-  settingsMutationInvalidations,
-} from "@/features/shared/cache-invalidations"
+import { fullDataRefreshInvalidations, invalidateQueries, settingsMutationInvalidations } from "@/features/shared/cache-invalidations"
 
-import type {
-  BackupExportType,
-  BackupImportType,
-} from "@/features/profile-backup/types"
+import type { BackupExportType, BackupImportType } from "@/features/profile-backup/types"
 import type { ImportBackupResponse } from "@/features/profile-backup/types"
 import type { UpdateUserSettingsRequest } from "./types"
 
@@ -24,10 +17,8 @@ export function useUpdateSettings() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (request: UpdateUserSettingsRequest) =>
-      updateSettings({ data: request }),
-    onSuccess: async () =>
-      invalidateQueries(queryClient, settingsMutationInvalidations),
+    mutationFn: (request: UpdateUserSettingsRequest) => updateSettings({ data: request }),
+    onSuccess: async () => invalidateQueries(queryClient, settingsMutationInvalidations),
   })
 }
 
@@ -36,8 +27,7 @@ export function useResetData() {
 
   return useMutation({
     mutationFn: () => postResetUserData(),
-    onSuccess: async () =>
-      invalidateQueries(queryClient, fullDataRefreshInvalidations),
+    onSuccess: async () => invalidateQueries(queryClient, fullDataRefreshInvalidations),
   })
 }
 
@@ -45,13 +35,7 @@ export function useImportBackup() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({
-      file,
-      type,
-    }: {
-      file: File
-      type: BackupImportType
-    }) => {
+    mutationFn: async ({ file, type }: { file: File; type: BackupImportType }) => {
       const formData = new FormData()
       formData.append("file", file)
       formData.append("type", type)
@@ -69,8 +53,7 @@ export function useImportBackup() {
 
       return (await response.json()) as ImportBackupResponse
     },
-    onSuccess: async () =>
-      invalidateQueries(queryClient, fullDataRefreshInvalidations),
+    onSuccess: async () => invalidateQueries(queryClient, fullDataRefreshInvalidations),
   })
 }
 
@@ -91,8 +74,7 @@ export function useExportBackup() {
       const blob = await response.blob()
       const disposition = response.headers.get("content-disposition") ?? ""
       const match = /filename="?([^";]+)"?/i.exec(disposition)
-      const fileName =
-        match?.[1] ?? `flamette-backup-${new Date().toISOString()}.xlsx`
+      const fileName = match?.[1] ?? `flamette-backup-${new Date().toISOString()}.xlsx`
 
       const downloadUrl = URL.createObjectURL(blob)
       const anchor = document.createElement("a")

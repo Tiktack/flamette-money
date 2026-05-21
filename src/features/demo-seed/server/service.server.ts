@@ -3,19 +3,9 @@ import { and, eq } from "drizzle-orm"
 import { auth } from "@/lib/auth"
 import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { db } from "@/lib/db/client.server"
-import {
-  forEachChunkSync,
-  SQLITE_INSERT_BATCH_SIZE,
-} from "@/lib/db/sqlite-batch.server"
+import { forEachChunkSync, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import { roundMoney } from "@/lib/finance"
-import {
-  accounts,
-  accountTypes,
-  categories,
-  trips,
-  transactions,
-  transactionTypes,
-} from "@/lib/db/schema"
+import { accounts, accountTypes, categories, trips, transactions, transactionTypes } from "@/lib/db/schema"
 
 import type { SeedDemoResponse } from "@/features/shared/types"
 
@@ -106,11 +96,7 @@ function getDailyTransactionCount(random: RandomSource, isTripDay: boolean) {
   return random.nextInt(4, 8)
 }
 
-function pickTransactionType(
-  random: RandomSource,
-  hasExpenses: boolean,
-  hasIncome: boolean
-): TransactionType {
+function pickTransactionType(random: RandomSource, hasExpenses: boolean, hasIncome: boolean): TransactionType {
   const roll = random.next()
   if (roll < 0.12 && hasIncome) return "Income"
   if (roll < 0.88) return "Expense"
@@ -130,11 +116,7 @@ function shouldAssign(random: RandomSource, probability: number) {
   return random.next() < probability
 }
 
-function pickDifferentAccount(
-  random: RandomSource,
-  values: AccountRow[],
-  source: AccountRow
-) {
+function pickDifferentAccount(random: RandomSource, values: AccountRow[], source: AccountRow) {
   if (values.length <= 1) {
     return source
   }
@@ -147,12 +129,7 @@ function pickDifferentAccount(
   return target
 }
 
-function applyBalances(
-  account: AccountRow,
-  targetAccount: AccountRow | null,
-  type: TransactionType,
-  amount: number
-) {
+function applyBalances(account: AccountRow, targetAccount: AccountRow | null, type: TransactionType, amount: number) {
   switch (type) {
     case "Expense":
       account.currentBalance = roundMoney(account.currentBalance - amount)
@@ -164,22 +141,14 @@ function applyBalances(
     case "Transfer":
       account.currentBalance = roundMoney(account.currentBalance - amount)
       if (targetAccount) {
-        targetAccount.currentBalance = roundMoney(
-          targetAccount.currentBalance + amount
-        )
+        targetAccount.currentBalance = roundMoney(targetAccount.currentBalance + amount)
       }
       break
   }
 }
 
-function pickActiveTripForDate(
-  random: RandomSource,
-  tripWindows: TripWindow[],
-  date: Date
-) {
-  const activeTrips = tripWindows.filter(
-    (trip) => date >= trip.startDate && date <= trip.endDate
-  )
+function pickActiveTripForDate(random: RandomSource, tripWindows: TripWindow[], date: Date) {
+  const activeTrips = tripWindows.filter((trip) => date >= trip.startDate && date <= trip.endDate)
   if (activeTrips.length === 0) {
     return null
   }
@@ -261,14 +230,7 @@ function getIncomeNotes() {
 }
 
 function getExpenseNotes() {
-  return [
-    "Groceries",
-    "Coffee",
-    "Transport",
-    "Home supplies",
-    "Online order",
-    "Subscription",
-  ]
+  return ["Groceries", "Coffee", "Transport", "Home supplies", "Online order", "Subscription"]
 }
 
 function buildTripDefinitions(startDate: Date, endDate: Date) {
@@ -277,72 +239,61 @@ function buildTripDefinitions(startDate: Date, endDate: Date) {
       name: "Paris, France",
       startDate: new Date("2022-06-10T00:00:00.000Z"),
       endDate: new Date("2022-06-19T00:00:00.000Z"),
-      imageUrl:
-        "https://tse3.mm.bing.net/th/id/OIP.6Yrhn7ORfVo_4tS4VaSPxQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3",
+      imageUrl: "https://tse3.mm.bing.net/th/id/OIP.6Yrhn7ORfVo_4tS4VaSPxQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3",
       country: "FR",
     },
     {
       name: "Berlin, Germany",
       startDate: new Date("2022-10-03T00:00:00.000Z"),
       endDate: new Date("2022-10-09T00:00:00.000Z"),
-      imageUrl:
-        "https://th.bing.com/th/id/OIP.t6dxttYixG86lZzVESWdygHaEK?w=286&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
+      imageUrl: "https://th.bing.com/th/id/OIP.t6dxttYixG86lZzVESWdygHaEK?w=286&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
       country: "DE",
     },
     {
       name: "London, United Kingdom",
       startDate: new Date("2023-03-15T00:00:00.000Z"),
       endDate: new Date("2023-03-20T00:00:00.000Z"),
-      imageUrl:
-        "https://th.bing.com/th/id/OIP.mPLXOEAwULJlqrItJA0j2gHaFj?w=226&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
+      imageUrl: "https://th.bing.com/th/id/OIP.mPLXOEAwULJlqrItJA0j2gHaFj?w=226&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
       country: "GB",
     },
     {
       name: "Lisbon, Portugal",
       startDate: new Date("2023-08-05T00:00:00.000Z"),
       endDate: new Date("2023-08-16T00:00:00.000Z"),
-      imageUrl:
-        "https://th.bing.com/th/id/R.8838157e1c8a414875b906139e026bb2?rik=IFMzsIMBmauv8w&pid=ImgRaw&r=0",
+      imageUrl: "https://th.bing.com/th/id/R.8838157e1c8a414875b906139e026bb2?rik=IFMzsIMBmauv8w&pid=ImgRaw&r=0",
       country: "PT",
     },
     {
       name: "Nice, France",
       startDate: new Date("2024-05-20T00:00:00.000Z"),
       endDate: new Date("2024-05-28T00:00:00.000Z"),
-      imageUrl:
-        "https://tse3.mm.bing.net/th/id/OIP.6Yrhn7ORfVo_4tS4VaSPxQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3",
+      imageUrl: "https://tse3.mm.bing.net/th/id/OIP.6Yrhn7ORfVo_4tS4VaSPxQHaEo?rs=1&pid=ImgDetMain&o=7&rm=3",
       country: "FR",
     },
     {
       name: "Munich, Germany",
       startDate: new Date("2024-09-20T00:00:00.000Z"),
       endDate: new Date("2024-09-26T00:00:00.000Z"),
-      imageUrl:
-        "https://th.bing.com/th/id/OIP.t6dxttYixG86lZzVESWdygHaEK?w=286&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
+      imageUrl: "https://th.bing.com/th/id/OIP.t6dxttYixG86lZzVESWdygHaEK?w=286&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
       country: "DE",
     },
     {
       name: "Edinburgh, United Kingdom",
       startDate: new Date("2025-04-10T00:00:00.000Z"),
       endDate: new Date("2025-04-15T00:00:00.000Z"),
-      imageUrl:
-        "https://th.bing.com/th/id/OIP.mPLXOEAwULJlqrItJA0j2gHaFj?w=226&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
+      imageUrl: "https://th.bing.com/th/id/OIP.mPLXOEAwULJlqrItJA0j2gHaFj?w=226&h=180&c=7&r=0&o=7&dpr=1.5&pid=1.7&rm=3",
       country: "GB",
     },
     {
       name: "Porto, Portugal",
       startDate: new Date("2025-07-02T00:00:00.000Z"),
       endDate: new Date("2025-07-12T00:00:00.000Z"),
-      imageUrl:
-        "https://th.bing.com/th/id/R.8838157e1c8a414875b906139e026bb2?rik=IFMzsIMBmauv8w&pid=ImgRaw&r=0",
+      imageUrl: "https://th.bing.com/th/id/R.8838157e1c8a414875b906139e026bb2?rik=IFMzsIMBmauv8w&pid=ImgRaw&r=0",
       country: "PT",
     },
   ]
 
-  return allDefinitions.filter(
-    (definition) =>
-      definition.endDate >= startDate && definition.startDate <= endDate
-  )
+  return allDefinitions.filter((definition) => definition.endDate >= startDate && definition.startDate <= endDate)
 }
 
 class RandomSource {
@@ -370,21 +321,15 @@ class RandomSource {
   }
 
   nextInt(minInclusive: number, maxExclusive: number) {
-    return (
-      Math.floor(this.next() * (maxExclusive - minInclusive)) + minInclusive
-    )
+    return Math.floor(this.next() * (maxExclusive - minInclusive)) + minInclusive
   }
 }
 
 export async function handleSeedDemoRequest(request: Request) {
   const userId = await requireUserIdForRequest(request)
   const url = new URL(request.url)
-  const years = clampYears(
-    url.searchParams.get("Years") ? Number(url.searchParams.get("Years")) : null
-  )
-  const seed = url.searchParams.get("Seed")
-    ? Number(url.searchParams.get("Seed"))
-    : undefined
+  const years = clampYears(url.searchParams.get("Years") ? Number(url.searchParams.get("Years")) : null)
+  const seed = url.searchParams.get("Seed") ? Number(url.searchParams.get("Seed")) : undefined
 
   const startDate = new Date()
   startDate.setUTCHours(0, 0, 0, 0)
@@ -401,30 +346,16 @@ export async function handleSeedDemoRequest(request: Request) {
     db.query.trips.findMany({ where: eq(trips.userId, userId) }),
   ])
 
-  const expenseCategories = allCategories.filter(
-    (category) => category.type === "Expense"
-  )
-  const incomeCategories = allCategories.filter(
-    (category) => category.type === "Income"
-  )
+  const expenseCategories = allCategories.filter((category) => category.type === "Expense")
+  const incomeCategories = allCategories.filter((category) => category.type === "Income")
   const travelParentIds = new Set(
-    expenseCategories
-      .filter(
-        (category) =>
-          category.parentId === null &&
-          category.name.trim().toLowerCase() === "travel"
-      )
-      .map((category) => category.id)
+    expenseCategories.filter((category) => category.parentId === null && category.name.trim().toLowerCase() === "travel").map((category) => category.id)
   )
 
   const nonTravelExpenseCategories = expenseCategories.filter(
-    (category) =>
-      !travelParentIds.has(category.id) &&
-      !(category.parentId && travelParentIds.has(category.parentId))
+    (category) => !travelParentIds.has(category.id) && !(category.parentId && travelParentIds.has(category.parentId))
   )
-  const expenseParents = nonTravelExpenseCategories.filter(
-    (category) => category.parentId === null
-  )
+  const expenseParents = nonTravelExpenseCategories.filter((category) => category.parentId === null)
   const expenseChildrenByParent = new Map<string, CategoryRow[]>()
   for (const category of nonTravelExpenseCategories) {
     if (!category.parentId) continue
@@ -433,12 +364,7 @@ export async function handleSeedDemoRequest(request: Request) {
     expenseChildrenByParent.set(category.parentId, existing)
   }
 
-  const accountLookup = new Map(
-    existingAccounts.map((account) => [
-      account.name.toLowerCase(),
-      { ...account },
-    ])
-  )
+  const accountLookup = new Map(existingAccounts.map((account) => [account.name.toLowerCase(), { ...account }]))
   const allAccounts = [...accountLookup.values()]
   const newAccounts: AccountRow[] = []
 
@@ -502,10 +428,7 @@ export async function handleSeedDemoRequest(request: Request) {
     })
   }
 
-  if (
-    allAccounts.length === 0 ||
-    (expenseParents.length === 0 && incomeCategories.length === 0)
-  ) {
+  if (allAccounts.length === 0 || (expenseParents.length === 0 && incomeCategories.length === 0)) {
     const response: SeedDemoResponse = {
       accountsAdded: newAccounts.length,
       transactionsAdded: 0,
@@ -526,24 +449,12 @@ export async function handleSeedDemoRequest(request: Request) {
   let transfersAdded = 0
   let refundsAdded = 0
 
-  for (
-    let date = new Date(startDate);
-    date <= endDate;
-    date = new Date(date.getTime() + 24 * 60 * 60 * 1000)
-  ) {
-    const isTripDay = tripWindows.some(
-      (trip) => date >= trip.startDate && date <= trip.endDate
-    )
+  for (let date = new Date(startDate); date <= endDate; date = new Date(date.getTime() + 24 * 60 * 60 * 1000)) {
+    const isTripDay = tripWindows.some((trip) => date >= trip.startDate && date <= trip.endDate)
     const count = getDailyTransactionCount(random, isTripDay)
     for (let index = 0; index < count; index++) {
-      let type = pickTransactionType(
-        random,
-        expenseTransactions.length > 0,
-        incomeCategories.length > 0
-      )
-      const timestamp = new Date(
-        date.getTime() + random.nextInt(0, 24 * 60) * 60 * 1000
-      )
+      let type = pickTransactionType(random, expenseTransactions.length > 0, incomeCategories.length > 0)
+      const timestamp = new Date(date.getTime() + random.nextInt(0, 24 * 60) * 60 * 1000)
 
       if (type === "Transfer") {
         const source = allAccounts[random.nextInt(0, allAccounts.length)]
@@ -580,12 +491,8 @@ export async function handleSeedDemoRequest(request: Request) {
         if (!original) {
           type = "Expense"
         } else {
-          const refundAmount = roundMoney(
-            original.amount * (0.2 + random.next() * 0.6)
-          )
-          const source = allAccounts.find(
-            (account) => account.id === original.accountId
-          )
+          const refundAmount = roundMoney(original.amount * (0.2 + random.next() * 0.6))
+          const source = allAccounts.find((account) => account.id === original.accountId)
           if (!source) continue
 
           transactionBuffer.push({
@@ -617,9 +524,7 @@ export async function handleSeedDemoRequest(request: Request) {
 
       if (type === "Income") {
         const account = allAccounts[random.nextInt(0, allAccounts.length)]
-        const category =
-          pickValue(random, incomeCategories) ??
-          pickValue(random, expenseParents)
+        const category = pickValue(random, incomeCategories) ?? pickValue(random, expenseParents)
         const amount = nextMoney(random, 500, 3500)
         transactionBuffer.push({
           id: crypto.randomUUID(),
@@ -638,9 +543,7 @@ export async function handleSeedDemoRequest(request: Request) {
           originalTransactionId: null,
           tripId: null,
           isRefund: false,
-          note: shouldAssign(random, 0.2)
-            ? pickValue(random, incomeNotes)
-            : null,
+          note: shouldAssign(random, 0.2) ? pickValue(random, incomeNotes) : null,
           merchantName: "Employer",
           location: pickValue(random, locations),
         })
@@ -649,21 +552,11 @@ export async function handleSeedDemoRequest(request: Request) {
       }
 
       const expenseAccount = allAccounts[random.nextInt(0, allAccounts.length)]
-      const expenseAmount =
-        random.next() < 0.1
-          ? nextMoney(random, 200, 900)
-          : nextMoney(random, 5, 200)
+      const expenseAmount = random.next() < 0.1 ? nextMoney(random, 200, 900) : nextMoney(random, 5, 200)
       const expenseParent = pickValue(random, expenseParents)
-      const expenseChild =
-        expenseParent && random.next() < 0.6
-          ? pickValue(
-              random,
-              expenseChildrenByParent.get(expenseParent.id) ?? []
-            )
-          : null
+      const expenseChild = expenseParent && random.next() < 0.6 ? pickValue(random, expenseChildrenByParent.get(expenseParent.id) ?? []) : null
       const activeTrip = pickActiveTripForDate(random, tripWindows, timestamp)
-      const tripId =
-        activeTrip && shouldAssign(random, 0.75) ? activeTrip.id : null
+      const tripId = activeTrip && shouldAssign(random, 0.75) ? activeTrip.id : null
 
       const expense: TransactionInsert = {
         id: crypto.randomUUID(),
@@ -682,9 +575,7 @@ export async function handleSeedDemoRequest(request: Request) {
         originalTransactionId: null,
         tripId,
         isRefund: false,
-        note: shouldAssign(random, 0.12)
-          ? pickValue(random, expenseNotes)
-          : null,
+        note: shouldAssign(random, 0.12) ? pickValue(random, expenseNotes) : null,
         merchantName: pickValue(random, merchants),
         location: pickValue(random, locations),
       }

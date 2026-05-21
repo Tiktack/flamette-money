@@ -2,11 +2,7 @@
 
 import { Link } from "@tanstack/react-router"
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -19,10 +15,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ArrowRight01Icon,
-  PlusSignCircleIcon,
-} from "@hugeicons/core-free-icons"
+import { ArrowRight01Icon, PlusSignCircleIcon } from "@hugeicons/core-free-icons"
 
 type AppRoute =
   | "/analytics/cashflow"
@@ -86,27 +79,15 @@ export function NavMain({
 
         <SidebarMenu>
           {items.map((item) => (
-            <Collapsible
-              key={item.title}
-              defaultOpen={item.isActive}
-              render={<SidebarMenuItem />}
-            >
-              <SidebarMenuButton
-                tooltip={item.title}
-                isActive={item.isActive}
-                render={<Link to={item.to} />}
-              >
+            <Collapsible key={item.title} defaultOpen={item.isActive} render={<SidebarMenuItem />}>
+              <SidebarMenuButton tooltip={item.title} isActive={item.isActive} render={<Link to={item.to} />}>
                 {item.icon}
                 <span>{item.title}</span>
               </SidebarMenuButton>
 
               {item.items?.length ? (
                 <>
-                  <CollapsibleTrigger
-                    render={
-                      <SidebarMenuAction className="aria-expanded:rotate-90" />
-                    }
-                  >
+                  <CollapsibleTrigger render={<SidebarMenuAction className="aria-expanded:rotate-90" />}>
                     <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
                     <span className="sr-only">Toggle {item.title}</span>
                   </CollapsibleTrigger>
@@ -115,10 +96,7 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.to}>
-                          <SidebarMenuSubButton
-                            render={<Link to={subItem.to} />}
-                            isActive={subItem.isActive}
-                          >
+                          <SidebarMenuSubButton render={<Link to={subItem.to} />} isActive={subItem.isActive}>
                             {subItem.title}
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

@@ -6,10 +6,7 @@ import { supportedCurrencies } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
 import { users } from "@/lib/db/schema"
 
-import type {
-  AppInfoResponse,
-  CurrentUserResponse,
-} from "@/features/shared/types"
+import type { AppInfoResponse, CurrentUserResponse } from "@/features/shared/types"
 
 export async function getCurrentUserData(): Promise<CurrentUserResponse | null> {
   const session = await getSessionData()

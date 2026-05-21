@@ -582,8 +582,7 @@ export type GetApiTripsResponses = {
   200: Array<TripListItemResponse>
 }
 
-export type GetApiTripsResponse =
-  GetApiTripsResponses[keyof GetApiTripsResponses]
+export type GetApiTripsResponse = GetApiTripsResponses[keyof GetApiTripsResponses]
 
 export type PostApiTripsData = {
   body: CreateTripRequest
@@ -608,8 +607,7 @@ export type PostApiTripsResponses = {
   201: CreateTripResponse
 }
 
-export type PostApiTripsResponse =
-  PostApiTripsResponses[keyof PostApiTripsResponses]
+export type PostApiTripsResponse = PostApiTripsResponses[keyof PostApiTripsResponses]
 
 export type PutApiTripsByIdData = {
   body: UpdateTripRequest
@@ -631,8 +629,7 @@ export type PutApiTripsByIdErrors = {
   404: unknown
 }
 
-export type PutApiTripsByIdError =
-  PutApiTripsByIdErrors[keyof PutApiTripsByIdErrors]
+export type PutApiTripsByIdError = PutApiTripsByIdErrors[keyof PutApiTripsByIdErrors]
 
 export type PutApiTripsByIdResponses = {
   /**
@@ -641,8 +638,7 @@ export type PutApiTripsByIdResponses = {
   200: UpdateTripResponse
 }
 
-export type PutApiTripsByIdResponse =
-  PutApiTripsByIdResponses[keyof PutApiTripsByIdResponses]
+export type PutApiTripsByIdResponse = PutApiTripsByIdResponses[keyof PutApiTripsByIdResponses]
 
 export type GetApiTransactionsData = {
   body?: never
@@ -661,8 +657,7 @@ export type GetApiTransactionsResponses = {
   200: Array<TransactionListItemResponse>
 }
 
-export type GetApiTransactionsResponse =
-  GetApiTransactionsResponses[keyof GetApiTransactionsResponses]
+export type GetApiTransactionsResponse = GetApiTransactionsResponses[keyof GetApiTransactionsResponses]
 
 export type PostApiTransactionsData = {
   body: CreateTransactionRequest
@@ -678,8 +673,7 @@ export type PostApiTransactionsErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type PostApiTransactionsError =
-  PostApiTransactionsErrors[keyof PostApiTransactionsErrors]
+export type PostApiTransactionsError = PostApiTransactionsErrors[keyof PostApiTransactionsErrors]
 
 export type PostApiTransactionsResponses = {
   /**
@@ -688,8 +682,7 @@ export type PostApiTransactionsResponses = {
   201: CreateTransactionResponse
 }
 
-export type PostApiTransactionsResponse =
-  PostApiTransactionsResponses[keyof PostApiTransactionsResponses]
+export type PostApiTransactionsResponse = PostApiTransactionsResponses[keyof PostApiTransactionsResponses]
 
 export type DeleteApiTransactionsByIdData = {
   body?: never
@@ -714,8 +707,7 @@ export type DeleteApiTransactionsByIdResponses = {
   204: void
 }
 
-export type DeleteApiTransactionsByIdResponse =
-  DeleteApiTransactionsByIdResponses[keyof DeleteApiTransactionsByIdResponses]
+export type DeleteApiTransactionsByIdResponse = DeleteApiTransactionsByIdResponses[keyof DeleteApiTransactionsByIdResponses]
 
 export type GetApiTransactionsByIdData = {
   body?: never
@@ -740,8 +732,7 @@ export type GetApiTransactionsByIdResponses = {
   200: GetTransactionResponse
 }
 
-export type GetApiTransactionsByIdResponse =
-  GetApiTransactionsByIdResponses[keyof GetApiTransactionsByIdResponses]
+export type GetApiTransactionsByIdResponse = GetApiTransactionsByIdResponses[keyof GetApiTransactionsByIdResponses]
 
 export type PutApiTransactionsByIdData = {
   body: UpdateTransactionRequest
@@ -763,8 +754,7 @@ export type PutApiTransactionsByIdErrors = {
   404: unknown
 }
 
-export type PutApiTransactionsByIdError =
-  PutApiTransactionsByIdErrors[keyof PutApiTransactionsByIdErrors]
+export type PutApiTransactionsByIdError = PutApiTransactionsByIdErrors[keyof PutApiTransactionsByIdErrors]
 
 export type PutApiTransactionsByIdResponses = {
   /**
@@ -773,8 +763,7 @@ export type PutApiTransactionsByIdResponses = {
   200: UpdateTransactionResponse
 }
 
-export type PutApiTransactionsByIdResponse =
-  PutApiTransactionsByIdResponses[keyof PutApiTransactionsByIdResponses]
+export type PutApiTransactionsByIdResponse = PutApiTransactionsByIdResponses[keyof PutApiTransactionsByIdResponses]
 
 export type GetApiTransactionsSearchData = {
   body?: never
@@ -802,8 +791,7 @@ export type GetApiTransactionsSearchResponses = {
   200: Array<TransactionListItemResponse>
 }
 
-export type GetApiTransactionsSearchResponse =
-  GetApiTransactionsSearchResponses[keyof GetApiTransactionsSearchResponses]
+export type GetApiTransactionsSearchResponse = GetApiTransactionsSearchResponses[keyof GetApiTransactionsSearchResponses]
 
 export type GetApiSettingsData = {
   body?: never
@@ -826,8 +814,7 @@ export type GetApiSettingsResponses = {
   200: UserSettingsResponse
 }
 
-export type GetApiSettingsResponse =
-  GetApiSettingsResponses[keyof GetApiSettingsResponses]
+export type GetApiSettingsResponse = GetApiSettingsResponses[keyof GetApiSettingsResponses]
 
 export type PutApiSettingsData = {
   body: UpdateUserSettingsRequest
@@ -847,8 +834,7 @@ export type PutApiSettingsErrors = {
   404: unknown
 }
 
-export type PutApiSettingsError =
-  PutApiSettingsErrors[keyof PutApiSettingsErrors]
+export type PutApiSettingsError = PutApiSettingsErrors[keyof PutApiSettingsErrors]
 
 export type PutApiSettingsResponses = {
   /**
@@ -857,8 +843,7 @@ export type PutApiSettingsResponses = {
   200: UserSettingsResponse
 }
 
-export type PutApiSettingsResponse =
-  PutApiSettingsResponses[keyof PutApiSettingsResponses]
+export type PutApiSettingsResponse = PutApiSettingsResponses[keyof PutApiSettingsResponses]
 
 export type PostApiSettingsResetDataData = {
   body?: never
@@ -881,8 +866,7 @@ export type PostApiSettingsResetDataResponses = {
   200: ResetUserDataResponse
 }
 
-export type PostApiSettingsResetDataResponse =
-  PostApiSettingsResetDataResponses[keyof PostApiSettingsResetDataResponses]
+export type PostApiSettingsResetDataResponse = PostApiSettingsResetDataResponses[keyof PostApiSettingsResetDataResponses]
 
 export type PostApiSeedDemoData = {
   body?: never
@@ -901,8 +885,7 @@ export type PostApiSeedDemoResponses = {
   200: SeedDemoResponse
 }
 
-export type PostApiSeedDemoResponse =
-  PostApiSeedDemoResponses[keyof PostApiSeedDemoResponses]
+export type PostApiSeedDemoResponse = PostApiSeedDemoResponses[keyof PostApiSeedDemoResponses]
 
 export type GetApiReportsCashflowSeriesData = {
   body?: never
@@ -922,8 +905,7 @@ export type GetApiReportsCashflowSeriesErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type GetApiReportsCashflowSeriesError =
-  GetApiReportsCashflowSeriesErrors[keyof GetApiReportsCashflowSeriesErrors]
+export type GetApiReportsCashflowSeriesError = GetApiReportsCashflowSeriesErrors[keyof GetApiReportsCashflowSeriesErrors]
 
 export type GetApiReportsCashflowSeriesResponses = {
   /**
@@ -932,8 +914,7 @@ export type GetApiReportsCashflowSeriesResponses = {
   200: CashflowSeriesReportResponse
 }
 
-export type GetApiReportsCashflowSeriesResponse =
-  GetApiReportsCashflowSeriesResponses[keyof GetApiReportsCashflowSeriesResponses]
+export type GetApiReportsCashflowSeriesResponse = GetApiReportsCashflowSeriesResponses[keyof GetApiReportsCashflowSeriesResponses]
 
 export type GetApiReportsCategorySeriesData = {
   body?: never
@@ -956,8 +937,7 @@ export type GetApiReportsCategorySeriesErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type GetApiReportsCategorySeriesError =
-  GetApiReportsCategorySeriesErrors[keyof GetApiReportsCategorySeriesErrors]
+export type GetApiReportsCategorySeriesError = GetApiReportsCategorySeriesErrors[keyof GetApiReportsCategorySeriesErrors]
 
 export type GetApiReportsCategorySeriesResponses = {
   /**
@@ -966,8 +946,7 @@ export type GetApiReportsCategorySeriesResponses = {
   200: CategorySeriesReportResponse
 }
 
-export type GetApiReportsCategorySeriesResponse =
-  GetApiReportsCategorySeriesResponses[keyof GetApiReportsCategorySeriesResponses]
+export type GetApiReportsCategorySeriesResponse = GetApiReportsCategorySeriesResponses[keyof GetApiReportsCategorySeriesResponses]
 
 export type GetApiReportsMonthlyYoyData = {
   body?: never
@@ -988,8 +967,7 @@ export type GetApiReportsMonthlyYoyErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type GetApiReportsMonthlyYoyError =
-  GetApiReportsMonthlyYoyErrors[keyof GetApiReportsMonthlyYoyErrors]
+export type GetApiReportsMonthlyYoyError = GetApiReportsMonthlyYoyErrors[keyof GetApiReportsMonthlyYoyErrors]
 
 export type GetApiReportsMonthlyYoyResponses = {
   /**
@@ -998,8 +976,7 @@ export type GetApiReportsMonthlyYoyResponses = {
   200: MonthlyYoyReportResponse
 }
 
-export type GetApiReportsMonthlyYoyResponse =
-  GetApiReportsMonthlyYoyResponses[keyof GetApiReportsMonthlyYoyResponses]
+export type GetApiReportsMonthlyYoyResponse = GetApiReportsMonthlyYoyResponses[keyof GetApiReportsMonthlyYoyResponses]
 
 export type GetApiReportsPortfolioBalanceSeriesData = {
   body?: never
@@ -1021,8 +998,7 @@ export type GetApiReportsPortfolioBalanceSeriesErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type GetApiReportsPortfolioBalanceSeriesError =
-  GetApiReportsPortfolioBalanceSeriesErrors[keyof GetApiReportsPortfolioBalanceSeriesErrors]
+export type GetApiReportsPortfolioBalanceSeriesError = GetApiReportsPortfolioBalanceSeriesErrors[keyof GetApiReportsPortfolioBalanceSeriesErrors]
 
 export type GetApiReportsPortfolioBalanceSeriesResponses = {
   /**
@@ -1031,8 +1007,7 @@ export type GetApiReportsPortfolioBalanceSeriesResponses = {
   200: PortfolioBalanceSeriesResponse
 }
 
-export type GetApiReportsPortfolioBalanceSeriesResponse =
-  GetApiReportsPortfolioBalanceSeriesResponses[keyof GetApiReportsPortfolioBalanceSeriesResponses]
+export type GetApiReportsPortfolioBalanceSeriesResponse = GetApiReportsPortfolioBalanceSeriesResponses[keyof GetApiReportsPortfolioBalanceSeriesResponses]
 
 export type PostApiReceiptsScanData = {
   body: {
@@ -1059,8 +1034,7 @@ export type PostApiReceiptsScanResponses = {
   200: ScanReceiptResponse
 }
 
-export type PostApiReceiptsScanResponse =
-  PostApiReceiptsScanResponses[keyof PostApiReceiptsScanResponses]
+export type PostApiReceiptsScanResponse = PostApiReceiptsScanResponses[keyof PostApiReceiptsScanResponses]
 
 export type GetApiProfileExportBackupData = {
   body?: never
@@ -1110,8 +1084,7 @@ export type PostApiProfileImportBackupResponses = {
   200: ImportBackupResponse
 }
 
-export type PostApiProfileImportBackupResponse =
-  PostApiProfileImportBackupResponses[keyof PostApiProfileImportBackupResponses]
+export type PostApiProfileImportBackupResponse = PostApiProfileImportBackupResponses[keyof PostApiProfileImportBackupResponses]
 
 export type GetApiCategoriesData = {
   body?: never
@@ -1127,8 +1100,7 @@ export type GetApiCategoriesResponses = {
   200: Array<CategoryHierarchyResponse>
 }
 
-export type GetApiCategoriesResponse =
-  GetApiCategoriesResponses[keyof GetApiCategoriesResponses]
+export type GetApiCategoriesResponse = GetApiCategoriesResponses[keyof GetApiCategoriesResponses]
 
 export type PostApiCategoriesData = {
   body: CreateCategoryRequest
@@ -1144,8 +1116,7 @@ export type PostApiCategoriesErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type PostApiCategoriesError =
-  PostApiCategoriesErrors[keyof PostApiCategoriesErrors]
+export type PostApiCategoriesError = PostApiCategoriesErrors[keyof PostApiCategoriesErrors]
 
 export type PostApiCategoriesResponses = {
   /**
@@ -1154,8 +1125,7 @@ export type PostApiCategoriesResponses = {
   201: CreateCategoryResponse
 }
 
-export type PostApiCategoriesResponse =
-  PostApiCategoriesResponses[keyof PostApiCategoriesResponses]
+export type PostApiCategoriesResponse = PostApiCategoriesResponses[keyof PostApiCategoriesResponses]
 
 export type DeleteApiCategoriesByIdData = {
   body?: never
@@ -1184,8 +1154,7 @@ export type DeleteApiCategoriesByIdResponses = {
   204: void
 }
 
-export type DeleteApiCategoriesByIdResponse =
-  DeleteApiCategoriesByIdResponses[keyof DeleteApiCategoriesByIdResponses]
+export type DeleteApiCategoriesByIdResponse = DeleteApiCategoriesByIdResponses[keyof DeleteApiCategoriesByIdResponses]
 
 export type PutApiCategoriesByIdData = {
   body: UpdateCategoryRequest
@@ -1207,8 +1176,7 @@ export type PutApiCategoriesByIdErrors = {
   404: unknown
 }
 
-export type PutApiCategoriesByIdError =
-  PutApiCategoriesByIdErrors[keyof PutApiCategoriesByIdErrors]
+export type PutApiCategoriesByIdError = PutApiCategoriesByIdErrors[keyof PutApiCategoriesByIdErrors]
 
 export type PutApiCategoriesByIdResponses = {
   /**
@@ -1217,8 +1185,7 @@ export type PutApiCategoriesByIdResponses = {
   200: UpdateCategoryResponse
 }
 
-export type PutApiCategoriesByIdResponse =
-  PutApiCategoriesByIdResponses[keyof PutApiCategoriesByIdResponses]
+export type PutApiCategoriesByIdResponse = PutApiCategoriesByIdResponses[keyof PutApiCategoriesByIdResponses]
 
 export type GetApiAuthLoginGoogleData = {
   body?: never
@@ -1250,8 +1217,7 @@ export type PostApiAuthLogoutResponses = {
   204: void
 }
 
-export type PostApiAuthLogoutResponse =
-  PostApiAuthLogoutResponses[keyof PostApiAuthLogoutResponses]
+export type PostApiAuthLogoutResponse = PostApiAuthLogoutResponses[keyof PostApiAuthLogoutResponses]
 
 export type GetApiAuthMeData = {
   body?: never
@@ -1278,8 +1244,7 @@ export type GetApiAuthMeResponses = {
   200: CurrentUserResponse
 }
 
-export type GetApiAuthMeResponse =
-  GetApiAuthMeResponses[keyof GetApiAuthMeResponses]
+export type GetApiAuthMeResponse = GetApiAuthMeResponses[keyof GetApiAuthMeResponses]
 
 export type GetApiAppInfoData = {
   body?: never
@@ -1295,8 +1260,7 @@ export type GetApiAppInfoResponses = {
   200: AppInfoResponse
 }
 
-export type GetApiAppInfoResponse =
-  GetApiAppInfoResponses[keyof GetApiAppInfoResponses]
+export type GetApiAppInfoResponse = GetApiAppInfoResponses[keyof GetApiAppInfoResponses]
 
 export type GetApiAccountsData = {
   body?: never
@@ -1312,8 +1276,7 @@ export type GetApiAccountsResponses = {
   200: Array<AccountListItemResponse>
 }
 
-export type GetApiAccountsResponse =
-  GetApiAccountsResponses[keyof GetApiAccountsResponses]
+export type GetApiAccountsResponse = GetApiAccountsResponses[keyof GetApiAccountsResponses]
 
 export type PostApiAccountsData = {
   body: CreateAccountRequest
@@ -1329,8 +1292,7 @@ export type PostApiAccountsErrors = {
   400: HttpValidationProblemDetails
 }
 
-export type PostApiAccountsError =
-  PostApiAccountsErrors[keyof PostApiAccountsErrors]
+export type PostApiAccountsError = PostApiAccountsErrors[keyof PostApiAccountsErrors]
 
 export type PostApiAccountsResponses = {
   /**
@@ -1339,8 +1301,7 @@ export type PostApiAccountsResponses = {
   201: CreateAccountResponse
 }
 
-export type PostApiAccountsResponse =
-  PostApiAccountsResponses[keyof PostApiAccountsResponses]
+export type PostApiAccountsResponse = PostApiAccountsResponses[keyof PostApiAccountsResponses]
 
 export type DeleteApiAccountsByIdData = {
   body?: never
@@ -1369,8 +1330,7 @@ export type DeleteApiAccountsByIdResponses = {
   204: void
 }
 
-export type DeleteApiAccountsByIdResponse =
-  DeleteApiAccountsByIdResponses[keyof DeleteApiAccountsByIdResponses]
+export type DeleteApiAccountsByIdResponse = DeleteApiAccountsByIdResponses[keyof DeleteApiAccountsByIdResponses]
 
 export type GetApiAccountsByIdData = {
   body?: never
@@ -1395,8 +1355,7 @@ export type GetApiAccountsByIdResponses = {
   200: GetAccountResponse
 }
 
-export type GetApiAccountsByIdResponse =
-  GetApiAccountsByIdResponses[keyof GetApiAccountsByIdResponses]
+export type GetApiAccountsByIdResponse = GetApiAccountsByIdResponses[keyof GetApiAccountsByIdResponses]
 
 export type PutApiAccountsByIdData = {
   body: UpdateAccountRequest
@@ -1418,8 +1377,7 @@ export type PutApiAccountsByIdErrors = {
   404: unknown
 }
 
-export type PutApiAccountsByIdError =
-  PutApiAccountsByIdErrors[keyof PutApiAccountsByIdErrors]
+export type PutApiAccountsByIdError = PutApiAccountsByIdErrors[keyof PutApiAccountsByIdErrors]
 
 export type PutApiAccountsByIdResponses = {
   /**
@@ -1428,5 +1386,4 @@ export type PutApiAccountsByIdResponses = {
   200: UpdateAccountResponse
 }
 
-export type PutApiAccountsByIdResponse =
-  PutApiAccountsByIdResponses[keyof PutApiAccountsByIdResponses]
+export type PutApiAccountsByIdResponse = PutApiAccountsByIdResponses[keyof PutApiAccountsByIdResponses]

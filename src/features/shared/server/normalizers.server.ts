@@ -1,12 +1,5 @@
-import {
-  normalizeCurrencyOrNull,
-  supportedCurrencies,
-} from "@/lib/currency"
-import {
-  accountTypes,
-  categoryTypes,
-  transactionTypes,
-} from "@/lib/db/schema"
+import { normalizeCurrencyOrNull, supportedCurrencies } from "@/lib/currency"
+import { accountTypes, categoryTypes, transactionTypes } from "@/lib/db/schema"
 
 type AccountType = (typeof accountTypes)[number]
 type CategoryType = (typeof categoryTypes)[number]
@@ -56,9 +49,7 @@ export function normalizeColor(value: string) {
     throw new Error("Color must be a 6-digit hex value.")
   }
 
-  return normalized.startsWith("#")
-    ? normalized.toUpperCase()
-    : `#${normalized.toUpperCase()}`
+  return normalized.startsWith("#") ? normalized.toUpperCase() : `#${normalized.toUpperCase()}`
 }
 
 export function normalizeCategoryColor(value: string) {
@@ -178,10 +169,7 @@ export function normalizeTransactionType(value: string): TransactionType {
   return value as TransactionType
 }
 
-export function normalizeSupportedCurrency(
-  value: string | null | undefined,
-  fieldName: string
-) {
+export function normalizeSupportedCurrency(value: string | null | undefined, fieldName: string) {
   const normalized = normalizeCurrencyOrNull(value)
 
   if (!normalized) {
@@ -191,9 +179,7 @@ export function normalizeSupportedCurrency(
   return normalized
 }
 
-export function normalizeOptionalSupportedCurrency(
-  value: string | null | undefined
-) {
+export function normalizeOptionalSupportedCurrency(value: string | null | undefined) {
   if (!value || value.trim().length === 0) {
     return null
   }

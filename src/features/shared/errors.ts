@@ -1,8 +1,6 @@
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null
 
-const pickString = (value: unknown): string | null =>
-  typeof value === "string" && value.trim().length > 0 ? value.trim() : null
+const pickString = (value: unknown): string | null => (typeof value === "string" && value.trim().length > 0 ? value.trim() : null)
 
 const pickValidationMessage = (value: unknown): string | null => {
   if (!isRecord(value)) {
@@ -28,10 +26,7 @@ const pickValidationMessage = (value: unknown): string | null => {
   return null
 }
 
-export const getApiErrorMessage = (
-  error: unknown,
-  fallback = "Something went wrong. Please try again."
-) => {
+export const getApiErrorMessage = (error: unknown, fallback = "Something went wrong. Please try again.") => {
   const direct = pickString(error)
   if (direct) {
     return direct
@@ -45,10 +40,7 @@ export const getApiErrorMessage = (
   }
 
   if (isRecord(error)) {
-    const message =
-      pickString(error.message) ??
-      pickString(error.detail) ??
-      pickString(error.title)
+    const message = pickString(error.message) ?? pickString(error.detail) ?? pickString(error.title)
     if (message) {
       return message
     }

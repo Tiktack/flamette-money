@@ -1,44 +1,16 @@
 import * as React from "react"
 
-import {
-  CheckmarkCircle02Icon,
-  Loading03Icon,
-} from "@hugeicons/core-free-icons"
+import { CheckmarkCircle02Icon, Loading03Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { createFileRoute } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Field,
-  FieldContent,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
@@ -46,17 +18,10 @@ import { useAppInfo, useCurrentUser } from "@/features/app/hooks"
 import { useSeedDemo } from "@/features/demo-seed/hooks"
 import type { BackupImportType } from "@/features/profile-backup/types"
 import { getApiErrorMessage } from "@/features/shared/errors"
-import {
-  useExportBackup,
-  useImportBackup,
-  useResetData,
-  useSettings,
-  useUpdateSettings,
-} from "@/features/settings/hooks"
+import { useExportBackup, useImportBackup, useResetData, useSettings, useUpdateSettings } from "@/features/settings/hooks"
 
 const fileAcceptByImportType: Record<BackupImportType, string> = {
-  flamette:
-    ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  flamette: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "one-money": ".csv,text/csv",
 }
 
@@ -85,8 +50,7 @@ function SettingsPage() {
   const [importOpen, setImportOpen] = React.useState(false)
   const [seedOpen, setSeedOpen] = React.useState(false)
   const [resetOpen, setResetOpen] = React.useState(false)
-  const [importType, setImportType] =
-    React.useState<BackupImportType>("flamette")
+  const [importType, setImportType] = React.useState<BackupImportType>("flamette")
   const [importFile, setImportFile] = React.useState<File | null>(null)
   const [importConfirmed, setImportConfirmed] = React.useState(false)
   const [resetConfirmed, setResetConfirmed] = React.useState(false)
@@ -101,22 +65,14 @@ function SettingsPage() {
   const seedFeedback = useTransientFeedback()
   const resetFeedback = useTransientFeedback()
 
-  const currentBaseCurrency =
-    settingsQuery.data?.baseCurrency ??
-    currentUserQuery.data?.baseCurrency ??
-    "USD"
-  const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) =>
-    item.code.toUpperCase()
-  ) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
+  const currentBaseCurrency = settingsQuery.data?.baseCurrency ?? currentUserQuery.data?.baseCurrency ?? "USD"
+  const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
   const isPageLoading = currentUserQuery.isLoading && !currentUserQuery.data
   const isBaseCurrencyDirty = baseCurrency !== currentBaseCurrency
   const seedButtonBusy = seedDemo.isPending || exportBackup.isPending
   const importRequiresConfirmation = importType === "flamette"
   const importAccept = fileAcceptByImportType[importType]
-  const importHint =
-    importType === "flamette"
-      ? "Full workspace restore."
-      : "Import from a 1Money CSV export."
+  const importHint = importType === "flamette" ? "Full workspace restore." : "Import from a 1Money CSV export."
 
   React.useEffect(() => {
     setBaseCurrency(currentBaseCurrency)
@@ -251,11 +207,7 @@ function SettingsPage() {
           <FieldGroup className="gap-3">
             <Field>
               <FieldLabel>Base currency</FieldLabel>
-              <Select
-                value={baseCurrency}
-                onValueChange={handleBaseCurrencyChange}
-                disabled={updateSettings.isPending}
-              >
+              <Select value={baseCurrency} onValueChange={handleBaseCurrencyChange} disabled={updateSettings.isPending}>
                 <SelectTrigger aria-label="Base currency">
                   <SelectValue placeholder="Base currency" />
                 </SelectTrigger>
@@ -270,27 +222,13 @@ function SettingsPage() {
                 </SelectContent>
               </Select>
             </Field>
-            {saveError ? (
-              <p className="text-sm text-destructive">{saveError}</p>
-            ) : null}
+            {saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
           </FieldGroup>
 
-          <Button
-            size="sm"
-            onClick={handleSaveSettings}
-            disabled={!isBaseCurrencyDirty || updateSettings.isPending}
-          >
+          <Button size="sm" onClick={handleSaveSettings} disabled={!isBaseCurrencyDirty || updateSettings.isPending}>
             {updateSettings.isPending ? <StatusIcon /> : null}
-            {!updateSettings.isPending && saveFeedback.state === "success" ? (
-              <StatusIcon success />
-            ) : null}
-            {updateSettings.isPending
-              ? "Saving"
-              : saveFeedback.state === "success"
-                ? "Saved"
-                : saveFeedback.state === "error"
-                  ? "Retry"
-                  : "Save"}
+            {!updateSettings.isPending && saveFeedback.state === "success" ? <StatusIcon success /> : null}
+            {updateSettings.isPending ? "Saving" : saveFeedback.state === "success" ? "Saved" : saveFeedback.state === "error" ? "Retry" : "Save"}
           </Button>
         </CardContent>
       </Card>
@@ -305,24 +243,10 @@ function SettingsPage() {
             title="Export backup"
             description={exportError ?? "Full workspace .xlsx"}
             action={
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportBackup}
-                disabled={exportBackup.isPending}
-              >
+              <Button size="sm" variant="outline" onClick={handleExportBackup} disabled={exportBackup.isPending}>
                 {exportBackup.isPending ? <StatusIcon /> : null}
-                {!exportBackup.isPending &&
-                exportFeedback.state === "success" ? (
-                  <StatusIcon success />
-                ) : null}
-                {exportBackup.isPending
-                  ? "Preparing"
-                  : exportFeedback.state === "success"
-                    ? "Exported"
-                    : exportFeedback.state === "error"
-                      ? "Retry"
-                      : "Export"}
+                {!exportBackup.isPending && exportFeedback.state === "success" ? <StatusIcon success /> : null}
+                {exportBackup.isPending ? "Preparing" : exportFeedback.state === "success" ? "Exported" : exportFeedback.state === "error" ? "Retry" : "Export"}
               </Button>
             }
           />
@@ -333,20 +257,9 @@ function SettingsPage() {
             title="Import data"
             description={importError ?? "All formats in one dialog."}
             action={
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setImportOpen(true)}
-                disabled={importBackup.isPending}
-              >
-                {importFeedback.state === "success" ? (
-                  <StatusIcon success />
-                ) : null}
-                {importFeedback.state === "success"
-                  ? "Imported"
-                  : importFeedback.state === "error"
-                    ? "Retry"
-                    : "Import"}
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} disabled={importBackup.isPending}>
+                {importFeedback.state === "success" ? <StatusIcon success /> : null}
+                {importFeedback.state === "success" ? "Imported" : importFeedback.state === "error" ? "Retry" : "Import"}
               </Button>
             }
           />
@@ -355,25 +268,11 @@ function SettingsPage() {
 
           <ActionRow
             title="Sample data"
-            description={
-              seedError ??
-              `${formatYearSummary(years)}${downloadAfterSeed ? " · backup on" : ""}`
-            }
+            description={seedError ?? `${formatYearSummary(years)}${downloadAfterSeed ? " · backup on" : ""}`}
             action={
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setSeedOpen(true)}
-                disabled={seedDemo.isPending || exportBackup.isPending}
-              >
-                {seedFeedback.state === "success" ? (
-                  <StatusIcon success />
-                ) : null}
-                {seedFeedback.state === "success"
-                  ? "Generated"
-                  : seedFeedback.state === "error"
-                    ? "Retry"
-                    : "Configure"}
+              <Button size="sm" variant="outline" onClick={() => setSeedOpen(true)} disabled={seedDemo.isPending || exportBackup.isPending}>
+                {seedFeedback.state === "success" ? <StatusIcon success /> : null}
+                {seedFeedback.state === "success" ? "Generated" : seedFeedback.state === "error" ? "Retry" : "Configure"}
               </Button>
             }
           />
@@ -390,20 +289,9 @@ function SettingsPage() {
             title="Reset workspace"
             description={resetError ?? "Keeps your profile and preferences."}
             action={
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => setResetOpen(true)}
-                disabled={resetData.isPending}
-              >
-                {resetFeedback.state === "success" ? (
-                  <StatusIcon success />
-                ) : null}
-                {resetFeedback.state === "success"
-                  ? "Cleared"
-                  : resetFeedback.state === "error"
-                    ? "Retry"
-                    : "Reset"}
+              <Button size="sm" variant="destructive" onClick={() => setResetOpen(true)} disabled={resetData.isPending}>
+                {resetFeedback.state === "success" ? <StatusIcon success /> : null}
+                {resetFeedback.state === "success" ? "Cleared" : resetFeedback.state === "error" ? "Retry" : "Reset"}
               </Button>
             }
           />
@@ -450,12 +338,8 @@ function SettingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="flamette">
-                      {importFormatLabels.flamette}
-                    </SelectItem>
-                    <SelectItem value="one-money">
-                      {importFormatLabels["one-money"]}
-                    </SelectItem>
+                    <SelectItem value="flamette">{importFormatLabels.flamette}</SelectItem>
+                    <SelectItem value="one-money">{importFormatLabels["one-money"]}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -473,9 +357,7 @@ function SettingsPage() {
                   setImportFile(event.target.files?.[0] ?? null)
                 }}
               />
-              <p className="text-sm text-muted-foreground">
-                {importFile ? importFile.name : importHint}
-              </p>
+              <p className="text-sm text-muted-foreground">{importFile ? importFile.name : importHint}</p>
             </Field>
 
             {importRequiresConfirmation ? (
@@ -490,16 +372,12 @@ function SettingsPage() {
                   }}
                 />
                 <FieldContent>
-                  <FieldLabel htmlFor="import-confirmation">
-                    Replace current workspace data
-                  </FieldLabel>
+                  <FieldLabel htmlFor="import-confirmation">Replace current workspace data</FieldLabel>
                 </FieldContent>
               </Field>
             ) : null}
 
-            {importError ? (
-              <p className="text-sm text-destructive">{importError}</p>
-            ) : null}
+            {importError ? <p className="text-sm text-destructive">{importError}</p> : null}
           </FieldGroup>
 
           <DialogFooter>
@@ -509,20 +387,10 @@ function SettingsPage() {
             <Button
               variant={importRequiresConfirmation ? "destructive" : "default"}
               onClick={handleImportData}
-              disabled={
-                !importFile ||
-                (importRequiresConfirmation && !importConfirmed) ||
-                importBackup.isPending
-              }
+              disabled={!importFile || (importRequiresConfirmation && !importConfirmed) || importBackup.isPending}
             >
               {importBackup.isPending ? <StatusIcon /> : null}
-              {importBackup.isPending
-                ? "Importing"
-                : importFeedback.state === "error"
-                  ? "Retry"
-                  : importRequiresConfirmation
-                    ? "Restore"
-                    : "Import"}
+              {importBackup.isPending ? "Importing" : importFeedback.state === "error" ? "Retry" : importRequiresConfirmation ? "Restore" : "Import"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -549,11 +417,7 @@ function SettingsPage() {
                     setSeedError(null)
                     seedFeedback.reset()
                     const nextYears = Number(event.target.value)
-                    setYears(
-                      Number.isFinite(nextYears) && nextYears > 0
-                        ? Math.min(Math.trunc(nextYears), 20)
-                        : 1
-                    )
+                    setYears(Number.isFinite(nextYears) && nextYears > 0 ? Math.min(Math.trunc(nextYears), 20) : 1)
                   }}
                 />
               </Field>
@@ -585,15 +449,11 @@ function SettingsPage() {
                 }}
               />
               <FieldContent>
-                <FieldLabel htmlFor="download-after-seed">
-                  Download backup after generation
-                </FieldLabel>
+                <FieldLabel htmlFor="download-after-seed">Download backup after generation</FieldLabel>
               </FieldContent>
             </Field>
 
-            {seedError ? (
-              <p className="text-sm text-destructive">{seedError}</p>
-            ) : null}
+            {seedError ? <p className="text-sm text-destructive">{seedError}</p> : null}
           </FieldGroup>
 
           <DialogFooter>
@@ -602,11 +462,7 @@ function SettingsPage() {
             </Button>
             <Button onClick={handleSeed} disabled={seedButtonBusy}>
               {seedButtonBusy ? <StatusIcon /> : null}
-              {seedButtonBusy
-                ? "Working"
-                : seedFeedback.state === "error"
-                  ? "Retry"
-                  : "Generate"}
+              {seedButtonBusy ? "Working" : seedFeedback.state === "error" ? "Retry" : "Generate"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -626,9 +482,7 @@ function SettingsPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Reset workspace</DialogTitle>
-            <DialogDescription>
-              This permanently deletes workspace data.
-            </DialogDescription>
+            <DialogDescription>This permanently deletes workspace data.</DialogDescription>
           </DialogHeader>
 
           <FieldGroup className="gap-4">
@@ -643,32 +497,20 @@ function SettingsPage() {
                 }}
               />
               <FieldContent>
-                <FieldLabel htmlFor="reset-confirmation">
-                  I want to remove all workspace data
-                </FieldLabel>
+                <FieldLabel htmlFor="reset-confirmation">I want to remove all workspace data</FieldLabel>
               </FieldContent>
             </Field>
 
-            {resetError ? (
-              <p className="text-sm text-destructive">{resetError}</p>
-            ) : null}
+            {resetError ? <p className="text-sm text-destructive">{resetError}</p> : null}
           </FieldGroup>
 
           <DialogFooter>
             <Button variant="outline" onClick={resetResetState}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReset}
-              disabled={!resetConfirmed || resetData.isPending}
-            >
+            <Button variant="destructive" onClick={handleReset} disabled={!resetConfirmed || resetData.isPending}>
               {resetData.isPending ? <StatusIcon /> : null}
-              {resetData.isPending
-                ? "Resetting"
-                : resetFeedback.state === "error"
-                  ? "Retry"
-                  : "Reset"}
+              {resetData.isPending ? "Resetting" : resetFeedback.state === "error" ? "Retry" : "Reset"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -677,15 +519,7 @@ function SettingsPage() {
   )
 }
 
-function ActionRow({
-  title,
-  description,
-  action,
-}: {
-  title: string
-  description: string
-  action: React.ReactNode
-}) {
+function ActionRow({ title, description, action }: { title: string; description: string; action: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="space-y-0.5">
@@ -699,18 +533,9 @@ function ActionRow({
 
 function StatusIcon({ success = false }: { success?: boolean }) {
   return success ? (
-    <HugeiconsIcon
-      icon={CheckmarkCircle02Icon}
-      strokeWidth={2}
-      data-icon="inline-start"
-    />
+    <HugeiconsIcon icon={CheckmarkCircle02Icon} strokeWidth={2} data-icon="inline-start" />
   ) : (
-    <HugeiconsIcon
-      icon={Loading03Icon}
-      strokeWidth={2}
-      data-icon="inline-start"
-      className="animate-spin"
-    />
+    <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} data-icon="inline-start" className="animate-spin" />
   )
 }
 

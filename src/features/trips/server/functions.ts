@@ -1,15 +1,10 @@
 import { createServerFn } from "@tanstack/react-start"
 
-import {
-  tripRequestSchema,
-  tripUpdateSchema,
-} from "@/features/shared/server/validators"
+import { tripRequestSchema, tripUpdateSchema } from "@/features/shared/server/validators"
 
 import { createTripData, listTripsData, updateTripData } from "./service.server"
 
-export const getTrips = createServerFn({ method: "GET" }).handler(async () =>
-  listTripsData()
-)
+export const getTrips = createServerFn({ method: "GET" }).handler(async () => listTripsData())
 
 export const createTrip = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => tripRequestSchema.parse(data))

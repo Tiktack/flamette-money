@@ -1,18 +1,8 @@
 import { Link } from "@tanstack/react-router"
 
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 
-type AnalyticsRoute =
-  | "/analytics/cashflow"
-  | "/analytics/comparison"
-  | "/analytics/portfolio"
-  | "/analytics/categories"
+type AnalyticsRoute = "/analytics/cashflow" | "/analytics/comparison" | "/analytics/portfolio" | "/analytics/categories"
 
 export function NavDocuments({
   label = "Analytics Views",
@@ -31,10 +21,7 @@ export function NavDocuments({
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton
-              render={<Link to={item.to} />}
-              isActive={item.isActive}
-            >
+            <SidebarMenuButton render={<Link to={item.to} />} isActive={item.isActive}>
               <span>{item.name}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

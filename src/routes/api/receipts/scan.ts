@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import {
-  handleReceiptScanRequest,
-  toReceiptScanErrorResponse,
-} from "@/features/receipt-scan/server/service.server"
+import { handleReceiptScanRequest, toReceiptScanErrorResponse } from "@/features/receipt-scan/server/service.server"
 
 export const Route = createFileRoute("/api/receipts/scan")({
   server: {

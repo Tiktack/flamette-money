@@ -1,7 +1,4 @@
-import type {
-  TransactionListItem,
-  TransactionType,
-} from "@/features/transactions/types"
+import type { TransactionListItem, TransactionType } from "@/features/transactions/types"
 import type { CategoryHierarchy } from "@/features/categories/types"
 
 export const DEFAULT_ACCOUNT_COLOR = "#B9A88A"
@@ -24,10 +21,7 @@ export function toNumber(value: number | string | null | undefined) {
   return 0
 }
 
-export function normalizeHexColor(
-  value?: string | null,
-  fallback = DEFAULT_ACCOUNT_COLOR
-) {
+export function normalizeHexColor(value?: string | null, fallback = DEFAULT_ACCOUNT_COLOR) {
   if (!value) {
     return fallback
   }
@@ -35,11 +29,7 @@ export function normalizeHexColor(
   return value.startsWith("#") ? value : `#${value}`
 }
 
-export function formatCurrency(
-  value: number | string | null | undefined,
-  currency = "USD",
-  minimumFractionDigits = 0
-) {
+export function formatCurrency(value: number | string | null | undefined, currency = "USD", minimumFractionDigits = 0) {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
@@ -136,10 +126,7 @@ export function transactionTone(type: TransactionType, isRefund?: boolean) {
   return "text-foreground"
 }
 
-export function getCategoryLabel(
-  transaction: TransactionListItem,
-  categoryMap: Map<string, CategoryHierarchy>
-) {
+export function getCategoryLabel(transaction: TransactionListItem, categoryMap: Map<string, CategoryHierarchy>) {
   if (transaction.type === "Transfer") {
     return "Transfer"
   }

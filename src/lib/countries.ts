@@ -598,9 +598,7 @@ export const ALPHA2_TO_NUMERIC: Record<string, string> = {
 }
 
 /** Reverse lookup: numeric ID → alpha-2. */
-export const NUMERIC_TO_ALPHA2: Record<string, string> = Object.fromEntries(
-  Object.entries(ALPHA2_TO_NUMERIC).map(([a2, num]) => [num, a2])
-)
+export const NUMERIC_TO_ALPHA2: Record<string, string> = Object.fromEntries(Object.entries(ALPHA2_TO_NUMERIC).map(([a2, num]) => [num, a2]))
 
 /** Sorted list of country options for select dropdowns. */
 export const COUNTRY_OPTIONS = Object.entries(COUNTRIES)

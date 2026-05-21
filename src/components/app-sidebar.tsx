@@ -6,25 +6,9 @@ import { Link, useRouterState } from "@tanstack/react-router"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-} from "@/components/ui/sidebar"
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  ChartRingIcon,
-  CommandIcon,
-  CreditCardIcon,
-  MapsIcon,
-  PieChartIcon,
-  SentIcon,
-} from "@hugeicons/core-free-icons"
+import { ChartRingIcon, CommandIcon, CreditCardIcon, MapsIcon, PieChartIcon, SentIcon } from "@hugeicons/core-free-icons"
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user: {
@@ -39,15 +23,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   onLogout: () => void
 }
 
-export function AppSidebar({
-  user,
-  theme,
-  isLoggingOut,
-  onNewTransaction,
-  onToggleTheme,
-  onLogout,
-  ...props
-}: AppSidebarProps) {
+export function AppSidebar({ user, theme, isLoggingOut, onNewTransaction, onToggleTheme, onLogout, ...props }: AppSidebarProps) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -115,15 +91,8 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-              render={<Link to="/analytics/comparison" />}
-            >
-              <HugeiconsIcon
-                icon={CommandIcon}
-                strokeWidth={2}
-                className="size-5!"
-              />
+            <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5!" render={<Link to="/analytics/comparison" />}>
+              <HugeiconsIcon icon={CommandIcon} strokeWidth={2} className="size-5!" />
               <span className="text-base font-semibold">Flamette Money</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -139,13 +108,7 @@ export function AppSidebar({
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser
-          user={user}
-          theme={theme}
-          isLoggingOut={isLoggingOut}
-          onToggleTheme={onToggleTheme}
-          onLogout={onLogout}
-        />
+        <NavUser user={user} theme={theme} isLoggingOut={isLoggingOut} onToggleTheme={onToggleTheme} onLogout={onLogout} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

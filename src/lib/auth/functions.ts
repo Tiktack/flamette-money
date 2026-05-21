@@ -4,11 +4,9 @@ import { getAvailableSocialAuthProviders as getAvailableSocialAuthProvidersData 
 import { getCurrentUserProfileData } from "@/lib/auth/session.server"
 import type { SocialAuthProvider } from "@/lib/auth/providers"
 
-export const getCurrentUserProfile = createServerFn({ method: "GET" }).handler(
-  async () => {
-    return getCurrentUserProfileData()
-  }
-)
+export const getCurrentUserProfile = createServerFn({ method: "GET" }).handler(async () => {
+  return getCurrentUserProfileData()
+})
 
 export const getAvailableSocialAuthProviders = createServerFn({
   method: "GET",

@@ -59,13 +59,9 @@ const accountIconAliases: Record<string, AccountIconName> = {
   IconCashBanknote: "Cash01Icon",
 }
 
-const accountIconsByName = new Map(
-  accountIconOptions.map((item) => [item.name, item])
-)
+const accountIconsByName = new Map(accountIconOptions.map((item) => [item.name, item]))
 
-export function resolveAccountIconName(
-  iconName?: string | null
-): AccountIconName {
+export function resolveAccountIconName(iconName?: string | null): AccountIconName {
   if (!iconName) {
     return defaultAccountIcon.name as AccountIconName
   }
@@ -81,11 +77,6 @@ export function resolveAccountIconName(
   return defaultAccountIcon.name as AccountIconName
 }
 
-export function getAccountIconDefinition(
-  iconName?: string | null
-): AccountIconDefinition {
-  return (
-    accountIconsByName.get(resolveAccountIconName(iconName)) ??
-    defaultAccountIcon
-  )
+export function getAccountIconDefinition(iconName?: string | null): AccountIconDefinition {
+  return accountIconsByName.get(resolveAccountIconName(iconName)) ?? defaultAccountIcon
 }

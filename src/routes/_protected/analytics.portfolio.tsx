@@ -1,68 +1,30 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts"
 
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-import {
-  computeNiceDomainTicks,
-  formatCompactNumber,
-  formatTimeSeriesAxisLabel,
-} from "@/lib/chart-utils"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { computeNiceDomainTicks, formatCompactNumber, formatTimeSeriesAxisLabel } from "@/lib/chart-utils"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
 import { useCurrentUser } from "@/features/app/hooks"
 import { usePortfolioBalanceSeriesReport } from "@/features/reports/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
-import {
-  resolveSharedDateRange,
-  toApiDateString,
-  useSharedDateRangeFilters,
-} from "@/lib/state/sharedDateRangeFilters"
+import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
 export const Route = createFileRoute("/_protected/analytics/portfolio")({
   component: AnalyticsPortfolioPage,
 })
 
 function AnalyticsPortfolioPage() {
-  const [interval, setInterval] = React.useState<
-    "Auto" | "Day" | "Week" | "Month"
-  >("Auto")
+  const [interval, setInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
   const currentUserQuery = useCurrentUser()
   const baseCurrency = currentUserQuery.data?.baseCurrency ?? "USD"
   const dateFilters = useSharedDateRangeFilters()
-  const resolvedDateRange = React.useMemo(
-    () => resolveSharedDateRange(dateFilters),
-    [dateFilters]
-  )
+  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
 
   const query = React.useMemo(() => {
     const value: {
@@ -89,48 +51,22 @@ function AnalyticsPortfolioPage() {
   const reportQuery = usePortfolioBalanceSeriesReport(query)
   const resolvedBaseCurrency = reportQuery.data?.baseCurrency ?? baseCurrency
   const today = React.useMemo(() => new Date(), [])
-  const todayStart = React.useMemo(
-    () => new Date(today.getFullYear(), today.getMonth(), today.getDate()),
-    [today]
-  )
-  const todayEnd = React.useMemo(
-    () =>
-      new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-        23,
-        59,
-        59,
-        999
-      ),
-    [today]
-  )
+  const todayStart = React.useMemo(() => new Date(today.getFullYear(), today.getMonth(), today.getDate()), [today])
+  const todayEnd = React.useMemo(() => new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999), [today])
   const chartPresentation = React.useMemo(() => {
     const points = reportQuery.data?.points ?? []
-    const startDate = reportQuery.data?.startDate
-      ? new Date(reportQuery.data.startDate)
-      : null
-    const endDate = reportQuery.data?.endDate
-      ? new Date(reportQuery.data.endDate)
-      : null
+    const startDate = reportQuery.data?.startDate ? new Date(reportQuery.data.startDate) : null
+    const endDate = reportQuery.data?.endDate ? new Date(reportQuery.data.endDate) : null
     const reportInterval = reportQuery.data?.interval
 
     let currentBucketIndex = -1
 
-    const hasProjection =
-      startDate !== null &&
-      endDate !== null &&
-      startDate.getTime() <= todayEnd.getTime() &&
-      endDate.getTime() > todayEnd.getTime()
+    const hasProjection = startDate !== null && endDate !== null && startDate.getTime() <= todayEnd.getTime() && endDate.getTime() > todayEnd.getTime()
 
     const tickLabels = new Map<string, string>()
     const data = points.map((point, index) => {
       const bucketEnd = new Date(point.bucketDate)
-      const bucketStart =
-        index === 0
-          ? (startDate ?? bucketEnd)
-          : new Date(new Date(points[index - 1]!.bucketDate).getTime() + 1)
+      const bucketStart = index === 0 ? (startDate ?? bucketEnd) : new Date(new Date(points[index - 1]!.bucketDate).getTime() + 1)
       const rawBalance = toNumber(point.totalBalance)
       const tickLabel = formatTimeSeriesAxisLabel({
         interval: reportInterval,
@@ -139,11 +75,7 @@ function AnalyticsPortfolioPage() {
         bucketStart,
       })
 
-      if (
-        currentBucketIndex === -1 &&
-        bucketStart.getTime() <= todayEnd.getTime() &&
-        bucketEnd.getTime() >= todayStart.getTime()
-      ) {
+      if (currentBucketIndex === -1 && bucketStart.getTime() <= todayEnd.getTime() && bucketEnd.getTime() >= todayStart.getTime()) {
         currentBucketIndex = index
       }
 
@@ -151,38 +83,21 @@ function AnalyticsPortfolioPage() {
 
       return {
         period: point.bucketLabel,
-        balance:
-          hasProjection && currentBucketIndex >= 0 && index > currentBucketIndex
-            ? null
-            : rawBalance,
+        balance: hasProjection && currentBucketIndex >= 0 && index > currentBucketIndex ? null : rawBalance,
         rawBalance,
       }
     })
 
     return {
       data,
-      hasProjection:
-        hasProjection &&
-        currentBucketIndex >= 0 &&
-        currentBucketIndex < points.length - 1,
+      hasProjection: hasProjection && currentBucketIndex >= 0 && currentBucketIndex < points.length - 1,
       currentBucketIndex,
       tickLabels,
     }
-  }, [
-    reportQuery.data?.endDate,
-    reportQuery.data?.interval,
-    reportQuery.data?.points,
-    reportQuery.data?.startDate,
-    todayStart,
-    todayEnd,
-  ])
+  }, [reportQuery.data?.endDate, reportQuery.data?.interval, reportQuery.data?.points, reportQuery.data?.startDate, todayStart, todayEnd])
   const chartData = chartPresentation.data
   const projectionSegment = React.useMemo(() => {
-    if (
-      !chartPresentation.hasProjection ||
-      chartPresentation.currentBucketIndex < 0 ||
-      chartData.length < 2
-    ) {
+    if (!chartPresentation.hasProjection || chartPresentation.currentBucketIndex < 0 || chartData.length < 2) {
       return null
     }
 
@@ -197,16 +112,10 @@ function AnalyticsPortfolioPage() {
       { x: lastActualPoint.period, y: lastActualPoint.rawBalance },
       { x: lastPoint.period, y: lastActualPoint.rawBalance },
     ] as const
-  }, [
-    chartData,
-    chartPresentation.hasProjection,
-    chartPresentation.currentBucketIndex,
-  ])
+  }, [chartData, chartPresentation.hasProjection, chartPresentation.currentBucketIndex])
 
   const yAxisConfig = React.useMemo(() => {
-    const values = chartData
-      .map((d) => d.rawBalance)
-      .filter((v) => typeof v === "number" && isFinite(v))
+    const values = chartData.map((d) => d.rawBalance).filter((v) => typeof v === "number" && isFinite(v))
     const { domain, ticks } = computeNiceDomainTicks(values, {
       tickCount: 4,
       paddingFraction: 0.08,
@@ -231,32 +140,21 @@ function AnalyticsPortfolioPage() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <CardTitle>Portfolio balance trend</CardTitle>
-                <CardDescription>
-                  Track total balances over time in your selected base currency.
-                </CardDescription>
+                <CardDescription>Track total balances over time in your selected base currency.</CardDescription>
               </div>
               <div className="flex min-w-36 flex-col gap-2">
-                <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-                  Interval
-                </span>
-                <Select
-                  value={interval}
-                  onValueChange={(value) =>
-                    setInterval((value as typeof interval) ?? "Auto")
-                  }
-                >
+                <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">Interval</span>
+                <Select value={interval} onValueChange={(value) => setInterval((value as typeof interval) ?? "Auto")}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Interval" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {(["Auto", "Day", "Week", "Month"] as const).map(
-                        (value) => (
-                          <SelectItem key={value} value={value}>
-                            {value}
-                          </SelectItem>
-                        )
-                      )}
+                      {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
@@ -270,10 +168,7 @@ function AnalyticsPortfolioPage() {
               <EmptyState
                 eyebrow="Report"
                 title="Unable to load the balance report"
-                description={getApiErrorMessage(
-                  reportQuery.error,
-                  "Try a different range or interval."
-                )}
+                description={getApiErrorMessage(reportQuery.error, "Try a different range or interval.")}
               />
             ) : chartData.length === 0 ? (
               <EmptyState
@@ -283,18 +178,12 @@ function AnalyticsPortfolioPage() {
               />
             ) : (
               <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-                <AreaChart
-                  data={chartData}
-                  margin={{ left: 8, right: 8, top: 12 }}
-                >
+                <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis
                     axisLine={false}
                     dataKey="period"
-                    tickFormatter={(value) =>
-                      chartPresentation.tickLabels.get(String(value)) ??
-                      String(value)
-                    }
+                    tickFormatter={(value) => chartPresentation.tickLabels.get(String(value)) ?? String(value)}
                     tickLine={false}
                   />
                   <YAxis
@@ -304,25 +193,11 @@ function AnalyticsPortfolioPage() {
                     ticks={yAxisConfig.ticks}
                     tickFormatter={(v) => formatCompactNumber(Number(v ?? 0))}
                   />
-                  <ChartTooltip
-                    content={<ChartTooltipContent indicator="line" />}
-                  />
+                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                   {projectionSegment ? (
-                    <ReferenceLine
-                      ifOverflow="extendDomain"
-                      segment={projectionSegment}
-                      stroke="var(--color-balance)"
-                      strokeDasharray="4 4"
-                      strokeWidth={2}
-                    />
+                    <ReferenceLine ifOverflow="extendDomain" segment={projectionSegment} stroke="var(--color-balance)" strokeDasharray="4 4" strokeWidth={2} />
                   ) : null}
-                  <Area
-                    dataKey="balance"
-                    fill="var(--color-balance)"
-                    fillOpacity={0.18}
-                    stroke="var(--color-balance)"
-                    type="linear"
-                  />
+                  <Area dataKey="balance" fill="var(--color-balance)" fillOpacity={0.18} stroke="var(--color-balance)" type="linear" />
                 </AreaChart>
               </ChartContainer>
             )}
@@ -330,33 +205,20 @@ function AnalyticsPortfolioPage() {
         </Card>
 
         <div className="grid gap-4 self-start">
-          <SummaryCard
-            label="Base currency"
-            value={resolvedBaseCurrency}
-            helper="Applied to the entire time series"
-          />
+          <SummaryCard label="Base currency" value={resolvedBaseCurrency} helper="Applied to the entire time series" />
           <SummaryCard
             label="Start balance"
-            value={formatCurrency(
-              reportQuery.data?.summary.startBalance,
-              resolvedBaseCurrency
-            )}
+            value={formatCurrency(reportQuery.data?.summary.startBalance, resolvedBaseCurrency)}
             helper="Balance at the beginning of the selected range"
           />
           <SummaryCard
             label="End balance"
-            value={formatCurrency(
-              reportQuery.data?.summary.endBalance,
-              resolvedBaseCurrency
-            )}
+            value={formatCurrency(reportQuery.data?.summary.endBalance, resolvedBaseCurrency)}
             helper="Latest known portfolio balance in range"
           />
           <SummaryCard
             label="Delta"
-            value={formatCurrency(
-              reportQuery.data?.summary.delta,
-              resolvedBaseCurrency
-            )}
+            value={formatCurrency(reportQuery.data?.summary.delta, resolvedBaseCurrency)}
             helper={`${toNumber(reportQuery.data?.summary.deltaPercent).toFixed(2)}% change across the selected period`}
           />
         </div>
@@ -365,22 +227,12 @@ function AnalyticsPortfolioPage() {
   )
 }
 
-function SummaryCard({
-  label,
-  value,
-  helper,
-}: {
-  label: string
-  value: string
-  helper: string
-}) {
+function SummaryCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
     <Card className="border-border/60 bg-card/80 shadow-sm">
       <CardContent className="space-y-2 p-5">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">
-          {value}
-        </p>
+        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
         <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
       </CardContent>
     </Card>

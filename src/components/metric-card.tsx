@@ -3,14 +3,7 @@ import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export type MetricCardIcon = Parameters<typeof HugeiconsIcon>[0]["icon"]
 
@@ -27,16 +20,7 @@ export interface MetricCardProps {
   className?: string
 }
 
-export function MetricCard({
-  label,
-  value,
-  footer,
-  badge,
-  icon,
-  iconBgClassName,
-  iconColorClassName,
-  className,
-}: MetricCardProps) {
+export function MetricCard({ label, value, footer, badge, icon, iconBgClassName, iconColorClassName, className }: MetricCardProps) {
   return (
     <Card
       size="sm"
@@ -49,17 +33,8 @@ export function MetricCard({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
           {icon !== undefined && (
-            <span
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-md",
-                iconBgClassName
-              )}
-            >
-              <HugeiconsIcon
-                icon={icon}
-                strokeWidth={2}
-                className={cn("size-3.5", iconColorClassName)}
-              />
+            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", iconBgClassName)}>
+              <HugeiconsIcon icon={icon} strokeWidth={2} className={cn("size-3.5", iconColorClassName)} />
             </span>
           )}
           {label}
@@ -67,9 +42,7 @@ export function MetricCard({
         {badge !== undefined && <CardAction>{badge}</CardAction>}
       </CardHeader>
       <CardContent>
-        <p className="break-words text-[2rem] leading-none font-semibold tracking-[-0.035em] text-foreground tabular-nums">
-          {value}
-        </p>
+        <p className="text-[2rem] leading-none font-semibold tracking-[-0.035em] break-words text-foreground tabular-nums">{value}</p>
       </CardContent>
       {footer !== undefined && (
         <CardFooter className="justify-between border-t border-border font-mono text-[11px] tracking-[0.08em] text-muted-foreground uppercase">

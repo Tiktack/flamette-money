@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
 
-import {
-  searchTransactionsSchema,
-  transactionRequestSchema,
-  transactionUpdateSchema,
-} from "@/features/shared/server/validators"
+import { searchTransactionsSchema, transactionRequestSchema, transactionUpdateSchema } from "@/features/shared/server/validators"
 
 import {
   createTransactionData,
@@ -26,9 +22,7 @@ export const getTransactions = createServerFn({ method: "GET" })
       .optional()
       .parse(data)
   )
-  .handler(async ({ data }) =>
-    searchTransactionsData({ Page: data?.page, PageSize: data?.pageSize })
-  )
+  .handler(async ({ data }) => searchTransactionsData({ Page: data?.page, PageSize: data?.pageSize }))
 
 export const getTransaction = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))

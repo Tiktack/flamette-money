@@ -3,18 +3,8 @@ import { betterAuth } from "better-auth"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
 import { db } from "@/lib/db/client.server"
-import {
-  getBetterAuthBaseUrl,
-  getBetterAuthSecret,
-  getBetterAuthTrustedOrigins,
-  getConfiguredSocialProviders,
-} from "@/lib/env.server"
-import {
-  authAccounts,
-  authSessions,
-  authVerifications,
-  users,
-} from "@/lib/db/schema"
+import { getBetterAuthBaseUrl, getBetterAuthSecret, getBetterAuthTrustedOrigins, getConfiguredSocialProviders } from "@/lib/env.server"
+import { authAccounts, authSessions, authVerifications, users } from "@/lib/db/schema"
 
 const socialProviders = getConfiguredSocialProviders()
 const trustedOrigins = getBetterAuthTrustedOrigins()

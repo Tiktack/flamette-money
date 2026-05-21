@@ -29,13 +29,9 @@ const COLORS = {
 }
 
 function useColorScheme() {
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  )
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"))
   useEffect(() => {
-    const obs = new MutationObserver(() =>
-      setIsDark(document.documentElement.classList.contains("dark"))
-    )
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains("dark")))
     obs.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
@@ -145,11 +141,7 @@ function TripWorldMapInner({ trips, baseCurrency }: TripMapProps) {
   }, [])
 
   return (
-    <div
-      ref={containerRef}
-      className="relative overflow-hidden rounded-2xl border shadow-sm"
-      style={{ background: colors.bg, borderColor: colors.border }}
-    >
+    <div ref={containerRef} className="relative overflow-hidden rounded-2xl border shadow-sm" style={{ background: colors.bg, borderColor: colors.border }}>
       <ComposableMap
         projection="geoNaturalEarth1"
         projectionConfig={{ scale: 155, center: [10, 10] }}
@@ -181,9 +173,7 @@ function TripWorldMapInner({ trips, baseCurrency }: TripMapProps) {
                     },
                     hover: {
                       outline: "none",
-                      fill: isVisited
-                        ? colors.fillVisitedHover
-                        : colors.fillDefaultHover,
+                      fill: isVisited ? colors.fillVisitedHover : colors.fillDefaultHover,
                       cursor: isVisited ? "pointer" : "default",
                     },
                     pressed: { outline: "none" },
@@ -195,20 +185,12 @@ function TripWorldMapInner({ trips, baseCurrency }: TripMapProps) {
         </Geographies>
       </ComposableMap>
 
-      {tooltip ? (
-        <CountryTooltip tooltip={tooltip} baseCurrency={baseCurrency} />
-      ) : null}
+      {tooltip ? <CountryTooltip tooltip={tooltip} baseCurrency={baseCurrency} /> : null}
     </div>
   )
 }
 
-function CountryTooltip({
-  tooltip,
-  baseCurrency,
-}: {
-  tooltip: NonNullable<TooltipState>
-  baseCurrency: string
-}) {
+function CountryTooltip({ tooltip, baseCurrency }: { tooltip: NonNullable<TooltipState>; baseCurrency: string }) {
   const { data } = tooltip
 
   return (
@@ -221,31 +203,21 @@ function CountryTooltip({
       }}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold text-foreground">
-          {data.countryName}
-        </span>
-        <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-xs font-medium text-primary">
-          {formatCurrency(data.totalSpent, baseCurrency)}
-        </span>
+        <span className="text-sm font-semibold text-foreground">{data.countryName}</span>
+        <span className="rounded-md bg-primary/15 px-1.5 py-0.5 text-xs font-medium text-primary">{formatCurrency(data.totalSpent, baseCurrency)}</span>
       </div>
 
       <div className="space-y-1.5">
         {data.trips.map((trip) => (
-          <div
-            key={trip.id}
-            className="flex items-center justify-between gap-2 text-xs"
-          >
+          <div key={trip.id} className="flex items-center justify-between gap-2 text-xs">
             <span className="truncate text-muted-foreground">{trip.name}</span>
-            <span className="shrink-0 text-muted-foreground/70">
-              {formatDateLabel(trip.startDate)}
-            </span>
+            <span className="shrink-0 text-muted-foreground/70">{formatDateLabel(trip.startDate)}</span>
           </div>
         ))}
       </div>
 
       <div className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-        {data.trips.reduce((sum, t) => sum + toNumber(t.transactionCount), 0)}{" "}
-        transactions across {data.trips.length}{" "}
+        {data.trips.reduce((sum, t) => sum + toNumber(t.transactionCount), 0)} transactions across {data.trips.length}{" "}
         {data.trips.length === 1 ? "trip" : "trips"}
       </div>
     </div>

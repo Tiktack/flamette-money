@@ -1,22 +1,13 @@
 import * as React from "react"
 
-import {
-  Outlet,
-  createFileRoute,
-  redirect,
-  useRouter,
-} from "@tanstack/react-router"
+import { Outlet, createFileRoute, redirect, useRouter } from "@tanstack/react-router"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-editor-dialog"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { getAuthRedirect } from "@/lib/auth/auth-redirect"
-import {
-  PAGE_ACTION_EVENT,
-  pageActionTypes,
-  type PageActionType,
-} from "@/lib/page-actions"
+import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import { getCurrentUserProfile } from "@/lib/auth/functions"
 import { authClient } from "@/lib/auth/client"
 
@@ -62,14 +53,8 @@ function ProtectedLayout() {
     }
 
     const storedTheme = window.localStorage.getItem("flamette-theme")
-    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
-      .matches
-      ? "dark"
-      : "light"
-    const nextTheme =
-      storedTheme === "dark" || storedTheme === "light"
-        ? storedTheme
-        : preferredTheme
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    const nextTheme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme
     setTheme(nextTheme)
   }, [])
 
@@ -99,9 +84,7 @@ function ProtectedLayout() {
         theme={theme}
         isLoggingOut={isLoggingOut}
         onNewTransaction={() => setNewTransactionOpen(true)}
-        onToggleTheme={() =>
-          setTheme((current) => (current === "dark" ? "light" : "dark"))
-        }
+        onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         onLogout={handleLogout}
       />
       <SidebarInset className="bg-[radial-gradient(circle_at_top,oklch(0.56_0.20_50/5%),transparent_34%),linear-gradient(180deg,oklch(0.99_0.006_58/55%),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.72_0.16_55/8%),transparent_32%)]">
@@ -111,11 +94,7 @@ function ProtectedLayout() {
             <Outlet />
           </div>
         </div>
-        <LazyTransactionEditorDialog
-          open={newTransactionOpen}
-          mode="new"
-          onOpenChange={setNewTransactionOpen}
-        />
+        <LazyTransactionEditorDialog open={newTransactionOpen} mode="new" onOpenChange={setNewTransactionOpen} />
       </SidebarInset>
     </SidebarProvider>
   )

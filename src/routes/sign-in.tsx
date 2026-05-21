@@ -6,25 +6,13 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { CommandIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getAuthRedirect } from "@/lib/auth/auth-redirect"
 import { authClient } from "@/lib/auth/client"
-import {
-  getAvailableSocialAuthProviders,
-  getCurrentUserProfile,
-} from "@/lib/auth/functions"
-import {
-  socialAuthProviderMeta,
-  type SocialAuthProvider,
-} from "@/lib/auth/providers"
+import { getAvailableSocialAuthProviders, getCurrentUserProfile } from "@/lib/auth/functions"
+import { socialAuthProviderMeta, type SocialAuthProvider } from "@/lib/auth/providers"
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -45,22 +33,10 @@ export const Route = createFileRoute("/sign-in")({
 function GoogleLogo() {
   return (
     <svg aria-hidden className="size-4" viewBox="0 0 24 24">
-      <path
-        d="M21.6 12.23c0-.68-.06-1.33-.18-1.95H12v3.69h5.39a4.62 4.62 0 0 1-2 3.03v2.52h3.24c1.9-1.75 2.97-4.34 2.97-7.29Z"
-        fill="#4285F4"
-      />
-      <path
-        d="M12 22c2.7 0 4.96-.9 6.62-2.44l-3.24-2.52c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.58-4.12H3.07v2.6A10 10 0 0 0 12 22Z"
-        fill="#34A853"
-      />
-      <path
-        d="M6.42 13.88A6 6 0 0 1 6.1 12c0-.65.11-1.28.31-1.88V7.52H3.07A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.48l3.35-2.6Z"
-        fill="#FBBC05"
-      />
-      <path
-        d="M12 5.97c1.47 0 2.79.5 3.82 1.49l2.86-2.86C16.96 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52l3.35 2.6C7.2 7.76 9.4 5.97 12 5.97Z"
-        fill="#EA4335"
-      />
+      <path d="M21.6 12.23c0-.68-.06-1.33-.18-1.95H12v3.69h5.39a4.62 4.62 0 0 1-2 3.03v2.52h3.24c1.9-1.75 2.97-4.34 2.97-7.29Z" fill="#4285F4" />
+      <path d="M12 22c2.7 0 4.96-.9 6.62-2.44l-3.24-2.52c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.58-4.12H3.07v2.6A10 10 0 0 0 12 22Z" fill="#34A853" />
+      <path d="M6.42 13.88A6 6 0 0 1 6.1 12c0-.65.11-1.28.31-1.88V7.52H3.07A10 10 0 0 0 2 12c0 1.61.39 3.14 1.07 4.48l3.35-2.6Z" fill="#FBBC05" />
+      <path d="M12 5.97c1.47 0 2.79.5 3.82 1.49l2.86-2.86C16.96 2.98 14.7 2 12 2a10 10 0 0 0-8.93 5.52l3.35 2.6C7.2 7.76 9.4 5.97 12 5.97Z" fill="#EA4335" />
     </svg>
   )
 }
@@ -73,17 +49,7 @@ function GitHubLogo() {
   )
 }
 
-function SocialLoginButton({
-  disabled,
-  isBusy,
-  onClick,
-  provider,
-}: {
-  disabled: boolean
-  isBusy: boolean
-  onClick: () => void
-  provider: SocialAuthProvider
-}) {
+function SocialLoginButton({ disabled, isBusy, onClick, provider }: { disabled: boolean; isBusy: boolean; onClick: () => void; provider: SocialAuthProvider }) {
   const content =
     provider === "google" ? (
       <>
@@ -106,14 +72,7 @@ function SocialLoginButton({
       type="button"
       variant="outline"
     >
-      {isBusy ? (
-        <span
-          className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-          aria-hidden
-        />
-      ) : (
-        content
-      )}
+      {isBusy ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden /> : content}
     </Button>
   )
 }
@@ -128,9 +87,7 @@ function SignInPage() {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
-  const [busyAction, setBusyAction] = React.useState<
-    "credentials" | null | SocialAuthProvider
-  >(null)
+  const [busyAction, setBusyAction] = React.useState<"credentials" | null | SocialAuthProvider>(null)
   const isBusy = busyAction !== null
   const socialErrorCallbackUrl = React.useMemo(() => {
     const params = new URLSearchParams()
@@ -146,10 +103,7 @@ function SignInPage() {
     setErrorMessage(null)
     setBusyAction("credentials")
 
-    const result =
-      mode === "sign-up"
-        ? await authClient.signUp.email({ name, email, password })
-        : await authClient.signIn.email({ email, password })
+    const result = mode === "sign-up" ? await authClient.signUp.email({ name, email, password }) : await authClient.signIn.email({ email, password })
 
     if (result.error) {
       setErrorMessage(result.error.message ?? "Unable to continue.")
@@ -174,10 +128,7 @@ function SignInPage() {
     })
 
     if (result.error) {
-      setErrorMessage(
-        result.error.message ??
-          `Unable to continue with ${socialAuthProviderMeta[provider].label}.`
-      )
+      setErrorMessage(result.error.message ?? `Unable to continue with ${socialAuthProviderMeta[provider].label}.`)
       setBusyAction(null)
     }
   }
@@ -191,32 +142,18 @@ function SignInPage() {
     <div className="auth-bg flex min-h-svh flex-col items-center justify-center px-4 py-10">
       <div className="mb-8 flex items-center gap-2.5">
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-          <HugeiconsIcon
-            icon={CommandIcon}
-            strokeWidth={2}
-            className="size-4 text-primary"
-          />
+          <HugeiconsIcon icon={CommandIcon} strokeWidth={2} className="size-4 text-primary" />
         </div>
         <div className="grid gap-0.5">
-          <span className="text-base font-semibold tracking-tight text-foreground">
-            Flamette Money
-          </span>
-          <span className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
-            workspace access
-          </span>
+          <span className="text-base font-semibold tracking-tight text-foreground">Flamette Money</span>
+          <span className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">workspace access</span>
         </div>
       </div>
 
       <Card className="w-full max-w-sm gap-0 overflow-hidden py-0 shadow-none">
         <CardHeader className="pt-6 pb-4">
-          <CardTitle className="text-xl font-semibold tracking-tight">
-            {mode === "sign-in" ? "Sign in" : "Create your account"}
-          </CardTitle>
-          <CardDescription>
-            {mode === "sign-in"
-              ? "Welcome back — enter your details to continue"
-              : "Fill in the details below to get started"}
-          </CardDescription>
+          <CardTitle className="text-xl font-semibold tracking-tight">{mode === "sign-in" ? "Sign in" : "Create your account"}</CardTitle>
+          <CardDescription>{mode === "sign-in" ? "Welcome back — enter your details to continue" : "Fill in the details below to get started"}</CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 pb-6">
@@ -236,9 +173,7 @@ function SignInPage() {
 
               <div className="relative flex items-center justify-center py-1">
                 <div className="absolute inset-x-0 border-t border-border" />
-                <span className="relative bg-card px-2 font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
-                  or continue with email
-                </span>
+                <span className="relative bg-card px-2 font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">or continue with email</span>
               </div>
             </>
           )}
@@ -247,14 +182,7 @@ function SignInPage() {
             {mode === "sign-up" && (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="name">Full name</Label>
-                <Input
-                  id="name"
-                  autoComplete="name"
-                  disabled={isBusy}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Your name"
-                  value={name}
-                />
+                <Input id="name" autoComplete="name" disabled={isBusy} onChange={(event) => setName(event.target.value)} placeholder="Your name" value={name} />
               </div>
             )}
 
@@ -275,9 +203,7 @@ function SignInPage() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
-                autoComplete={
-                  mode === "sign-up" ? "new-password" : "current-password"
-                }
+                autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
                 disabled={isBusy}
                 minLength={8}
                 onChange={(event) => setPassword(event.target.value)}
@@ -287,21 +213,11 @@ function SignInPage() {
               />
             </div>
 
-            {errorMessage && (
-              <p className="text-sm text-destructive">{errorMessage}</p>
-            )}
+            {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
 
-            <Button
-              className="w-full"
-              size="lg"
-              disabled={isBusy}
-              type="submit"
-            >
+            <Button className="w-full" size="lg" disabled={isBusy} type="submit">
               {busyAction === "credentials" ? (
-                <span
-                  className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-                  aria-hidden
-                />
+                <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden />
               ) : (
                 "Continue"
               )}
@@ -313,22 +229,14 @@ function SignInPage() {
           {mode === "sign-in" ? (
             <>
               Don&apos;t have an account?{" "}
-              <button
-                type="button"
-                onClick={() => switchMode("sign-up")}
-                className="font-medium text-primary underline-offset-4 hover:underline"
-              >
+              <button type="button" onClick={() => switchMode("sign-up")} className="font-medium text-primary underline-offset-4 hover:underline">
                 Sign up
               </button>
             </>
           ) : (
             <>
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => switchMode("sign-in")}
-                className="font-medium text-primary underline-offset-4 hover:underline"
-              >
+              <button type="button" onClick={() => switchMode("sign-in")} className="font-medium text-primary underline-offset-4 hover:underline">
                 Sign in
               </button>
             </>
@@ -336,9 +244,7 @@ function SignInPage() {
         </div>
       </Card>
 
-      <p className="mt-6 text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Flamette Money
-      </p>
+      <p className="mt-6 text-xs text-muted-foreground">© {new Date().getFullYear()} Flamette Money</p>
     </div>
   )
 }
