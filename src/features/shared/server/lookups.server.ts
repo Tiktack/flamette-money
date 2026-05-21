@@ -12,10 +12,6 @@ import {
   users,
 } from "@/lib/db/schema"
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-
 export async function requireUser() {
   const session = await requireSessionData()
   await ensureUserBootstrap(session.user.id)
@@ -24,7 +20,7 @@ export async function requireUser() {
   })
 
   if (!user) {
-    fail("User was not found.")
+    throw new Error("User was not found.")
   }
 
   return user
@@ -36,7 +32,7 @@ export async function requireAccount(userId: string, accountId: string) {
   })
 
   if (!account) {
-    fail("Account was not found.")
+    throw new Error("Account was not found.")
   }
 
   return account
@@ -48,7 +44,7 @@ export async function requireCategory(userId: string, categoryId: string) {
   })
 
   if (!category) {
-    fail("Category was not found.")
+    throw new Error("Category was not found.")
   }
 
   return category
@@ -60,7 +56,7 @@ export async function requireTrip(userId: string, tripId: string) {
   })
 
   if (!trip) {
-    fail("Trip was not found.")
+    throw new Error("Trip was not found.")
   }
 
   return trip
@@ -80,7 +76,7 @@ export async function requireTransaction(userId: string, transactionId: string) 
   })
 
   if (!transaction) {
-    fail("Transaction was not found.")
+    throw new Error("Transaction was not found.")
   }
 
   return transaction

@@ -25,10 +25,6 @@ import type {
   UpdateTripResponse,
 } from "@/features/shared/types"
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-
 export async function listTripsData(): Promise<TripListItemResponse[]> {
   const user = await requireUser()
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
@@ -115,7 +111,7 @@ export async function createTripData(
   const imageUrl = normalizeImageUrl(request.imageUrl)
 
   if (startDate > endDate) {
-    fail("StartDate cannot be after EndDate.")
+    throw new Error("StartDate cannot be after EndDate.")
   }
 
   const id = crypto.randomUUID()
@@ -156,7 +152,7 @@ export async function updateTripData(
   const imageUrl = normalizeImageUrl(request.imageUrl)
 
   if (startDate > endDate) {
-    fail("StartDate cannot be after EndDate.")
+    throw new Error("StartDate cannot be after EndDate.")
   }
 
   await db

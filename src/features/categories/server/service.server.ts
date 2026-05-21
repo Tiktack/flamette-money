@@ -24,10 +24,6 @@ import type {
 
 type CategoryRecord = typeof categories.$inferSelect
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-
 function mapCategoryTree(
   rows: CategoryRecord[],
   parentId: string | null
@@ -76,11 +72,11 @@ export async function createCategoryData(
     const parent = await requireCategory(user.id, parentId)
 
     if (parent.parentId) {
-      fail("Only one nesting level is allowed.")
+      throw new Error("Only one nesting level is allowed.")
     }
 
     if (parent.type !== type) {
-      fail("Subcategory type must match parent type.")
+      throw new Error("Subcategory type must match parent type.")
     }
   }
 
@@ -118,18 +114,18 @@ export async function updateCategoryData(
   const parentId = request.parentId
 
   if (parentId === categoryId) {
-    fail("Category cannot be its own parent.")
+    throw new Error("Category cannot be its own parent.")
   }
 
   if (parentId) {
     const parent = await requireCategory(user.id, parentId)
 
     if (parent.parentId) {
-      fail("Only one nesting level is allowed.")
+      throw new Error("Only one nesting level is allowed.")
     }
 
     if (parent.type !== category.type) {
-      fail("Parent category type must match.")
+      throw new Error("Parent category type must match.")
     }
   }
 
@@ -174,7 +170,7 @@ export async function deleteCategoryData(categoryId: string) {
   })
 
   if (hasTransactions || hasSubcategoryTransactions) {
-    fail("Category cannot be deleted because it is used by transactions.")
+    throw new Error("Category cannot be deleted because it is used by transactions.")
   }
 
   await db

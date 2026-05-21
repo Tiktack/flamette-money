@@ -69,10 +69,6 @@ type TransactionSearchSummary = {
   expenseTotal: number
 }
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-
 function convertAmountToBase(
   amount: number,
   sourceCurrency: string | null | undefined,
@@ -358,23 +354,23 @@ async function validateTransactionRequest(
 
   if (type === "Transfer") {
     if (!request.targetAccountId) {
-      fail("Target account is required for transfers.")
+      throw new Error("Target account is required for transfers.")
     }
 
     if (request.targetAccountId === request.accountId) {
-      fail("Target account must be different from source account.")
+      throw new Error("Target account must be different from source account.")
     }
 
     if (request.categoryId) {
-      fail("Category is not applicable for transfers.")
+      throw new Error("Category is not applicable for transfers.")
     }
 
     if (request.tripId) {
-      fail("Trip is only applicable for expense transactions.")
+      throw new Error("Trip is only applicable for expense transactions.")
     }
 
     if (request.originalTransactionId) {
-      fail("Original transaction is only valid for refunds.")
+      throw new Error("Original transaction is only valid for refunds.")
     }
 
     targetAccount = await requireAccount(user.id, request.targetAccountId)
@@ -387,7 +383,7 @@ async function validateTransactionRequest(
       sourceCurrency &&
       sourceCurrency !== normalizeCurrencyOrDefault(account.currency, "USD")
     ) {
-      fail("Transfer source currency must match source account currency.")
+      throw new Error("Transfer source currency must match source account currency.")
     }
 
     const targetCurrency = normalizeCurrencyOrNull(request.currency2)
@@ -396,19 +392,19 @@ async function validateTransactionRequest(
       targetCurrency !==
         normalizeCurrencyOrDefault(targetAccount.currency, "USD")
     ) {
-      fail("Transfer target currency must match target account currency.")
+      throw new Error("Transfer target currency must match target account currency.")
     }
   } else if (type === "Refund") {
     if (request.targetAccountId) {
-      fail("Target account is only valid for transfers.")
+      throw new Error("Target account is only valid for transfers.")
     }
 
     if (!request.originalTransactionId) {
-      fail("Original transaction is required for refunds.")
+      throw new Error("Original transaction is required for refunds.")
     }
 
     if (request.tripId) {
-      fail("Trip is inherited from the original expense for refunds.")
+      throw new Error("Trip is inherited from the original expense for refunds.")
     }
 
     const originalTransaction = await requireTransaction(
@@ -417,25 +413,25 @@ async function validateTransactionRequest(
     )
 
     if (originalTransaction.type !== "Expense") {
-      fail("Refunds can only reference expense transactions.")
+      throw new Error("Refunds can only reference expense transactions.")
     }
 
     if (originalTransaction.accountId !== request.accountId) {
-      fail("Refunds must use the same account as the original transaction.")
+      throw new Error("Refunds must use the same account as the original transaction.")
     }
 
     if (
       request.categoryId &&
       request.categoryId !== originalTransaction.categoryId
     ) {
-      fail("Refund category must match the original transaction.")
+      throw new Error("Refund category must match the original transaction.")
     }
 
     if (
       request.subCategoryId &&
       request.subCategoryId !== originalTransaction.subCategoryId
     ) {
-      fail("Refund subcategory must match the original transaction.")
+      throw new Error("Refund subcategory must match the original transaction.")
     }
 
     categoryId = originalTransaction.categoryId
@@ -444,24 +440,24 @@ async function validateTransactionRequest(
     originalTransactionId = originalTransaction.id
 
     if (!categoryId) {
-      fail("Refunds require a category.")
+      throw new Error("Refunds require a category.")
     }
 
     const refundCategory = await requireCategory(user.id, categoryId)
     if (refundCategory.type !== "Expense") {
-      fail("Refunds must use an expense category.")
+      throw new Error("Refunds must use an expense category.")
     }
   } else {
     if (request.targetAccountId) {
-      fail("Target account is only valid for transfers.")
+      throw new Error("Target account is only valid for transfers.")
     }
 
     if (request.originalTransactionId) {
-      fail("Original transaction is only valid for refunds.")
+      throw new Error("Original transaction is only valid for refunds.")
     }
 
     if (type !== "Expense" && request.tripId) {
-      fail("Trip is only applicable for expense transactions.")
+      throw new Error("Trip is only applicable for expense transactions.")
     }
 
     if (type === "Expense" && request.tripId) {
@@ -473,23 +469,23 @@ async function validateTransactionRequest(
     }
 
     if (!request.categoryId) {
-      fail("Category is required.")
+      throw new Error("Category is required.")
     }
 
     const category = await requireCategory(user.id, request.categoryId)
     if (!typeMatches(category.type, type)) {
-      fail("Transaction type must match category type.")
+      throw new Error("Transaction type must match category type.")
     }
 
     if (request.subCategoryId) {
       const subCategory = await requireCategory(user.id, request.subCategoryId)
 
       if (subCategory.parentId !== request.categoryId) {
-        fail("Subcategory must be a child of the category.")
+        throw new Error("Subcategory must be a child of the category.")
       }
 
       if (subCategory.type !== category.type) {
-        fail("Subcategory type must match category type.")
+        throw new Error("Subcategory type must match category type.")
       }
     }
   }
@@ -624,7 +620,7 @@ export async function createTransactionData(
       .sync()
 
     if (!sourceAccount) {
-      fail("Account was not found.")
+      throw new Error("Account was not found.")
     }
 
     let targetAccount: AccountRecord | null = null
@@ -641,7 +637,7 @@ export async function createTransactionData(
           .sync() ?? null
 
       if (!targetAccount) {
-        fail("Target account was not found.")
+        throw new Error("Target account was not found.")
       }
     }
 
@@ -728,7 +724,7 @@ export async function updateTransactionData(
       .sync()
 
     if (!sourceAccount) {
-      fail("Account was not found.")
+      throw new Error("Account was not found.")
     }
 
     let oldTargetAccount: AccountRecord | null = null
@@ -757,7 +753,7 @@ export async function updateTransactionData(
             .sync()
 
     if (!nextSourceAccount) {
-      fail("Account was not found.")
+      throw new Error("Account was not found.")
     }
 
     let nextTargetAccount: AccountRecord | null = null
@@ -810,7 +806,7 @@ export async function updateTransactionData(
       .sync()
 
     if (!refreshedSourceAccount) {
-      fail("Account was not found.")
+      throw new Error("Account was not found.")
     }
 
     const newDeltas = getBalanceDeltas(
@@ -837,7 +833,7 @@ export async function updateTransactionData(
         .sync()
 
       if (!refreshedTargetAccount) {
-        fail("Target account was not found.")
+        throw new Error("Target account was not found.")
       }
 
       tx.update(accounts)
@@ -903,7 +899,7 @@ export async function deleteTransactionData(transactionId: string) {
       .sync()
 
     if (!sourceAccount) {
-      fail("Account was not found.")
+      throw new Error("Account was not found.")
     }
 
     const deltas = getBalanceDeltas(

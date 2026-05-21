@@ -28,10 +28,6 @@ import type {
   UpdateAccountResponse,
 } from "@/features/shared/types"
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-
 export async function listAccountsData(): Promise<AccountListItemResponse[]> {
   const user = await requireUser()
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
@@ -176,7 +172,7 @@ export async function deleteAccountData(accountId: string) {
   })
 
   if (hasTransactions) {
-    fail("Account cannot be deleted because it has transactions.")
+    throw new Error("Account cannot be deleted because it has transactions.")
   }
 
   await db

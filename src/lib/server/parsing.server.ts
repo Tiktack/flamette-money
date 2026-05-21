@@ -1,7 +1,3 @@
-function fail(message: string): never {
-  throw new Error(message)
-}
-
 export function parseAmount(
   value: number | string | null | undefined,
   fieldName: string
@@ -9,7 +5,7 @@ export function parseAmount(
   const parsed = typeof value === "number" ? value : Number(value)
 
   if (!Number.isFinite(parsed)) {
-    fail(`${fieldName} must be a valid number.`)
+    throw new Error(`${fieldName} must be a valid number.`)
   }
 
   return parsed
@@ -22,7 +18,7 @@ export function parsePositiveAmount(
   const parsed = parseAmount(value, fieldName)
 
   if (parsed <= 0) {
-    fail(`${fieldName} must be greater than 0.`)
+    throw new Error(`${fieldName} must be greater than 0.`)
   }
 
   return parsed
@@ -32,7 +28,7 @@ export function parseDateInput(value: string, fieldName: string) {
   const parsed = new Date(value)
 
   if (Number.isNaN(parsed.getTime())) {
-    fail(`${fieldName} must be a valid date.`)
+    throw new Error(`${fieldName} must be a valid date.`)
   }
 
   return parsed
