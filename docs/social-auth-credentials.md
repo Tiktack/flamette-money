@@ -2,6 +2,8 @@
 
 Use this guide to create the OAuth client ID and client secret for the Google and GitHub sign-in buttons.
 
+The sign-in page also remembers the last auth method the browser used and marks it with a subtle "Last used" badge. This is stored client-side by Better Auth and is not persisted in the app database.
+
 ## What you need
 
 Better Auth uses these env vars:
