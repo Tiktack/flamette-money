@@ -1,10 +1,18 @@
+import * as React from "react"
+
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { CheckmarkCircle02Icon, InformationCircleIcon, Alert02Icon, MultiplicationSignCircleIcon, Loading03Icon } from "@hugeicons/core-free-icons"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+  const { resolvedTheme = "light" } = useTheme()
+  const theme = mounted ? resolvedTheme : "light"
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <Sonner

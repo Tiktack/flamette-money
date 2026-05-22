@@ -16,14 +16,12 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
     email: string
     avatar?: string
   }
-  theme: "light" | "dark"
   isLoggingOut: boolean
   onNewTransaction: () => void
-  onToggleTheme: () => void
   onLogout: () => void
 }
 
-export function AppSidebar({ user, theme, isLoggingOut, onNewTransaction, onToggleTheme, onLogout, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...props }: AppSidebarProps) {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -108,7 +106,7 @@ export function AppSidebar({ user, theme, isLoggingOut, onNewTransaction, onTogg
         />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} theme={theme} isLoggingOut={isLoggingOut} onToggleTheme={onToggleTheme} onLogout={onLogout} />
+        <NavUser user={user} isLoggingOut={isLoggingOut} onLogout={onLogout} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

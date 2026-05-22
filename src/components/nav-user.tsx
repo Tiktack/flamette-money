@@ -1,6 +1,9 @@
 "use client"
 
+import * as React from "react"
+
 import { Link } from "@tanstack/react-router"
+import { useTheme } from "next-themes"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -9,20 +12,31 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Logout01Icon, Moon02Icon, MoreVerticalCircle01Icon, Settings05Icon, Sun03Icon } from "@hugeicons/core-free-icons"
+import { ComputerIcon, Logout01Icon, Moon02Icon, MoreVerticalCircle01Icon, Settings05Icon, Sun03Icon } from "@hugeicons/core-free-icons"
 
 import { initials } from "@/lib/finance"
+import { isThemeMode, themeLabels, themeModes, type ThemeMode } from "@/lib/theme"
+
+const themeIcons: Record<ThemeMode, typeof Sun03Icon> = {
+  light: Sun03Icon,
+  dark: Moon02Icon,
+  system: ComputerIcon,
+}
 
 export function NavUser({
   user,
-  theme,
   isLoggingOut,
-  onToggleTheme,
   onLogout,
 }: {
   user: {
@@ -30,12 +44,17 @@ export function NavUser({
     email: string
     avatar?: string
   }
-  theme: "light" | "dark"
   isLoggingOut: boolean
-  onToggleTheme: () => void
   onLogout: () => void
 }) {
   const { isMobile } = useSidebar()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+  const selectedTheme: ThemeMode = mounted && isThemeMode(theme) ? theme : "system"
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <SidebarMenu>
@@ -50,9 +69,9 @@ export function NavUser({
               <span className="truncate font-medium">{user.name}</span>
               <span className="truncate font-mono text-[11px] tracking-[0.08em] text-foreground/55">{user.email}</span>
             </div>
-            <HugeiconsIcon icon={MoreVerticalCircle01Icon} strokeWidth={2} className="ml-auto size-4" />
+            <HugeiconsIcon icon={MoreVerticalCircle01Icon} strokeWidth={2} className="ml-auto" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="min-w-56" side={isMobile ? "bottom" : "right"} align="end" sideOffset={4}>
+          <DropdownMenuContent className="min-w-60" side={isMobile ? "bottom" : "right"} align="end" sideOffset={4}>
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
@@ -73,10 +92,38 @@ export function NavUser({
                 <HugeiconsIcon icon={Settings05Icon} strokeWidth={2} />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onToggleTheme}>
-                <HugeiconsIcon icon={theme === "dark" ? Sun03Icon : Moon02Icon} strokeWidth={2} />
-                {theme === "dark" ? "Light theme" : "Dark theme"}
-              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <HugeiconsIcon icon={ComputerIcon} strokeWidth={2} />
+                  Appearance
+                  {mounted ? <DropdownMenuShortcut>{themeLabels[selectedTheme]}</DropdownMenuShortcut> : null}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Theme</DropdownMenuLabel>
+                    {mounted ? (
+                      <DropdownMenuRadioGroup
+                        value={selectedTheme}
+                        onValueChange={(value) => {
+                          if (isThemeMode(value)) {
+                            setTheme(value)
+                          }
+                        }}
+                      >
+                        {themeModes.map((mode) => (
+                          <DropdownMenuRadioItem key={mode} value={mode}>
+                            <HugeiconsIcon icon={themeIcons[mode]} strokeWidth={2} />
+                            {themeLabels[mode]}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    ) : null}
+                  </DropdownMenuGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout} disabled={isLoggingOut}>
