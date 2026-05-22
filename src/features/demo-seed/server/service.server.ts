@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm"
 
 import { auth } from "@/lib/auth"
 import { ensureUserBootstrap } from "@/lib/bootstrap.server"
-import { db } from "@/lib/db/client.server"
-import { forEachChunkSync, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { db, runWithDb } from "@/lib/db/client.server"
+import { forEachChunk, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import { roundMoney } from "@/lib/finance"
 import { accounts, accountTypes, categories, trips, transactions, transactionTypes } from "@/lib/db/schema"
 
@@ -586,30 +586,29 @@ export async function handleSeedDemoRequest(request: Request) {
     }
   }
 
-  db.transaction((tx) => {
+  await runWithDb(async (database) => {
     if (newAccounts.length > 0) {
-      forEachChunkSync(newAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(accounts).values(chunk).run()
+      await forEachChunk(newAccounts, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(accounts).values(chunk)
       })
     }
 
     if (newTrips.length > 0) {
-      forEachChunkSync(newTrips, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(trips).values(chunk).run()
+      await forEachChunk(newTrips, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(trips).values(chunk)
       })
     }
 
     if (transactionBuffer.length > 0) {
-      forEachChunkSync(transactionBuffer, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(transactions).values(chunk).run()
+      await forEachChunk(transactionBuffer, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(transactions).values(chunk)
       })
     }
 
     for (const account of allAccounts) {
-      tx.update(accounts)
+      await database.update(accounts)
         .set({ currentBalance: account.currentBalance, updatedAt: new Date() })
         .where(and(eq(accounts.id, account.id), eq(accounts.userId, userId)))
-        .run()
     }
   })
 

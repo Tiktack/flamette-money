@@ -25,7 +25,7 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
 
 - **Frontend + server runtime**: TanStack Start full-stack app (source at `src/`).
 - **Authentication**: Better Auth with email/password plus optional Google and GitHub social sign-in.
-- **Database**: local SQLite shared by the app and auth, accessed through Drizzle ORM.
+- **Database**: Cloudflare D1 shared by the app and auth, accessed through Drizzle ORM.
 - **Routing and data**: TanStack Router, TanStack React Query, and TanStack Start server functions.
 - **UI**: shadcn/ui components with Tailwind CSS 4.
 
@@ -44,11 +44,14 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 - `BETTER_AUTH_URL`: Optional explicit app origin for auth callbacks/cookies.
 - `BETTER_AUTH_ALLOWED_HOSTS`: Optional comma-separated host patterns for dynamic auth URLs. Defaults to local hosts like `localhost:*`.
 - `BETTER_AUTH_TRUSTED_ORIGINS`: Optional comma-separated extra origins Better Auth should trust.
-- `DATABASE_URL`: SQLite path. Defaults to `file:./data/flamette-money.db`.
+- `EXCHANGE_RATE_API_KEY`: Optional, enables live FX refreshes.
+- `EXCHANGE_RATE_CACHE_HOURS`: Optional FX cache TTL in hours.
 - `OPENROUTER_API_KEY`: Optional, enables AI receipt scanning.
 - `OPENROUTER_MODEL`: Optional OpenRouter model override for receipt scanning.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Optional Google OAuth credentials.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`: Optional GitHub OAuth credentials.
+
+The database itself is configured through the Cloudflare `DB` D1 binding in `wrangler.jsonc`, not through a `DATABASE_URL`.
 
 ## Getting Started
 
@@ -63,9 +66,20 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 2. **Run**:
    ```bash
    pnpm install
+   # Fill in .dev.vars and wrangler.jsonc first
    pnpm dev
    ```
 3. **Explore**: Open the local URL shown by Vite.
+
+## Cloudflare deployment
+
+The app is configured for Cloudflare Workers + D1.
+
+- Worker config: `wrangler.jsonc`
+- Initial D1 schema: `migrations/0001_initial.sql`
+- Local runtime secrets example: `.dev.vars.example`
+
+See `docs/cloudflare-workers-deployment.md` for the full setup and Workers Builds instructions.
 
 ## Demo Data
 
