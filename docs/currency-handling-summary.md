@@ -70,6 +70,7 @@ This summary covers the currency and FX implementation for account transfers, an
 
 - Settings and transaction editor currency options consume `GET /api/app-info`.
 - Removed local hardcoded currency assumptions as the primary source.
+- Settings base-currency changes now save immediately on selection without a separate save button.
 
 2. Transfer UX behavior
 

@@ -43,7 +43,6 @@ function SettingsPage() {
   const importBackup = useImportBackup()
   const exportBackup = useExportBackup()
   const resetData = useResetData()
-  const [baseCurrency, setBaseCurrency] = React.useState("USD")
   const [years, setYears] = React.useState(3)
   const [seedValue, setSeedValue] = React.useState("")
   const [downloadAfterSeed, setDownloadAfterSeed] = React.useState(true)
@@ -59,24 +58,18 @@ function SettingsPage() {
   const [importError, setImportError] = React.useState<string | null>(null)
   const [seedError, setSeedError] = React.useState<string | null>(null)
   const [resetError, setResetError] = React.useState<string | null>(null)
-  const saveFeedback = useTransientFeedback()
+  const currentBaseCurrency = settingsQuery.data?.baseCurrency ?? currentUserQuery.data?.baseCurrency ?? "USD"
   const exportFeedback = useTransientFeedback()
   const importFeedback = useTransientFeedback()
   const seedFeedback = useTransientFeedback()
   const resetFeedback = useTransientFeedback()
 
-  const currentBaseCurrency = settingsQuery.data?.baseCurrency ?? currentUserQuery.data?.baseCurrency ?? "USD"
   const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
   const isPageLoading = currentUserQuery.isLoading && !currentUserQuery.data
-  const isBaseCurrencyDirty = baseCurrency !== currentBaseCurrency
   const seedButtonBusy = seedDemo.isPending || exportBackup.isPending
   const importRequiresConfirmation = importType === "flamette"
   const importAccept = fileAcceptByImportType[importType]
   const importHint = importType === "flamette" ? "Full workspace restore." : "Import from a 1Money CSV export."
-
-  React.useEffect(() => {
-    setBaseCurrency(currentBaseCurrency)
-  }, [currentBaseCurrency])
 
   const resetImportState = () => {
     setImportOpen(false)
@@ -93,28 +86,19 @@ function SettingsPage() {
   }
 
   const handleBaseCurrencyChange = (value: string | null) => {
-    if (!value) {
+    if (!value || value === currentBaseCurrency) {
       return
     }
 
-    setBaseCurrency(value)
     setSaveError(null)
-    saveFeedback.reset()
-  }
-
-  const handleSaveSettings = async () => {
-    if (!isBaseCurrencyDirty) {
-      return
-    }
-
-    try {
-      await updateSettings.mutateAsync({ baseCurrency })
-      setSaveError(null)
-      saveFeedback.show("success")
-    } catch (error) {
-      setSaveError(getApiErrorMessage(error, "Unable to save settings."))
-      saveFeedback.show("error")
-    }
+    updateSettings.mutate(
+      { baseCurrency: value },
+      {
+        onError: (error) => {
+          setSaveError(getApiErrorMessage(error, "Unable to save settings."))
+        },
+      }
+    )
   }
 
   const handleExportBackup = async () => {
@@ -199,37 +183,31 @@ function SettingsPage() {
       </header>
 
       <Card className="border-border/60 bg-card/90 shadow-sm">
-        <CardHeader className="gap-1">
+        <CardHeader>
           <CardTitle>Preferences</CardTitle>
-          <CardDescription>Base currency.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <FieldGroup className="gap-3">
-            <Field>
-              <FieldLabel>Base currency</FieldLabel>
-              <Select value={baseCurrency} onValueChange={handleBaseCurrencyChange} disabled={updateSettings.isPending}>
-                <SelectTrigger aria-label="Base currency">
-                  <SelectValue placeholder="Base currency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {currencyOptions.map((currency) => (
-                      <SelectItem key={currency} value={currency}>
-                        {currency}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-            {saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
-          </FieldGroup>
+        <CardContent>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-foreground">Base currency</p>
+              {saveError ? <p className="text-sm text-destructive">{saveError}</p> : null}
+            </div>
 
-          <Button size="sm" onClick={handleSaveSettings} disabled={!isBaseCurrencyDirty || updateSettings.isPending}>
-            {updateSettings.isPending ? <StatusIcon /> : null}
-            {!updateSettings.isPending && saveFeedback.state === "success" ? <StatusIcon success /> : null}
-            {updateSettings.isPending ? "Saving" : saveFeedback.state === "success" ? "Saved" : saveFeedback.state === "error" ? "Retry" : "Save"}
-          </Button>
+            <Select value={currentBaseCurrency} onValueChange={handleBaseCurrencyChange}>
+              <SelectTrigger aria-label="Base currency" className="w-full sm:w-32">
+                <SelectValue placeholder="Base currency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {currencyOptions.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
