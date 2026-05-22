@@ -3,16 +3,48 @@ import * as React from "react"
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
 
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CommandIcon } from "@hugeicons/core-free-icons"
+import { Clock01Icon, CommandIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getAuthRedirect } from "@/lib/auth/auth-redirect"
 import { authClient } from "@/lib/auth/client"
 import { getAvailableSocialAuthProviders, getCurrentUserProfile } from "@/lib/auth/functions"
-import { socialAuthProviderMeta, type SocialAuthProvider } from "@/lib/auth/providers"
+import { socialAuthProviderMeta, supportedSocialAuthProviders, type SocialAuthProvider } from "@/lib/auth/providers"
+
+type LastLoginMethod = "email" | SocialAuthProvider
+
+function isLastLoginMethod(method: string | null): method is LastLoginMethod {
+  return method === "email" || supportedSocialAuthProviders.some((provider) => provider === method)
+}
+
+function normalizeLastLoginMethod(method: string | null): LastLoginMethod | null {
+  return isLastLoginMethod(method) ? method : null
+}
+
+function LastUsedIndicator({ label }: { label: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            aria-label={`Last signed in with ${label}`}
+            className="absolute top-0 right-0 z-10 flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary shadow-sm ring-2 ring-background transition-colors hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            tabIndex={0}
+          >
+            <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5" />
+          </span>
+        }
+      />
+      <TooltipContent side="top" align="end">
+        Last signed in with {label}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -49,7 +81,19 @@ function GitHubLogo() {
   )
 }
 
-function SocialLoginButton({ disabled, isBusy, onClick, provider }: { disabled: boolean; isBusy: boolean; onClick: () => void; provider: SocialAuthProvider }) {
+function SocialLoginButton({
+  disabled,
+  isBusy,
+  isLastUsed,
+  onClick,
+  provider,
+}: {
+  disabled: boolean
+  isBusy: boolean
+  isLastUsed: boolean
+  onClick: () => void
+  provider: SocialAuthProvider
+}) {
   const content =
     provider === "google" ? (
       <>
@@ -64,16 +108,19 @@ function SocialLoginButton({ disabled, isBusy, onClick, provider }: { disabled: 
     )
 
   return (
-    <Button
-      className="h-10 w-full justify-center gap-2 rounded-lg px-3 font-medium tracking-[0.01em] text-foreground hover:text-foreground"
-      disabled={disabled}
-      onClick={onClick}
-      size="lg"
-      type="button"
-      variant="outline"
-    >
-      {isBusy ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden /> : content}
-    </Button>
+    <div className="relative w-full">
+      <Button
+        className="h-10 w-full justify-center gap-2 rounded-lg px-3 font-medium tracking-[0.01em] text-foreground hover:text-foreground"
+        disabled={disabled}
+        onClick={onClick}
+        size="lg"
+        type="button"
+        variant="outline"
+      >
+        {isBusy ? <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden /> : content}
+      </Button>
+      {isLastUsed ? <LastUsedIndicator label={socialAuthProviderMeta[provider].label} /> : null}
+    </div>
   )
 }
 
@@ -87,6 +134,7 @@ function SignInPage() {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+  const [lastLoginMethod, setLastLoginMethod] = React.useState<LastLoginMethod | null>(null)
   const [busyAction, setBusyAction] = React.useState<"credentials" | null | SocialAuthProvider>(null)
   const isBusy = busyAction !== null
   const socialErrorCallbackUrl = React.useMemo(() => {
@@ -97,6 +145,10 @@ function SignInPage() {
 
     return params.size > 0 ? `/sign-in?${params.toString()}` : "/sign-in"
   }, [redirectTo, search.redirect])
+
+  React.useEffect(() => {
+    setLastLoginMethod(normalizeLastLoginMethod(authClient.getLastUsedLoginMethod()))
+  }, [])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -165,6 +217,7 @@ function SignInPage() {
                     key={provider}
                     disabled={isBusy}
                     isBusy={busyAction === provider}
+                    isLastUsed={mode === "sign-in" && lastLoginMethod === provider}
                     onClick={() => void handleSocialSignIn(provider)}
                     provider={provider}
                   />
@@ -188,15 +241,18 @@ function SignInPage() {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                autoComplete="email"
-                disabled={isBusy}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="Enter your email address"
-                type="email"
-                value={email}
-              />
+              <div className="relative">
+                <Input
+                  id="email"
+                  autoComplete="email"
+                  disabled={isBusy}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Enter your email address"
+                  type="email"
+                  value={email}
+                />
+                {mode === "sign-in" && lastLoginMethod === "email" ? <LastUsedIndicator label="Email" /> : null}
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">

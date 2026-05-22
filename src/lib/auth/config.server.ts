@@ -1,5 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter"
 import { betterAuth } from "better-auth"
+import { lastLoginMethod } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
 import { db } from "@/lib/db/client.server"
@@ -30,7 +31,7 @@ export const auth = betterAuth({
       verification: authVerifications,
     },
   }),
-  plugins: [tanstackStartCookies()],
+  plugins: [tanstackStartCookies(), lastLoginMethod()],
 })
 
 export type AuthSession = typeof auth.$Infer.Session
