@@ -30,7 +30,6 @@ export const Route = createFileRoute("/_protected")({
 function ProtectedLayout() {
   const { user } = Route.useRouteContext()
   const router = useRouter()
-  const [theme, setTheme] = React.useState<"light" | "dark">("light")
   const [newTransactionOpen, setNewTransactionOpen] = React.useState(false)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
 
@@ -46,22 +45,6 @@ function ProtectedLayout() {
     window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
     return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
   }, [])
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
-
-    const storedTheme = window.localStorage.getItem("flamette-theme")
-    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-    const nextTheme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : preferredTheme
-    setTheme(nextTheme)
-  }, [])
-
-  React.useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark")
-    window.localStorage.setItem("flamette-theme", theme)
-  }, [theme])
 
   const handleLogout = () => {
     setIsLoggingOut(true)
@@ -81,10 +64,8 @@ function ProtectedLayout() {
           email: user.email,
           avatar: undefined,
         }}
-        theme={theme}
         isLoggingOut={isLoggingOut}
         onNewTransaction={() => setNewTransactionOpen(true)}
-        onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
         onLogout={handleLogout}
       />
       <SidebarInset className="bg-[radial-gradient(circle_at_top,oklch(0.56_0.20_50/5%),transparent_34%),linear-gradient(180deg,oklch(0.99_0.006_58/55%),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.72_0.16_55/8%),transparent_32%)]">

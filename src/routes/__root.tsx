@@ -4,8 +4,10 @@ import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanst
 import type { QueryClient } from "@tanstack/react-query"
 import { QueryClientProvider } from "@tanstack/react-query"
 
+import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Toaster } from "sonner"
+import { Toaster } from "@/components/ui/sonner"
+import { themeStorageKey } from "@/lib/theme"
 import appCss from "@/styles.css?url"
 
 export const Route = createRootRouteWithContext<{
@@ -48,13 +50,15 @@ function RootApp() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
-        <Scripts />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange storageKey={themeStorageKey}>
+          {children}
+          <Scripts />
+        </ThemeProvider>
       </body>
     </html>
   )
