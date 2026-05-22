@@ -8,4 +8,5 @@ export const categoriesQueryOptions = () =>
   queryOptions({
     queryKey: queryKeys.categories(),
     queryFn: () => getCategories(),
+    staleTime: 60_000,
   })

@@ -1,6 +1,5 @@
 import { asc, eq } from "drizzle-orm"
 
-import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { getSessionData } from "@/lib/auth/session.server"
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
@@ -61,8 +60,6 @@ async function requireUser() {
   if (!session) {
     throw new Error("Unauthorized")
   }
-
-  await ensureUserBootstrap(session.user.id)
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.user.id),

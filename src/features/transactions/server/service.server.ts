@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, desc, eq, gte, inArray, lte, or, sql, type SQL } from "drizzle-orm"
 
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db, runWithDb } from "@/lib/db/client.server"
@@ -31,6 +31,7 @@ import type {
 } from "@/features/shared/types"
 
 type TransactionType = (typeof transactionTypes)[number]
+type TransactionSearchQuery = GetApiTransactionsSearchData["query"]
 
 type UserRecord = Awaited<ReturnType<typeof requireUser>>
 type AccountRecord = typeof accounts.$inferSelect
@@ -48,6 +49,55 @@ type TransactionSearchSummary = {
   incomeTotal: number
   expenseCount: number
   expenseTotal: number
+}
+
+type TransactionSearchFacets = {
+  accountCounts: Record<string, number>
+  categoryCounts: Record<string, number>
+  tripCounts: Record<string, number>
+  transactionTypeCounts: Record<string, number>
+  maxAvailableAmount: number
+}
+
+type TransactionListRow = Pick<
+  TransactionRecord,
+  | "id"
+  | "date"
+  | "type"
+  | "amount"
+  | "amount2"
+  | "currency"
+  | "currency2"
+  | "accountId"
+  | "tripId"
+  | "categoryId"
+  | "subCategoryId"
+  | "targetAccountId"
+  | "originalTransactionId"
+  | "isRefund"
+  | "note"
+  | "merchantName"
+  | "location"
+> & {
+  itemCount: number | string
+}
+
+type TransactionSummaryRow = Pick<TransactionRecord, "accountId" | "amount" | "currency" | "type">
+
+type TransactionFacetRow = Pick<TransactionRecord, "accountId" | "targetAccountId" | "categoryId" | "tripId" | "type" | "amount">
+
+type NormalizedTransactionSearch = {
+  start: Date | null
+  end: Date | null
+  accountIds: string[]
+  tripIds: string[]
+  categoryIds: string[]
+  types: TransactionType[]
+  searchText: string | null
+  minAmount: number | null
+  maxAmount: number | null
+  page: number | null
+  pageSize: number | null
 }
 
 function convertAmountToBase(amount: number, sourceCurrency: string | null | undefined, baseCurrency: string, ratesToBase: Record<string, number>) {
@@ -103,7 +153,7 @@ function mapTransactionItems(items: TransactionItemRecord[]): TransactionItemRes
   }))
 }
 
-function mapTransactionListItem(transaction: LoadedTransaction): TransactionListItemResponse {
+function mapTransactionListItem(transaction: TransactionListRow): TransactionListItemResponse {
   return {
     id: transaction.id,
     date: transaction.date.toISOString(),
@@ -122,7 +172,7 @@ function mapTransactionListItem(transaction: LoadedTransaction): TransactionList
     note: transaction.note,
     merchantName: transaction.merchantName,
     location: transaction.location,
-    itemCount: transaction.items.length,
+    itemCount: Number(transaction.itemCount ?? 0),
   }
 }
 
@@ -149,72 +199,141 @@ function mapTransactionDetail(transaction: LoadedTransaction): GetTransactionRes
   }
 }
 
-function filterTransactions(rows: LoadedTransaction[], query?: GetApiTransactionsSearchData["query"]) {
-  const searchText = query?.SearchText?.trim().toLowerCase()
-  const start = query?.StartDate ? startOfDay(query.StartDate) : null
-  const end = query?.EndDate ? endOfDay(query.EndDate) : null
-  const accountIds = new Set(query?.AccountIds ?? [])
-  const tripIds = new Set(query?.TripIds ?? [])
-  const categoryIds = new Set(query?.CategoryIds ?? [])
-  const types = new Set(query?.Types ?? [])
-  const minAmount = query?.MinAmount === undefined ? null : parseAmount(query.MinAmount, "MinAmount")
-  const maxAmount = query?.MaxAmount === undefined ? null : parseAmount(query.MaxAmount, "MaxAmount")
+function normalizeTransactionSearchQuery(query?: TransactionSearchQuery): NormalizedTransactionSearch {
+  const page = query?.Page && query.Page > 0 ? query.Page : null
+  const pageSize = query?.PageSize && query.PageSize > 0 && query.PageSize <= 200 ? query.PageSize : null
 
-  return rows.filter((transaction) => {
-    if (start && transaction.date < start) {
-      return false
-    }
-
-    if (end && transaction.date > end) {
-      return false
-    }
-
-    if (accountIds.size > 0 && !accountIds.has(transaction.accountId) && !(transaction.targetAccountId && accountIds.has(transaction.targetAccountId))) {
-      return false
-    }
-
-    if (tripIds.size > 0 && (!transaction.tripId || !tripIds.has(transaction.tripId))) {
-      return false
-    }
-
-    if (categoryIds.size > 0 && (!transaction.categoryId || !categoryIds.has(transaction.categoryId))) {
-      return false
-    }
-
-    if (types.size > 0 && !types.has(transaction.type)) {
-      return false
-    }
-
-    if (minAmount !== null && transaction.amount < minAmount) {
-      return false
-    }
-
-    if (maxAmount !== null && transaction.amount > maxAmount) {
-      return false
-    }
-
-    if (searchText) {
-      const haystack = [transaction.note, transaction.merchantName, transaction.location].filter(Boolean).join(" ").toLowerCase()
-
-      if (!haystack.includes(searchText)) {
-        return false
-      }
-    }
-
-    return true
-  })
+  return {
+    start: query?.StartDate ? startOfDay(query.StartDate) : null,
+    end: query?.EndDate ? endOfDay(query.EndDate) : null,
+    accountIds: query?.AccountIds ?? [],
+    tripIds: query?.TripIds ?? [],
+    categoryIds: query?.CategoryIds ?? [],
+    types: query?.Types ?? [],
+    searchText: query?.SearchText?.trim().toLowerCase() || null,
+    minAmount: query?.MinAmount === undefined ? null : parseAmount(query.MinAmount, "MinAmount"),
+    maxAmount: query?.MaxAmount === undefined ? null : parseAmount(query.MaxAmount, "MaxAmount"),
+    page,
+    pageSize,
+  }
 }
 
-async function listAllTransactions(userId: string) {
-  return db.query.transactions.findMany({
-    where: eq(transactions.userId, userId),
-    orderBy: [desc(transactions.date), desc(transactions.createdAt)],
-    with: {
-      items: {
-        orderBy: [asc(transactionItems.createdAt)],
-      },
-    },
-  })
+function buildTransactionWhere(userId: string, query: NormalizedTransactionSearch) {
+  const conditions: SQL<unknown>[] = [eq(transactions.userId, userId)]
+
+  if (query.start) {
+    conditions.push(gte(transactions.date, query.start))
+  }
+
+  if (query.end) {
+    conditions.push(lte(transactions.date, query.end))
+  }
+
+  if (query.accountIds.length > 0) {
+    conditions.push(or(inArray(transactions.accountId, query.accountIds), inArray(transactions.targetAccountId, query.accountIds))!)
+  }
+
+  if (query.tripIds.length > 0) {
+    conditions.push(inArray(transactions.tripId, query.tripIds))
+  }
+
+  if (query.categoryIds.length > 0) {
+    conditions.push(inArray(transactions.categoryId, query.categoryIds))
+  }
+
+  if (query.types.length > 0) {
+    conditions.push(inArray(transactions.type, query.types))
+  }
+
+  if (query.minAmount !== null) {
+    conditions.push(gte(transactions.amount, query.minAmount))
+  }
+
+  if (query.maxAmount !== null) {
+    conditions.push(lte(transactions.amount, query.maxAmount))
+  }
+
+  if (query.searchText) {
+    const pattern = `%${query.searchText}%`
+    conditions.push(
+      sql`lower(coalesce(${transactions.note}, '') || ' ' || coalesce(${transactions.merchantName}, '') || ' ' || coalesce(${transactions.location}, '')) like ${pattern}`
+    )
+  }
+
+  return and(...conditions)!
+}
+
+function getListItemCountSql() {
+  return sql<number>`coalesce((select count(*) from transaction_items where transaction_items.transaction_id = ${transactions.id}), 0)`
+}
+
+async function listTransactionRows(userId: string, query?: TransactionSearchQuery): Promise<TransactionListRow[]> {
+  const normalizedQuery = normalizeTransactionSearchQuery(query)
+  const whereClause = buildTransactionWhere(userId, normalizedQuery)
+  const select = {
+    id: transactions.id,
+    date: transactions.date,
+    type: transactions.type,
+    amount: transactions.amount,
+    amount2: transactions.amount2,
+    currency: transactions.currency,
+    currency2: transactions.currency2,
+    accountId: transactions.accountId,
+    tripId: transactions.tripId,
+    categoryId: transactions.categoryId,
+    subCategoryId: transactions.subCategoryId,
+    targetAccountId: transactions.targetAccountId,
+    originalTransactionId: transactions.originalTransactionId,
+    isRefund: transactions.isRefund,
+    note: transactions.note,
+    merchantName: transactions.merchantName,
+    location: transactions.location,
+    itemCount: getListItemCountSql().as("item_count"),
+  }
+
+  if (normalizedQuery.page && normalizedQuery.pageSize) {
+    const offset = (normalizedQuery.page - 1) * normalizedQuery.pageSize
+
+    return db
+      .select(select)
+      .from(transactions)
+      .where(whereClause)
+      .orderBy(desc(transactions.date), desc(transactions.createdAt))
+      .limit(normalizedQuery.pageSize)
+      .offset(offset)
+  }
+
+  return db
+    .select(select)
+    .from(transactions)
+    .where(whereClause)
+    .orderBy(desc(transactions.date), desc(transactions.createdAt))
+}
+
+async function listTransactionSummaryRows(userId: string, query?: TransactionSearchQuery): Promise<TransactionSummaryRow[]> {
+  return db
+    .select({
+      accountId: transactions.accountId,
+      amount: transactions.amount,
+      currency: transactions.currency,
+      type: transactions.type,
+    })
+    .from(transactions)
+    .where(buildTransactionWhere(userId, normalizeTransactionSearchQuery(query)))
+}
+
+async function listTransactionFacetRows(userId: string, query?: TransactionSearchQuery): Promise<TransactionFacetRow[]> {
+  return db
+    .select({
+      accountId: transactions.accountId,
+      targetAccountId: transactions.targetAccountId,
+      categoryId: transactions.categoryId,
+      tripId: transactions.tripId,
+      type: transactions.type,
+      amount: transactions.amount,
+    })
+    .from(transactions)
+    .where(buildTransactionWhere(userId, normalizeTransactionSearchQuery(query)))
 }
 
 async function buildTransactionItems(itemsInput: CreateTransactionRequest["items"] | UpdateTransactionRequest["items"], transactionId: string) {
@@ -415,25 +534,13 @@ export async function getTransactionData(transactionId: string): Promise<GetTran
 
 export async function searchTransactionsData(query?: GetApiTransactionsSearchData["query"]): Promise<TransactionListItemResponse[]> {
   const user = await requireUser()
-  const rows = await listAllTransactions(user.id)
-  const filtered = filterTransactions(rows, query)
-
-  const page = query?.Page
-  const pageSize = query?.PageSize
-
-  if (page !== undefined || pageSize !== undefined) {
-    const currentPage = !page || page <= 0 ? 1 : page
-    const currentSize = !pageSize || pageSize <= 0 || pageSize > 200 ? 25 : pageSize
-    const offset = (currentPage - 1) * currentSize
-    return filtered.slice(offset, offset + currentSize).map(mapTransactionListItem)
-  }
-
-  return filtered.map(mapTransactionListItem)
+  const rows = await listTransactionRows(user.id, query)
+  return rows.map(mapTransactionListItem)
 }
 
 export async function searchTransactionsSummaryData(query?: GetApiTransactionsSearchData["query"]): Promise<TransactionSearchSummary> {
   const user = await requireUser()
-  const rows = filterTransactions(await listAllTransactions(user.id), query)
+  const rows = await listTransactionSummaryRows(user.id, query)
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
   const fx = await getRatesToBase(baseCurrency)
   const accountRows = await db.query.accounts.findMany({
@@ -468,6 +575,43 @@ export async function searchTransactionsSummaryData(query?: GetApiTransactionsSe
     incomeTotal: roundMoney(incomeTotal),
     expenseCount,
     expenseTotal: roundMoney(expenseTotal),
+  }
+}
+
+export async function searchTransactionsFacetsData(query?: TransactionSearchQuery): Promise<TransactionSearchFacets> {
+  const user = await requireUser()
+  const rows = await listTransactionFacetRows(user.id, query)
+  const accountCounts: Record<string, number> = {}
+  const categoryCounts: Record<string, number> = {}
+  const tripCounts: Record<string, number> = {}
+  const transactionTypeCounts: Record<string, number> = {}
+  let maxAvailableAmount = 0
+
+  for (const transaction of rows) {
+    accountCounts[transaction.accountId] = (accountCounts[transaction.accountId] ?? 0) + 1
+
+    if (transaction.targetAccountId) {
+      accountCounts[transaction.targetAccountId] = (accountCounts[transaction.targetAccountId] ?? 0) + 1
+    }
+
+    if (transaction.categoryId) {
+      categoryCounts[transaction.categoryId] = (categoryCounts[transaction.categoryId] ?? 0) + 1
+    }
+
+    if (transaction.tripId) {
+      tripCounts[transaction.tripId] = (tripCounts[transaction.tripId] ?? 0) + 1
+    }
+
+    transactionTypeCounts[transaction.type] = (transactionTypeCounts[transaction.type] ?? 0) + 1
+    maxAvailableAmount = Math.max(maxAvailableAmount, Number(transaction.amount))
+  }
+
+  return {
+    accountCounts,
+    categoryCounts,
+    tripCounts,
+    transactionTypeCounts,
+    maxAvailableAmount,
   }
 }
 

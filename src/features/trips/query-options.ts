@@ -8,4 +8,5 @@ export const tripsQueryOptions = () =>
   queryOptions({
     queryKey: queryKeys.trips(),
     queryFn: () => getTrips(),
+    staleTime: 60_000,
   })

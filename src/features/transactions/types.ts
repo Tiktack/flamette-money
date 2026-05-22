@@ -17,3 +17,11 @@ export type TransactionSearchSummary = {
   expenseCount: number
   expenseTotal: number
 }
+
+export type TransactionSearchFacets = {
+  accountCounts: Record<string, number>
+  categoryCounts: Record<string, number>
+  tripCounts: Record<string, number>
+  transactionTypeCounts: Record<string, number>
+  maxAvailableAmount: number
+}

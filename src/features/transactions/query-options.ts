@@ -1,10 +1,10 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query"
 
-import { getTransaction, getTransactions, searchTransactions, searchTransactionsSummary } from "./server/functions"
+import { getTransaction, getTransactions, searchTransactions, searchTransactionsFacets, searchTransactionsSummary } from "./server/functions"
 
 import { queryKeys } from "@/features/shared/query-keys"
 
-import type { GetApiTransactionsSearchData, TransactionSearchSummary } from "./types"
+import type { GetApiTransactionsSearchData, TransactionSearchFacets, TransactionSearchSummary } from "./types"
 
 export const transactionsQueryOptions = (page = 1, pageSize = 50) =>
   queryOptions({
@@ -29,5 +29,12 @@ export const transactionsSummaryQueryOptions = (query?: GetApiTransactionsSearch
   queryOptions<TransactionSearchSummary>({
     queryKey: queryKeys.transactionsSummary(query),
     queryFn: () => searchTransactionsSummary({ data: query }),
+    placeholderData: keepPreviousData,
+  })
+
+export const transactionsFacetsQueryOptions = (query?: GetApiTransactionsSearchData["query"]) =>
+  queryOptions<TransactionSearchFacets>({
+    queryKey: queryKeys.transactionsFacets(query),
+    queryFn: () => searchTransactionsFacets({ data: query }),
     placeholderData: keepPreviousData,
   })

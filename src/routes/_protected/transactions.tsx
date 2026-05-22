@@ -30,7 +30,7 @@ import { getAccountIconDefinition } from "@/lib/account-icons"
 import { useAccounts } from "@/features/accounts/hooks"
 import { useCategories } from "@/features/categories/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
-import { useDeleteTransaction, useTransactionsSearch, useTransactionsSummary } from "@/features/transactions/hooks"
+import { useDeleteTransaction, useTransactionsFacets, useTransactionsSearch, useTransactionsSummary } from "@/features/transactions/hooks"
 import { useTrips } from "@/features/trips/hooks"
 import type { AccountType } from "@/features/accounts/types"
 import type { CategoryHierarchy } from "@/features/categories/types"
@@ -156,11 +156,10 @@ function TransactionsPage() {
     return value
   }, [baseQuery, filters.amountMax, filters.amountMin])
 
-  const supportingTransactionsQuery = useTransactionsSearch(baseQuery)
+  const transactionsFacetsQuery = useTransactionsFacets(baseQuery)
   const transactionsQuery = useTransactionsSearch(query)
   const transactionsSummaryQuery = useTransactionsSummary(query)
   const transactions = React.useMemo(() => transactionsQuery.data ?? [], [transactionsQuery.data])
-  const supportingTransactions = React.useMemo(() => supportingTransactionsQuery.data ?? transactions, [supportingTransactionsQuery.data, transactions])
 
   const hasActiveFilters =
     filters.accountIds.length > 0 ||
@@ -172,66 +171,24 @@ function TransactionsPage() {
     searchText.trim().length > 0
 
   const accountCounts = React.useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const transaction of supportingTransactions) {
-      counts.set(transaction.accountId, (counts.get(transaction.accountId) ?? 0) + 1)
-
-      if (transaction.targetAccountId) {
-        counts.set(transaction.targetAccountId, (counts.get(transaction.targetAccountId) ?? 0) + 1)
-      }
-    }
-
-    return counts
-  }, [supportingTransactions])
+    return new Map(Object.entries(transactionsFacetsQuery.data?.accountCounts ?? {}).map(([id, count]) => [id, Number(count)]))
+  }, [transactionsFacetsQuery.data?.accountCounts])
 
   const categoryCounts = React.useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const transaction of supportingTransactions) {
-      if (!transaction.categoryId) {
-        continue
-      }
-
-      counts.set(transaction.categoryId, (counts.get(transaction.categoryId) ?? 0) + 1)
-    }
-
-    return counts
-  }, [supportingTransactions])
+    return new Map(Object.entries(transactionsFacetsQuery.data?.categoryCounts ?? {}).map(([id, count]) => [id, Number(count)]))
+  }, [transactionsFacetsQuery.data?.categoryCounts])
 
   const transactionTypeCounts = React.useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const transaction of supportingTransactions) {
-      counts.set(transaction.type, (counts.get(transaction.type) ?? 0) + 1)
-    }
-
-    return counts
-  }, [supportingTransactions])
+    return new Map(Object.entries(transactionsFacetsQuery.data?.transactionTypeCounts ?? {}).map(([id, count]) => [id, Number(count)]))
+  }, [transactionsFacetsQuery.data?.transactionTypeCounts])
 
   const tripCounts = React.useMemo(() => {
-    const counts = new Map<string, number>()
-
-    for (const transaction of supportingTransactions) {
-      if (!transaction.tripId) {
-        continue
-      }
-
-      counts.set(transaction.tripId, (counts.get(transaction.tripId) ?? 0) + 1)
-    }
-
-    return counts
-  }, [supportingTransactions])
+    return new Map(Object.entries(transactionsFacetsQuery.data?.tripCounts ?? {}).map(([id, count]) => [id, Number(count)]))
+  }, [transactionsFacetsQuery.data?.tripCounts])
 
   const maxAvailableAmount = React.useMemo(() => {
-    let maxAmount = 0
-
-    for (const transaction of supportingTransactions) {
-      maxAmount = Math.max(maxAmount, toNumber(transaction.amount))
-    }
-
-    return maxAmount
-  }, [supportingTransactions])
+    return Number(transactionsFacetsQuery.data?.maxAvailableAmount ?? 0)
+  }, [transactionsFacetsQuery.data?.maxAvailableAmount])
 
   const amountRangeValue = React.useMemo<[number, number]>(() => {
     const nextMax = maxAvailableAmount
@@ -289,8 +246,8 @@ function TransactionsPage() {
     [transactionTypeCounts]
   )
 
-  const summary = transactionsSummaryQuery.data
-  const primaryCurrency = summary?.baseCurrency
+  const summaryMetrics = transactionsSummaryQuery.data
+  const primaryCurrency = summaryMetrics?.baseCurrency
   const formatAmountRangeLabel = React.useCallback(
     (value: number) =>
       primaryCurrency ? formatCurrency(value, primaryCurrency) : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value),
@@ -351,12 +308,12 @@ function TransactionsPage() {
         header: "Details",
         cell: ({ row }) => {
           const transaction = row.original
-          const summary = transaction.note || transaction.merchantName || transaction.location || "-"
-          const secondary = [transaction.merchantName, transaction.location].filter((value) => value && value !== summary).join(" • ")
+          const detailsSummary = transaction.note || transaction.merchantName || transaction.location || "-"
+          const secondary = [transaction.merchantName, transaction.location].filter((value) => value && value !== detailsSummary).join(" • ")
 
           return (
             <div className="max-w-[320px] min-w-0">
-              <p className="truncate text-foreground">{summary}</p>
+              <p className="truncate text-foreground">{detailsSummary}</p>
               {secondary ? <p className="truncate text-sm text-muted-foreground">{secondary}</p> : null}
             </div>
           )
@@ -460,24 +417,24 @@ function TransactionsPage() {
               icon={TransactionIcon}
               iconBgClassName="bg-primary/10"
               iconColorClassName="text-primary"
-              value={String(summary?.transactionCount ?? transactions.length)}
-            />
-            <MetricCard
-              label="Income"
+               value={String(summaryMetrics?.transactionCount ?? transactions.length)}
+             />
+             <MetricCard
+               label="Income"
               icon={AddMoneyCircleIcon}
               iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
               iconColorClassName="text-blue-600 dark:text-blue-400"
-              badge={<MetricCardBadge>{formatTransactionCount(summary?.incomeCount ?? 0)}</MetricCardBadge>}
-              value={formatCurrency(summary?.incomeTotal, summary?.baseCurrency)}
-            />
-            <MetricCard
-              label="Expenses"
+               badge={<MetricCardBadge>{formatTransactionCount(summaryMetrics?.incomeCount ?? 0)}</MetricCardBadge>}
+               value={formatCurrency(summaryMetrics?.incomeTotal, summaryMetrics?.baseCurrency)}
+             />
+             <MetricCard
+               label="Expenses"
               icon={CreditCardIcon}
               iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
               iconColorClassName="text-amber-600 dark:text-amber-400"
-              badge={<MetricCardBadge>{formatTransactionCount(summary?.expenseCount ?? 0)}</MetricCardBadge>}
-              value={formatCurrency(summary?.expenseTotal, summary?.baseCurrency)}
-            />
+               badge={<MetricCardBadge>{formatTransactionCount(summaryMetrics?.expenseCount ?? 0)}</MetricCardBadge>}
+               value={formatCurrency(summaryMetrics?.expenseTotal, summaryMetrics?.baseCurrency)}
+             />
           </>
         )}
       </div>

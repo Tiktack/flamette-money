@@ -30,6 +30,7 @@ export const tripMutationInvalidations = [
   { queryKey: queryKeys.trips() },
   { queryKey: ["transactions"] },
   { queryKey: ["transactions-search"] },
+  { queryKey: ["transactions-facets"] },
   { queryKey: ["reports-cashflow-series"] },
   { queryKey: ["reports-category-series"] },
   { queryKey: ["reports-monthly-yoy"] },
@@ -38,6 +39,7 @@ export const tripMutationInvalidations = [
 export const transactionMutationInvalidations = [
   { queryKey: ["transactions-search"] },
   { queryKey: ["transactions-summary"] },
+  { queryKey: ["transactions-facets"] },
   { queryKey: ["transactions"] },
   { queryKey: queryKeys.trips() },
   ...reportInvalidations,
@@ -52,6 +54,7 @@ export const fullDataRefreshInvalidations = [
   { queryKey: ["transactions"] },
   { queryKey: ["transactions-search"] },
   { queryKey: ["transactions-summary"] },
+  { queryKey: ["transactions-facets"] },
   ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 

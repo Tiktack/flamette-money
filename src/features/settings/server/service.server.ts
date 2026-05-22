@@ -1,5 +1,6 @@
 import { and, count, eq, isNotNull, isNull } from "drizzle-orm"
 
+import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { db, runWithDb } from "@/lib/db/client.server"
 import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
 
@@ -37,7 +38,7 @@ export async function updateSettingsData(request: { baseCurrency: string }): Pro
 export async function resetUserData(): Promise<ResetUserDataResponse> {
   const user = await requireUser()
 
-  return runWithDb(async (database) => {
+  const result = await runWithDb(async (database) => {
     const [
       [{ deletedTransactions }],
       [{ deletedTransactionItems }],
@@ -84,6 +85,12 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
     await database.delete(categories)
       .where(and(eq(categories.userId, user.id), isNull(categories.parentId)))
     await database.delete(accounts).where(eq(accounts.userId, user.id))
+    await database
+      .update(users)
+      .set({
+        bootstrapCompletedAt: null,
+      })
+      .where(eq(users.id, user.id))
 
     return {
       deletedTransactions,
@@ -93,4 +100,7 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
       deletedTransactionItems,
     }
   })
+
+  await ensureUserBootstrap(user.id)
+  return result
 }

@@ -19,6 +19,7 @@ export const users = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
     baseCurrency: text("base_currency").notNull().default("USD"),
+    bootstrapCompletedAt: integer("bootstrap_completed_at", { mode: "timestamp_ms" }),
     subscriptionType: text("subscription_type", {
       enum: subscriptionTypes,
     })
@@ -182,32 +183,38 @@ export const transactions = sqliteTable(
   },
   (table) => [
     index("transactions_user_id_date_idx").on(table.userId, table.date),
+    index("transactions_user_id_date_created_at_idx").on(table.userId, table.date, table.createdAt),
+    index("transactions_user_id_type_date_idx").on(table.userId, table.type, table.date),
     index("transactions_user_id_account_id_date_idx").on(table.userId, table.accountId, table.date),
     index("transactions_user_id_category_id_date_idx").on(table.userId, table.categoryId, table.date),
     index("transactions_user_id_trip_id_date_idx").on(table.userId, table.tripId, table.date),
   ]
 )
 
-export const transactionItems = sqliteTable("transaction_items", {
-  id: text("id").primaryKey(),
-  transactionId: text("transaction_id")
-    .notNull()
-    .references(() => transactions.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  quantity: real("quantity").notNull().default(1),
-  unit: text("unit"),
-  unitPrice: real("unit_price").notNull().default(0),
-  promotionAmount: real("promotion_amount").notNull().default(0),
-  finalAmount: real("final_amount").notNull().default(0),
-  categoryId: text("category_id").references(() => categories.id, {
-    onDelete: "restrict",
-  }),
-  subCategoryId: text("sub_category_id").references(() => categories.id, {
-    onDelete: "restrict",
-  }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-})
+export const transactionItems = sqliteTable(
+  "transaction_items",
+  {
+    id: text("id").primaryKey(),
+    transactionId: text("transaction_id")
+      .notNull()
+      .references(() => transactions.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    quantity: real("quantity").notNull().default(1),
+    unit: text("unit"),
+    unitPrice: real("unit_price").notNull().default(0),
+    promotionAmount: real("promotion_amount").notNull().default(0),
+    finalAmount: real("final_amount").notNull().default(0),
+    categoryId: text("category_id").references(() => categories.id, {
+      onDelete: "restrict",
+    }),
+    subCategoryId: text("sub_category_id").references(() => categories.id, {
+      onDelete: "restrict",
+    }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+  },
+  (table) => [index("transaction_items_transaction_id_created_at_idx").on(table.transactionId, table.createdAt)]
+)
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),

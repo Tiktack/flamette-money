@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm"
 
 import { normalizeCurrencyOrDefault } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
@@ -20,9 +20,15 @@ export async function listTripsData(): Promise<TripListItemResponse[]> {
     where: eq(trips.userId, user.id),
     orderBy: [desc(trips.startDate), asc(trips.name)],
   })
-  const tripExpenseRows = await db.query.transactions.findMany({
-    where: and(eq(transactions.userId, user.id), eq(transactions.type, "Expense")),
-  })
+  const tripExpenseRows = await db
+    .select({
+      tripId: transactions.tripId,
+      accountId: transactions.accountId,
+      amount: transactions.amount,
+      currency: transactions.currency,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.userId, user.id), eq(transactions.type, "Expense"), isNotNull(transactions.tripId)))
   const accountRows = await db.query.accounts.findMany({
     where: eq(accounts.userId, user.id),
   })
@@ -31,15 +37,16 @@ export async function listTripsData(): Promise<TripListItemResponse[]> {
   const transactionCountByTrip = new Map<string, number>()
 
   for (const transaction of tripExpenseRows) {
-    if (!transaction.tripId) {
+    const tripId = transaction.tripId
+    if (!tripId) {
       continue
     }
 
     const currency = normalizeCurrencyOrDefault(transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? user.baseCurrency, baseCurrency)
     const converted = transaction.amount * (fx.ratesToBase[currency] ?? 1)
 
-    totalsByTrip.set(transaction.tripId, roundMoney((totalsByTrip.get(transaction.tripId) ?? 0) + converted))
-    transactionCountByTrip.set(transaction.tripId, (transactionCountByTrip.get(transaction.tripId) ?? 0) + 1)
+    totalsByTrip.set(tripId, roundMoney((totalsByTrip.get(tripId) ?? 0) + converted))
+    transactionCountByTrip.set(tripId, (transactionCountByTrip.get(tripId) ?? 0) + 1)
   }
 
   return tripRows

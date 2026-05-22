@@ -1,17 +1,28 @@
-import { count, eq } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 
 import { categorySeeds } from "@/lib/categories/category-seeds"
-import { db } from "@/lib/db/client.server"
+import { db, runWithDb } from "@/lib/db/client.server"
 import { forEachChunk, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
-import { categories } from "@/lib/db/schema"
+import { categories, users } from "@/lib/db/schema"
 
 export async function ensureUserBootstrap(userId: string) {
-  const existing = await db.select({ value: count() }).from(categories).where(eq(categories.userId, userId))
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: {
+      id: true,
+      bootstrapCompletedAt: true,
+    },
+  })
 
-  if ((existing[0]?.value ?? 0) > 0) {
+  if (!user) {
+    throw new Error("User was not found.")
+  }
+
+  if (user.bootstrapCompletedAt) {
     return
   }
 
+  const now = new Date()
   const idMap = new Map(categorySeeds.map((category) => [category.id, crypto.randomUUID()]))
   const categoryValues = categorySeeds.map((category) => ({
     ...category,
@@ -20,7 +31,33 @@ export async function ensureUserBootstrap(userId: string) {
     userId,
   }))
 
-  await forEachChunk(categoryValues, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-    await db.insert(categories).values(chunk)
+  await runWithDb(async (database) => {
+    const freshUser = await database.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: {
+        id: true,
+        bootstrapCompletedAt: true,
+      },
+    })
+
+    if (!freshUser) {
+      throw new Error("User was not found.")
+    }
+
+    if (freshUser.bootstrapCompletedAt) {
+      return
+    }
+
+    await forEachChunk(categoryValues, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+      await database.insert(categories).values(chunk)
+    })
+
+    await database
+      .update(users)
+      .set({
+        bootstrapCompletedAt: now,
+        updatedAt: now,
+      })
+      .where(eq(users.id, userId))
   })
 }
