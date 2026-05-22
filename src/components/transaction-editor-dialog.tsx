@@ -908,17 +908,27 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
   const appInfoQuery = useAppInfo()
   const categoriesQuery = useCategories()
   const tripsQuery = useTrips()
-  const recentTransactionsQuery = useTransactionsSearch()
-  const transactionQuery = useTransaction(mode === "edit" ? transactionId : undefined)
-  const createTransaction = useCreateTransaction()
-  const updateTransaction = useUpdateTransaction()
-  const scanReceipt = useScanReceipt()
   const [form, setForm] = React.useState<TransactionFormState>(() => buildDefaultState(presetType ?? defaultType))
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [scanPreview, setScanPreview] = React.useState<string | null>(null)
   const [scanResult, setScanResult] = React.useState<ReceiptScanResult | null>(null)
   const [scanError, setScanError] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState<string | number | null>("manual")
+  const recentTransactionsQuery = useTransactionsSearch(
+    form.type === "Refund" && form.accountId
+      ? {
+          Types: ["Expense"],
+          AccountIds: [form.accountId],
+        }
+      : undefined,
+    {
+      enabled: open && form.type === "Refund" && Boolean(form.accountId),
+    }
+  )
+  const transactionQuery = useTransaction(mode === "edit" ? transactionId : undefined)
+  const createTransaction = useCreateTransaction()
+  const updateTransaction = useUpdateTransaction()
+  const scanReceipt = useScanReceipt()
 
   const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const categoryMap = React.useMemo(() => buildCategoryMap(categories), [categories])
@@ -1102,13 +1112,16 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
     name: t.name,
   }))
 
-  const recentTransactions = (recentTransactionsQuery.data ?? []).map((t) => ({
-    id: t.id,
-    date: t.date,
-    accountId: t.accountId,
-    amount: t.amount,
-    type: t.type,
-  }))
+  const recentTransactions =
+    open && form.type === "Refund"
+      ? (recentTransactionsQuery.data ?? []).map((t) => ({
+          id: t.id,
+          date: t.date,
+          accountId: t.accountId,
+          amount: t.amount,
+          type: t.type,
+        }))
+      : []
 
   const formFields = (
     <TransactionFormFields

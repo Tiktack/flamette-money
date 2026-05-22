@@ -7,6 +7,7 @@ import {
   createTransactionData,
   deleteTransactionData,
   getTransactionData,
+  searchTransactionsFacetsData,
   searchTransactionsData,
   searchTransactionsSummaryData,
   updateTransactionData,
@@ -35,6 +36,10 @@ export const searchTransactions = createServerFn({ method: "GET" })
 export const searchTransactionsSummary = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
   .handler(async ({ data }) => searchTransactionsSummaryData(data))
+
+export const searchTransactionsFacets = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
+  .handler(async ({ data }) => searchTransactionsFacetsData(data))
 
 export const createTransaction = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => transactionRequestSchema.parse(data))

@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm"
 
-import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { getSessionData } from "@/lib/auth/session.server"
 import { supportedCurrencies } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
@@ -14,8 +13,6 @@ export async function getCurrentUserData(): Promise<CurrentUserResponse | null> 
   if (!session) {
     return null
   }
-
-  await ensureUserBootstrap(session.user.id)
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.user.id),
