@@ -5,12 +5,13 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build && tsc --noEmit",
+    "cf-typegen": "wrangler types",
+    "deploy": "pnpm run build && wrangler deploy",
     "format": "oxfmt --disable-nested-config --ignore-path .gitignore --ignore-path .oxfmtignore",
     "format:check": "oxfmt --check --disable-nested-config --ignore-path .gitignore --ignore-path .oxfmtignore",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "preview": "vite preview",
-    "start": "pnpx srvx --prod -s ../client dist/server/server.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -33,7 +34,6 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/router-plugin": "^1.168.2",
     "better-auth": "^1.6.11",
-    "better-sqlite3": "^12.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -60,9 +60,9 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.37.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.19.19",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -74,12 +74,16 @@
     "typescript": "^5.9.3",
     "vite": "^8.0.13",
     "vitest": "^3.2.4",
-    "web-vitals": "^5.2.0"
+    "web-vitals": "^5.2.0",
+    "wrangler": "^4.93.1"
   },
   "packageManager": "pnpm@11.1.2",
   "pnpm": {
     "onlyBuiltDependencies": [
-      "better-sqlite3"
+      "esbuild",
+      "lightningcss",
+      "sharp",
+      "workerd"
     ]
   }
 }

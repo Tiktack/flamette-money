@@ -1,7 +1,8 @@
 import { and, asc, desc, eq } from "drizzle-orm"
 
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
-import { db } from "@/lib/db/client.server"
+import { db, runWithDb } from "@/lib/db/client.server"
+import { forEachChunk, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import { accounts, transactionItems, transactions, transactionTypes } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { roundMoney } from "@/lib/finance"
@@ -477,12 +478,11 @@ export async function createTransactionData(request: CreateTransactionRequest): 
   const now = new Date()
   const itemsToInsert = await buildTransactionItems(request.items, id)
 
-  db.transaction((tx) => {
-    const sourceAccount = tx.query.accounts
+  await runWithDb(async (database) => {
+    const sourceAccount = await database.query.accounts
       .findFirst({
         where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.account.id)),
       })
-      .sync()
 
     if (!sourceAccount) {
       throw new Error("Account was not found.")
@@ -492,11 +492,10 @@ export async function createTransactionData(request: CreateTransactionRequest): 
 
     if (validated.targetAccount) {
       targetAccount =
-        tx.query.accounts
+        (await database.query.accounts
           .findFirst({
             where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.targetAccount.id)),
-          })
-          .sync() ?? null
+          })) ?? null
 
       if (!targetAccount) {
         throw new Error("Target account was not found.")
@@ -505,25 +504,23 @@ export async function createTransactionData(request: CreateTransactionRequest): 
 
     const deltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
 
-    tx.update(accounts)
+    await database.update(accounts)
       .set({
         currentBalance: roundMoney(sourceAccount.currentBalance + deltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, sourceAccount.id))
-      .run()
 
     if (targetAccount && deltas.targetDelta !== null) {
-      tx.update(accounts)
+      await database.update(accounts)
         .set({
           currentBalance: roundMoney(targetAccount.currentBalance + deltas.targetDelta),
           updatedAt: now,
         })
         .where(eq(accounts.id, targetAccount.id))
-        .run()
     }
 
-    tx.insert(transactions)
+    await database.insert(transactions)
       .values({
         id,
         userId: user.id,
@@ -546,10 +543,11 @@ export async function createTransactionData(request: CreateTransactionRequest): 
         createdAt: now,
         updatedAt: now,
       })
-      .run()
 
     if (itemsToInsert.length > 0) {
-      tx.insert(transactionItems).values(itemsToInsert).run()
+      await forEachChunk(itemsToInsert, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(transactionItems).values(chunk)
+      })
     }
   })
 
@@ -564,12 +562,11 @@ export async function updateTransactionData(transactionId: string, request: Upda
   const now = new Date()
   const nextItems = await buildTransactionItems(request.items, transactionId)
 
-  db.transaction((tx) => {
-    const sourceAccount = tx.query.accounts
+  await runWithDb(async (database) => {
+    const sourceAccount = await database.query.accounts
       .findFirst({
         where: and(eq(accounts.userId, user.id), eq(accounts.id, existing.accountId)),
       })
-      .sync()
 
     if (!sourceAccount) {
       throw new Error("Account was not found.")
@@ -578,21 +575,19 @@ export async function updateTransactionData(transactionId: string, request: Upda
     let oldTargetAccount: AccountRecord | null = null
     if (existing.targetAccountId) {
       oldTargetAccount =
-        tx.query.accounts
+        (await database.query.accounts
           .findFirst({
             where: and(eq(accounts.userId, user.id), eq(accounts.id, existing.targetAccountId)),
-          })
-          .sync() ?? null
+          })) ?? null
     }
 
     const nextSourceAccount =
       existing.accountId === validated.account.id
         ? sourceAccount
-        : tx.query.accounts
+        : await database.query.accounts
             .findFirst({
               where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.account.id)),
             })
-            .sync()
 
     if (!nextSourceAccount) {
       throw new Error("Account was not found.")
@@ -603,38 +598,35 @@ export async function updateTransactionData(transactionId: string, request: Upda
       nextTargetAccount =
         existing.targetAccountId === validated.targetAccount.id
           ? oldTargetAccount
-          : (tx.query.accounts
+          : ((await database.query.accounts
               .findFirst({
                 where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.targetAccount.id)),
               })
-              .sync() ?? null)
+              ) ?? null)
     }
 
     const oldDeltas = getBalanceDeltas(existing.type, existing.amount, existing.amount2)
 
-    tx.update(accounts)
+    await database.update(accounts)
       .set({
         currentBalance: roundMoney(sourceAccount.currentBalance - oldDeltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, sourceAccount.id))
-      .run()
 
     if (oldTargetAccount && oldDeltas.targetDelta !== null) {
-      tx.update(accounts)
+      await database.update(accounts)
         .set({
           currentBalance: roundMoney(oldTargetAccount.currentBalance - oldDeltas.targetDelta),
           updatedAt: now,
         })
         .where(eq(accounts.id, oldTargetAccount.id))
-        .run()
     }
 
-    const refreshedSourceAccount = tx.query.accounts
+    const refreshedSourceAccount = await database.query.accounts
       .findFirst({
         where: eq(accounts.id, nextSourceAccount.id),
       })
-      .sync()
 
     if (!refreshedSourceAccount) {
       throw new Error("Account was not found.")
@@ -642,35 +634,32 @@ export async function updateTransactionData(transactionId: string, request: Upda
 
     const newDeltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
 
-    tx.update(accounts)
+    await database.update(accounts)
       .set({
         currentBalance: roundMoney(refreshedSourceAccount.currentBalance + newDeltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, refreshedSourceAccount.id))
-      .run()
 
     if (nextTargetAccount && newDeltas.targetDelta !== null) {
-      const refreshedTargetAccount = tx.query.accounts
+      const refreshedTargetAccount = await database.query.accounts
         .findFirst({
           where: eq(accounts.id, nextTargetAccount.id),
         })
-        .sync()
 
       if (!refreshedTargetAccount) {
         throw new Error("Target account was not found.")
       }
 
-      tx.update(accounts)
+      await database.update(accounts)
         .set({
           currentBalance: roundMoney(refreshedTargetAccount.currentBalance + newDeltas.targetDelta),
           updatedAt: now,
         })
         .where(eq(accounts.id, refreshedTargetAccount.id))
-        .run()
     }
 
-    tx.update(transactions)
+    await database.update(transactions)
       .set({
         date: validated.date,
         type: validated.type,
@@ -691,12 +680,13 @@ export async function updateTransactionData(transactionId: string, request: Upda
         updatedAt: now,
       })
       .where(eq(transactions.id, existing.id))
-      .run()
 
-    tx.delete(transactionItems).where(eq(transactionItems.transactionId, existing.id)).run()
+    await database.delete(transactionItems).where(eq(transactionItems.transactionId, existing.id))
 
     if (nextItems.length > 0) {
-      tx.insert(transactionItems).values(nextItems).run()
+      await forEachChunk(nextItems, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(transactionItems).values(chunk)
+      })
     }
   })
 
@@ -709,12 +699,11 @@ export async function deleteTransactionData(transactionId: string) {
   const transaction = await requireTransaction(user.id, transactionId)
   const now = new Date()
 
-  db.transaction((tx) => {
-    const sourceAccount = tx.query.accounts
+  await runWithDb(async (database) => {
+    const sourceAccount = await database.query.accounts
       .findFirst({
         where: and(eq(accounts.userId, user.id), eq(accounts.id, transaction.accountId)),
       })
-      .sync()
 
     if (!sourceAccount) {
       throw new Error("Account was not found.")
@@ -722,33 +711,30 @@ export async function deleteTransactionData(transactionId: string) {
 
     const deltas = getBalanceDeltas(transaction.type, transaction.amount, transaction.amount2)
 
-    tx.update(accounts)
+    await database.update(accounts)
       .set({
         currentBalance: roundMoney(sourceAccount.currentBalance - deltas.sourceDelta),
         updatedAt: now,
       })
       .where(eq(accounts.id, sourceAccount.id))
-      .run()
 
     if (transaction.targetAccountId && deltas.targetDelta !== null) {
-      const targetAccount = tx.query.accounts
+      const targetAccount = await database.query.accounts
         .findFirst({
           where: and(eq(accounts.userId, user.id), eq(accounts.id, transaction.targetAccountId)),
         })
-        .sync()
 
       if (targetAccount) {
-        tx.update(accounts)
+        await database.update(accounts)
           .set({
             currentBalance: roundMoney(targetAccount.currentBalance - deltas.targetDelta),
             updatedAt: now,
           })
           .where(eq(accounts.id, targetAccount.id))
-          .run()
-      }
+        }
     }
 
-    tx.delete(transactionItems).where(eq(transactionItems.transactionId, transaction.id)).run()
-    tx.delete(transactions).where(eq(transactions.id, transaction.id)).run()
+    await database.delete(transactionItems).where(eq(transactionItems.transactionId, transaction.id))
+    await database.delete(transactions).where(eq(transactions.id, transaction.id))
   })
 }

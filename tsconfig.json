@@ -1,5 +1,6 @@
 {
-  "include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "vite.config.js"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "eslint.config.js", "prettier.config.js", "vite.config.js"],
+  "exclude": ["my-tanstack-app"],
 
   "compilerOptions": {
     "target": "ES2022",

@@ -1,4 +1,5 @@
 import { normalizeCurrencyOrDefault, supportedCurrencies } from "@/lib/currency"
+import { getExchangeRateApiKey, getExchangeRateCacheHours } from "@/lib/env.server"
 
 type ExchangeRateSnapshot = {
   baseCurrency: string
@@ -44,8 +45,8 @@ export async function getRatesToBase(baseCurrency: string) {
     return cached.snapshot
   }
 
-  const apiKey = process.env.EXCHANGE_RATE_API_KEY?.trim()
-  const cacheHours = Number.parseInt(process.env.EXCHANGE_RATE_CACHE_HOURS ?? "5", 10)
+  const apiKey = getExchangeRateApiKey()
+  const cacheHours = getExchangeRateCacheHours()
   const ttl = Math.max(1, Number.isNaN(cacheHours) ? 5 : cacheHours) * 60 * 60 * 1000
 
   if (!apiKey) {

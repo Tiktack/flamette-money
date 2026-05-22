@@ -4,8 +4,8 @@ import * as XLSX from "xlsx"
 import { auth } from "@/lib/auth"
 import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
-import { db } from "@/lib/db/client.server"
-import { forEachChunk, forEachChunkSync, SQLITE_IN_CLAUSE_BATCH_SIZE, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { db, runWithDb, type AppDatabase } from "@/lib/db/client.server"
+import { forEachChunk, SQLITE_IN_CLAUSE_BATCH_SIZE, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import {
   accounts,
   accountTypes,
@@ -513,39 +513,35 @@ async function requireUserForRequest(request: Request) {
   return user
 }
 
-function clearUserScopedData(tx: Parameters<typeof db.transaction>[0] extends (arg: infer T) => unknown ? T : never, userId: string) {
-  const existingTransactions = tx.query.transactions
+async function clearUserScopedData(database: AppDatabase, userId: string) {
+  const existingTransactions = await database.query.transactions
     .findMany({
       where: eq(transactions.userId, userId),
       columns: { id: true },
     })
-    .sync()
 
   const transactionIds = existingTransactions.map((transaction) => transaction.id)
 
-  tx.update(transactions)
+  await database.update(transactions)
     .set({
       originalTransactionId: null,
       relatedTransactionId: null,
     })
     .where(eq(transactions.userId, userId))
-    .run()
 
   if (transactionIds.length > 0) {
-    forEachChunkSync(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, (chunk) => {
-      tx.delete(transactionItems).where(inArray(transactionItems.transactionId, chunk)).run()
+    await forEachChunk(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, async (chunk) => {
+      await database.delete(transactionItems).where(inArray(transactionItems.transactionId, chunk))
     })
   }
 
-  tx.delete(transactions).where(eq(transactions.userId, userId)).run()
-  tx.delete(trips).where(eq(trips.userId, userId)).run()
-  tx.delete(categories)
+  await database.delete(transactions).where(eq(transactions.userId, userId))
+  await database.delete(trips).where(eq(trips.userId, userId))
+  await database.delete(categories)
     .where(and(eq(categories.userId, userId), isNotNull(categories.parentId)))
-    .run()
-  tx.delete(categories)
+  await database.delete(categories)
     .where(and(eq(categories.userId, userId), isNull(categories.parentId)))
-    .run()
-  tx.delete(accounts).where(eq(accounts.userId, userId)).run()
+  await database.delete(accounts).where(eq(accounts.userId, userId))
 }
 
 function pickAccountColor(accountName: string) {
@@ -962,8 +958,8 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
 
   const now = new Date()
 
-  return db.transaction((tx) => {
-    clearUserScopedData(tx, user.id)
+  return runWithDb(async (database) => {
+    await clearUserScopedData(database, user.id)
 
     const importedAccounts = accountRows
       .filter((row) => row.id && row.name.trim())
@@ -1137,26 +1133,26 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
     }
 
     if (importedAccounts.length > 0) {
-      forEachChunkSync(importedAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(accounts).values(chunk).run()
+      await forEachChunk(importedAccounts, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(accounts).values(chunk)
       })
     }
 
     if (importedCategories.length > 0) {
-      forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(categories).values(chunk).run()
+      await forEachChunk(importedCategories, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(categories).values(chunk)
       })
     }
 
     if (importedTrips.length > 0) {
-      forEachChunkSync(importedTrips, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(trips).values(chunk).run()
+      await forEachChunk(importedTrips, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(trips).values(chunk)
       })
     }
 
     if (importedTransactions.length > 0) {
-      forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(transactions).values(chunk).run()
+      await forEachChunk(importedTransactions, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(transactions).values(chunk)
       })
     }
 
@@ -1169,18 +1165,17 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
         continue
       }
 
-      tx.update(transactions)
+      await database.update(transactions)
         .set({
           relatedTransactionId: nextRelatedId,
           originalTransactionId: nextOriginalId,
         })
         .where(eq(transactions.id, reference.id))
-        .run()
     }
 
     if (importedTransactionItems.length > 0) {
-      forEachChunkSync(importedTransactionItems, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(transactionItems).values(chunk).run()
+      await forEachChunk(importedTransactionItems, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(transactionItems).values(chunk)
       })
     }
 
@@ -1189,14 +1184,13 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
     const settingsChanged = nextBaseCurrency !== user.baseCurrency || nextSubscriptionType !== user.subscriptionType
 
     if (settingsChanged) {
-      tx.update(users)
+      await database.update(users)
         .set({
           baseCurrency: nextBaseCurrency,
           subscriptionType: nextSubscriptionType,
           updatedAt: now,
         })
         .where(eq(users.id, user.id))
-        .run()
     }
 
     return {
@@ -1251,8 +1245,8 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
 
   const now = new Date()
 
-  return db.transaction((tx) => {
-    clearUserScopedData(tx, user.id)
+  return runWithDb(async (database) => {
+    await clearUserScopedData(database, user.id)
 
     const accountsByName = new Map<string, typeof accounts.$inferInsert>()
     const importedAccounts: Array<typeof accounts.$inferInsert> = []
@@ -1445,20 +1439,20 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
     }
 
     if (importedAccounts.length > 0) {
-      forEachChunkSync(importedAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(accounts).values(chunk).run()
+      await forEachChunk(importedAccounts, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(accounts).values(chunk)
       })
     }
 
     if (importedCategories.length > 0) {
-      forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(categories).values(chunk).run()
+      await forEachChunk(importedCategories, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(categories).values(chunk)
       })
     }
 
     if (importedTransactions.length > 0) {
-      forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-        tx.insert(transactions).values(chunk).run()
+      await forEachChunk(importedTransactions, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
+        await database.insert(transactions).values(chunk)
       })
     }
 

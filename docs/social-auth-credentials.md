@@ -22,7 +22,7 @@ These are the callback URLs this app uses:
 - Google: `http://localhost:<port>/api/auth/callback/google`
 - GitHub: `http://localhost:<port>/api/auth/callback/github`
 
-For production, replace `http://localhost:<port>` with your deployed app origin.
+For production, replace `http://localhost:<port>` with your deployed Worker origin or custom domain.
 
 ## Google setup
 
@@ -77,3 +77,5 @@ If you want a production base URL, also set:
 ```bash
 BETTER_AUTH_URL=https://your-app.example.com
 ```
+
+For Cloudflare preview deployments on `*.workers.dev`, you can leave `BETTER_AUTH_URL` unset and rely on the dynamic host allowlist, but production is more stable when `BETTER_AUTH_URL` is set explicitly.
