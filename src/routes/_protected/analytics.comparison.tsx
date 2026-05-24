@@ -1,6 +1,9 @@
+import * as React from "react"
+
 import { createFileRoute } from "@tanstack/react-router"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
+import { MetricCard } from "@/components/metric-card"
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -61,7 +64,7 @@ function AnalyticsComparisonPage() {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
-      <Card className="border-border/60 bg-card/80 shadow-sm">
+      <Card className="border-border bg-card/95 shadow-none">
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -121,7 +124,7 @@ function AnalyticsComparisonPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 self-start">
+      <div className="grid gap-3 self-start">
         <SummaryCard label="Total" value={formatCurrency(reportQuery.data?.summary.total, baseCurrency)} helper="Across the latest selected year" />
         <SummaryCard label="Previous year" value={formatCurrency(reportQuery.data?.summary.previousYearTotal, baseCurrency)} helper="Reference period total" />
         <SummaryCard
@@ -165,14 +168,11 @@ function YearSelect({ label, value, options, onChange }: { label: string; value:
 
 function SummaryCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="space-y-2 p-5">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-        <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
-      </CardContent>
-    </Card>
+    <MetricCard
+      label={label}
+      value={value}
+      footer={helper}
+      footerClassName="items-start justify-start font-sans text-xs leading-5 tracking-normal normal-case"
+    />
   )
 }
-
-import * as React from "react"

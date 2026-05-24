@@ -1,8 +1,11 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
+import { ArrowDown01Icon, ArrowUp01Icon, ChartUpIcon, CreditCardIcon, Wallet01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts"
 
+import { MetricCard } from "@/components/metric-card"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { computeNiceDomainTicks, formatCompactNumber, formatTimeSeriesAxisLabel } from "@/lib/chart-utils"
@@ -122,6 +125,21 @@ function AnalyticsPortfolioPage() {
     })
     return { domain, ticks }
   }, [chartData])
+  const summary = reportQuery.data?.summary
+  const startBalance = formatCurrency(summary?.startBalance, resolvedBaseCurrency)
+  const endBalance = formatCurrency(summary?.endBalance, resolvedBaseCurrency)
+  const delta = toNumber(summary?.delta)
+  const deltaPercent = toNumber(summary?.deltaPercent)
+  const peakBalance = React.useMemo(() => {
+    const points = reportQuery.data?.points ?? []
+
+    if (points.length === 0) {
+      return formatCurrency(0, resolvedBaseCurrency)
+    }
+
+    const peakPoint = points.reduce((currentPeak, point) => (toNumber(point.totalBalance) > toNumber(currentPeak.totalBalance) ? point : currentPeak))
+    return formatCurrency(peakPoint.totalBalance, resolvedBaseCurrency)
+  }, [reportQuery.data?.points, resolvedBaseCurrency])
 
   const chartConfig: ChartConfig = {
     balance: {
@@ -134,49 +152,77 @@ function AnalyticsPortfolioPage() {
     <div className="flex flex-col gap-6">
       <SharedDateRangeToolbar />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
-        <Card className="border-border/60 bg-card/80 shadow-sm">
-          <CardHeader className="gap-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <CardTitle>Portfolio balance trend</CardTitle>
-                <CardDescription>Track total balances over time in your selected base currency.</CardDescription>
+      {reportQuery.isPending ? (
+        <>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="h-[98px] animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+          <div className="h-[460px] animate-pulse rounded-xl bg-muted" />
+        </>
+      ) : reportQuery.isError ? (
+        <EmptyState eyebrow="Report" title="Unable to load the balance report" description={getApiErrorMessage(reportQuery.error, "Try a different range or interval.")} />
+      ) : chartData.length === 0 ? (
+        <EmptyState
+          eyebrow="Report"
+          title="No portfolio data in this range"
+          description="Adjust the active time window to inspect a wider portion of your account history."
+        />
+      ) : (
+        <>
+          <div className="grid gap-3 lg:grid-cols-3">
+            <MetricCard
+              label="Start balance"
+              value={startBalance}
+              icon={Wallet01Icon}
+              iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
+              iconColorClassName="text-blue-600 dark:text-blue-400"
+            />
+            <MetricCard
+              label="End balance"
+              value={endBalance}
+              icon={CreditCardIcon}
+              iconBgClassName="bg-emerald-500/10 dark:bg-emerald-500/15"
+              iconColorClassName="text-emerald-600 dark:text-emerald-400"
+              badge={<PortfolioTrendBadge delta={delta} deltaPercent={deltaPercent} />}
+            />
+            <MetricCard
+              label="Peak balance"
+              value={peakBalance}
+              icon={ChartUpIcon}
+              iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
+              iconColorClassName="text-amber-600 dark:text-amber-400"
+            />
+          </div>
+
+          <Card className="border-border bg-card/95 shadow-none">
+            <CardHeader className="gap-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <CardTitle>Portfolio balance trend</CardTitle>
+                  <CardDescription>Track total balances over time in {resolvedBaseCurrency} across the selected range.</CardDescription>
+                </div>
+                <div className="flex min-w-36 flex-col gap-2">
+                  <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">Interval</span>
+                  <Select value={interval} onValueChange={(value) => setInterval((value as typeof interval) ?? "Auto")}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Interval" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {value}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex min-w-36 flex-col gap-2">
-                <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">Interval</span>
-                <Select value={interval} onValueChange={(value) => setInterval((value as typeof interval) ?? "Auto")}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Interval" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
-                        <SelectItem key={value} value={value}>
-                          {value}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {reportQuery.isPending ? (
-              <div className="h-[360px] animate-pulse rounded-2xl bg-muted" />
-            ) : reportQuery.isError ? (
-              <EmptyState
-                eyebrow="Report"
-                title="Unable to load the balance report"
-                description={getApiErrorMessage(reportQuery.error, "Try a different range or interval.")}
-              />
-            ) : chartData.length === 0 ? (
-              <EmptyState
-                eyebrow="Report"
-                title="No portfolio data in this range"
-                description="Adjust the active time window to inspect a wider portion of your account history."
-              />
-            ) : (
+            </CardHeader>
+            <CardContent>
               <ChartContainer className="h-[360px] w-full" config={chartConfig}>
                 <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
                   <CartesianGrid vertical={false} />
@@ -200,41 +246,29 @@ function AnalyticsPortfolioPage() {
                   <Area dataKey="balance" fill="var(--color-balance)" fillOpacity={0.18} stroke="var(--color-balance)" type="linear" />
                 </AreaChart>
               </ChartContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4 self-start">
-          <SummaryCard label="Base currency" value={resolvedBaseCurrency} helper="Applied to the entire time series" />
-          <SummaryCard
-            label="Start balance"
-            value={formatCurrency(reportQuery.data?.summary.startBalance, resolvedBaseCurrency)}
-            helper="Balance at the beginning of the selected range"
-          />
-          <SummaryCard
-            label="End balance"
-            value={formatCurrency(reportQuery.data?.summary.endBalance, resolvedBaseCurrency)}
-            helper="Latest known portfolio balance in range"
-          />
-          <SummaryCard
-            label="Delta"
-            value={formatCurrency(reportQuery.data?.summary.delta, resolvedBaseCurrency)}
-            helper={`${toNumber(reportQuery.data?.summary.deltaPercent).toFixed(2)}% change across the selected period`}
-          />
-        </div>
-      </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }
 
-function SummaryCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+function PortfolioTrendBadge({ delta, deltaPercent }: { delta: number; deltaPercent: number }) {
+  const isNeutral = delta === 0
+  const isPositive = delta > 0
+  const icon = isNeutral ? null : isPositive ? ArrowUp01Icon : ArrowDown01Icon
+  const className = isNeutral
+    ? "border-border bg-muted/40 text-muted-foreground"
+    : isPositive
+      ? "border-emerald-500/20 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300"
+      : "border-rose-500/20 bg-rose-500/6 text-rose-700 dark:text-rose-300"
+  const label = isNeutral ? "Flat" : `${deltaPercent > 0 ? "+" : ""}${deltaPercent.toFixed(1)}%`
+
   return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
-      <CardContent className="space-y-2 p-5">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-        <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
-      </CardContent>
-    </Card>
+    <div className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10px] leading-none font-medium tracking-[0.14em] uppercase ${className}`}>
+      {icon ? <HugeiconsIcon icon={icon} strokeWidth={2} className="size-3.5" /> : null}
+      <span>{label}</span>
+    </div>
   )
 }
