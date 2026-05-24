@@ -27,6 +27,9 @@
 		}
 	],
 	"vars": {
+		"BETTER_AUTH_URL": "https://mm.aleh-lab.com",
+		"BETTER_AUTH_ALLOWED_HOSTS": "mm.aleh-lab.com",
+		"BETTER_AUTH_TRUSTED_ORIGINS": "https://mm.aleh-lab.com",
 		"GITHUB_CLIENT_ID": "Iv23liA7WzsjnymH0wyW",
 		"GOOGLE_CLIENT_ID": "102699714157-kh2l3g0q57d1b4qjfcasnb1saet5bld1.apps.googleusercontent.com",
 		"OPENROUTER_MODEL": "nvidia/llama-3.3-nemotron-super-49b-v1:free"

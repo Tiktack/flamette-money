@@ -55,6 +55,14 @@ Set these in Cloudflare under **Workers & Pages -> your Worker -> Settings -> Va
 - `OPENROUTER_MODEL` (optional)
 - `EXCHANGE_RATE_CACHE_HOURS` (optional)
 
+If you attach a custom domain to the Worker, set Better Auth to the same origin instead of relying on the default `*.workers.dev` allowlist. For example:
+
+```bash
+BETTER_AUTH_URL=https://app.example.com
+BETTER_AUTH_ALLOWED_HOSTS=app.example.com
+BETTER_AUTH_TRUSTED_ORIGINS=https://app.example.com
+```
+
 For local development, copy `.dev.vars.example` to `.dev.vars` and fill in the values you need.
 
 ## 3. Apply the initial migration
