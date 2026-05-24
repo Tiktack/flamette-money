@@ -20,10 +20,10 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { DataTable } from "@/components/data-table"
 import { DataTableFacetedFilter, DataTableRangeFilter, type FacetedFilterOption } from "@/components/data-table-faceted-filter"
 import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-editor-dialog"
+import { MetricCard } from "@/components/metric-card"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getAccountIconDefinition } from "@/lib/account-icons"
@@ -38,7 +38,6 @@ import type { TransactionListItem, TransactionType } from "@/features/transactio
 import { formatCurrency, formatDateLabel, getCategoryLabel, normalizeHexColor, toNumber, transactionTone } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
-import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_protected/transactions")({
   component: TransactionsPage,
@@ -551,50 +550,6 @@ function TransactionsPage() {
         onOpenChange={(open) => !open && setEditor(null)}
       />
     </div>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  badge,
-  icon,
-  iconBgClassName,
-  iconColorClassName,
-  valueClassName,
-}: {
-  label: string
-  value: React.ReactNode
-  badge?: React.ReactNode
-  icon?: Parameters<typeof HugeiconsIcon>[0]["icon"]
-  iconBgClassName?: string
-  iconColorClassName?: string
-  valueClassName?: string
-}) {
-  return (
-    <Card
-      size="sm"
-      className="relative overflow-hidden border-border bg-card/95 shadow-none before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent"
-    >
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
-          {icon !== undefined ? (
-            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", iconBgClassName)}>
-              <HugeiconsIcon icon={icon} strokeWidth={2} className={cn("size-3.5", iconColorClassName)} />
-            </span>
-          ) : null}
-          {label}
-        </CardTitle>
-        {badge !== undefined ? <CardAction>{badge}</CardAction> : null}
-      </CardHeader>
-      <CardContent className="pt-0">
-        {typeof value === "string" || typeof value === "number" ? (
-          <p className={cn("text-[2rem] leading-none font-semibold tracking-[-0.035em] break-words text-foreground tabular-nums", valueClassName)}>{value}</p>
-        ) : (
-          <div className={cn("min-w-0", valueClassName)}>{value}</div>
-        )}
-      </CardContent>
-    </Card>
   )
 }
 

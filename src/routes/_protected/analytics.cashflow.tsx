@@ -84,9 +84,9 @@ function AnalyticsCashflowPage() {
         />
       ) : reportQuery.isPending ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[130px] animate-pulse rounded-xl bg-muted" />
+              <div key={i} className="h-[118px] animate-pulse rounded-xl bg-muted" />
             ))}
           </div>
           <div className="h-[460px] animate-pulse rounded-xl bg-muted" />
@@ -99,7 +99,7 @@ function AnalyticsCashflowPage() {
         />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               label="Income"
               value={formatCurrency(income, baseCurrency)}
@@ -127,7 +127,7 @@ function AnalyticsCashflowPage() {
             <SavingsRadialCard savingsRate={savingsRate} income={income} spending={spending} net={net} />
           </div>
 
-          <Card className="border-border/60 bg-card/80 shadow-sm">
+          <Card className="border-border bg-card/95 shadow-none">
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -209,12 +209,12 @@ function SavingsRadialCard({ savingsRate, income, spending, net }: { savingsRate
   return (
     <Card
       size="sm"
-      className="border-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent),linear-gradient(135deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-sm"
+      className="relative min-w-0 overflow-hidden border-border bg-card/95 shadow-none before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent"
     >
-      <CardContent className="flex items-center justify-center px-4">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[110px]">
-          <RadialBarChart data={chartData} startAngle={90} endAngle={radialEndAngle} innerRadius={38} outerRadius={52}>
-            <PolarGrid gridType="circle" radialLines={false} stroke="none" className="first:fill-muted last:fill-background" polarRadius={[52, 38]} />
+      <CardContent className="flex items-center justify-center px-3 pt-3">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[98px]">
+          <RadialBarChart data={chartData} startAngle={90} endAngle={radialEndAngle} innerRadius={34} outerRadius={46}>
+            <PolarGrid gridType="circle" radialLines={false} stroke="none" className="first:fill-muted last:fill-background" polarRadius={[46, 34]} />
             <RadialBar dataKey="value" cornerRadius={4} fill="var(--color-rate)" />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
@@ -222,10 +222,10 @@ function SavingsRadialCard({ savingsRate, income, spending, net }: { savingsRate
                   if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                     return (
                       <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-lg font-bold">
+                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-base font-bold">
                           {displayPercent.toFixed(1)}%
                         </tspan>
-                        <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 17} className="fill-muted-foreground text-[11px]">
+                        <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 15} className="fill-muted-foreground text-[10px]">
                           {isOverspent ? "overspent" : "saved"}
                         </tspan>
                       </text>
