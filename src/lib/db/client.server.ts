@@ -1,10 +1,55 @@
-import { drizzle } from "drizzle-orm/d1"
+import BetterSqlite3 from "better-sqlite3"
+import { drizzle } from "drizzle-orm/better-sqlite3"
 
-import { getDatabaseBinding } from "@/lib/env.server"
+import { runMigrations } from "@/lib/db/migrate.server"
+import { getDatabasePath } from "@/lib/env.server"
 import * as schema from "@/lib/db/schema"
 
+let connection: BetterSqlite3.Database | null = null
+let shutdownRegistered = false
+
+function closeConnection() {
+  if (!connection) {
+    return
+  }
+
+  try {
+    // Flush the WAL back into the main database file so a stopped/updated container
+    // never leaves the DB mid-write, then release the file handle.
+    connection.pragma("wal_checkpoint(TRUNCATE)")
+    connection.close()
+  } catch {
+    // Best-effort during shutdown; nothing useful to do if checkpoint/close fails.
+  } finally {
+    connection = null
+  }
+}
+
+function registerShutdownHandlers() {
+  if (shutdownRegistered || typeof process === "undefined") {
+    return
+  }
+
+  shutdownRegistered = true
+
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    process.once(signal, () => {
+      closeConnection()
+      process.exit(0)
+    })
+  }
+}
+
 function createDatabase() {
-  return drizzle(getDatabaseBinding(), { schema })
+  connection = new BetterSqlite3(getDatabasePath())
+  connection.pragma("journal_mode = WAL")
+  connection.pragma("foreign_keys = ON")
+  connection.pragma("busy_timeout = 5000")
+
+  runMigrations(connection)
+  registerShutdownHandlers()
+
+  return drizzle(connection, { schema })
 }
 
 export type AppDatabase = ReturnType<typeof createDatabase>
@@ -18,6 +63,12 @@ export function getDb() {
 
 export async function runWithDb<T>(callback: (database: AppDatabase) => Promise<T>): Promise<T> {
   return callback(getDb())
+}
+
+/** Lightweight liveness check used by the /healthz endpoint. Throws if the DB is unreachable. */
+export function pingDatabase() {
+  getDb()
+  connection?.prepare("SELECT 1").get()
 }
 
 export const db: AppDatabase = new Proxy({} as AppDatabase, {

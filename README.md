@@ -25,9 +25,10 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
 
 - **Frontend + server runtime**: TanStack Start full-stack app (source at `src/`).
 - **Authentication**: Better Auth with email/password plus optional Google and GitHub social sign-in.
-- **Database**: Cloudflare D1 shared by the app and auth, accessed through Drizzle ORM.
+- **Database**: local SQLite (via `better-sqlite3`) shared by the app and auth, accessed through Drizzle ORM. No external/managed database is required.
 - **Routing and data**: TanStack Router, TanStack React Query, and TanStack Start server functions.
 - **UI**: shadcn/ui components with Tailwind CSS 4.
+- **Deployment**: self-hosted Node server; ships as a Home Assistant add-on (see [`docs/home-assistant-addon.md`](docs/home-assistant-addon.md)).
 
 ## Project Structure
 
@@ -44,6 +45,8 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 - `BETTER_AUTH_URL`: Optional explicit app origin for auth callbacks/cookies.
 - `BETTER_AUTH_ALLOWED_HOSTS`: Optional comma-separated host patterns for dynamic auth URLs. Defaults to local hosts like `localhost:*`.
 - `BETTER_AUTH_TRUSTED_ORIGINS`: Optional comma-separated extra origins Better Auth should trust.
+- `BETTER_AUTH_USE_SECURE_COOKIES`: Optional `true`/`false` override. By default derived from `BETTER_AUTH_URL` (https ⇒ secure).
+- `DATABASE_URL`: SQLite file path. Defaults to `file:./data/flamette-money.db`.
 - `EXCHANGE_RATE_API_KEY`: Optional, enables live FX refreshes.
 - `EXCHANGE_RATE_CACHE_HOURS`: Optional FX cache TTL in hours.
 - `OPENROUTER_API_KEY`: Optional, enables AI receipt scanning.
@@ -51,7 +54,7 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Optional Google OAuth credentials.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`: Optional GitHub OAuth credentials.
 
-The database itself is configured through the Cloudflare `DB` D1 binding in `wrangler.jsonc`, not through a `DATABASE_URL`.
+The SQLite schema is created and kept up to date automatically on startup by applying the SQL files in `migrations/` (tracked in a `_migrations` table).
 
 ## Getting Started
 
@@ -62,24 +65,29 @@ The database itself is configured through the Cloudflare `DB` D1 binding in `wra
 
 ### Launching the Application
 
-1. **Configure**: Set the [environment variables](#configuration) you need.
+1. **Configure**: Copy `.env.example` to `.env` and set the values you need (at minimum `BETTER_AUTH_SECRET`).
 2. **Run**:
    ```bash
    pnpm install
-   # Fill in .dev.vars and wrangler.jsonc first
    pnpm dev
    ```
 3. **Explore**: Open the local URL shown by Vite.
 
-## Cloudflare deployment
+### Production (self-hosted Node)
 
-The app is configured for Cloudflare Workers + D1.
+```bash
+pnpm build
+pnpm start   # serves dist/server/server.js via srvx; honors PORT/HOST
+```
 
-- Worker config: `wrangler.jsonc`
-- Initial D1 schema: `migrations/0001_initial.sql`
-- Local runtime secrets example: `.dev.vars.example`
+## Home Assistant add-on
 
-See `docs/cloudflare-workers-deployment.md` for the full setup and Workers Builds instructions.
+Flamette Money ships as a Home Assistant add-on so it can run on a Raspberry Pi / Home
+Assistant OS with no Cloudflare dependency. Add this repository under
+**Settings → Add-ons → Add-on Store → ⋮ → Repositories** and install the add-on.
+
+See [`docs/home-assistant-addon.md`](docs/home-assistant-addon.md) for full setup, exposing
+the app via Cloudflare Tunnel, and migrating existing data.
 
 ## Demo Data
 

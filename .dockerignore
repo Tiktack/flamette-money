@@ -1,0 +1,15 @@
+node_modules
+dist
+data
+.git
+.github
+.wrangler
+.output
+.tanstack
+.nitro
+.vinxi
+*.local
+.env
+.env.*
+!.env.example
+npm-debug.log*

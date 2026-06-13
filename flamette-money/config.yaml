@@ -1,0 +1,41 @@
+---
+name: Flamette Money
+version: "1.0.0"
+slug: flamette_money
+description: Self-hosted multi-currency personal finance app backed by a local SQLite database.
+url: https://github.com/Tiktack/flamette-money
+arch:
+  - aarch64
+image: ghcr.io/tiktack/flamette-money-{arch}
+init: false
+boot: auto
+startup: application
+ports:
+  8744/tcp: 8744
+ports_description:
+  8744/tcp: Web UI / API — point your Cloudflare Tunnel or reverse proxy at this port
+webui: http://[HOST]:[PORT:8744]
+watchdog: http://[HOST]:[PORT:8744]/api/healthz
+options:
+  better_auth_secret: ""
+  better_auth_url: ""
+  better_auth_trusted_origins: ""
+  openrouter_api_key: ""
+  openrouter_model: nvidia/llama-3.3-nemotron-super-49b-v1:free
+  exchange_rate_api_key: ""
+  google_client_id: ""
+  google_client_secret: ""
+  github_client_id: ""
+  github_client_secret: ""
+schema:
+  better_auth_secret: password
+  better_auth_url: str?
+  better_auth_trusted_origins: str?
+  better_auth_use_secure_cookies: bool?
+  openrouter_api_key: password?
+  openrouter_model: str?
+  exchange_rate_api_key: password?
+  google_client_id: str?
+  google_client_secret: password?
+  github_client_id: str?
+  github_client_secret: password?

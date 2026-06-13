@@ -2,7 +2,6 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter"
 import { betterAuth } from "better-auth"
 import { lastLoginMethod } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
-import { waitUntil } from "cloudflare:workers"
 
 import { getDb } from "@/lib/db/client.server"
 import {
@@ -10,6 +9,7 @@ import {
   getBetterAuthSecret,
   getBetterAuthTrustedOrigins,
   getConfiguredSocialProviders,
+  getUseSecureCookies,
 } from "@/lib/env.server"
 import * as dbSchema from "@/lib/db/schema"
 import { authAccounts, authSessions, authVerifications, users } from "@/lib/db/schema"
@@ -32,12 +32,18 @@ function createAuth() {
       storeStateStrategy: "cookie",
     },
     advanced: {
-      useSecureCookies: import.meta.env.PROD,
+      useSecureCookies: getUseSecureCookies(),
       ipAddress: {
         ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
       },
       backgroundTasks: {
-        handler: (promise) => waitUntil(promise),
+        // Node keeps the process alive across requests, so we just run the task and
+        // make sure a rejection never becomes an unhandled promise rejection.
+        handler: (promise) => {
+          void Promise.resolve(promise).catch((error) => {
+            console.error("[auth] background task failed", error)
+          })
+        },
       },
     },
     session: {

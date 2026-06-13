@@ -1,9 +1,10 @@
-import { env as workerEnv } from "cloudflare:workers"
+import { mkdirSync } from "node:fs"
+import { dirname, resolve } from "node:path"
 
 import { supportedSocialAuthProviders, type SocialAuthProvider } from "@/lib/auth/providers"
 
 const DEFAULT_LOCAL_AUTH_ALLOWED_HOSTS = ["localhost:*", "127.0.0.1:*", "[::1]:*"] as const
-const DEFAULT_CLOUDFLARE_AUTH_ALLOWED_HOSTS = ["*.workers.dev"] as const
+const DEFAULT_DATABASE_URL = "file:./data/flamette-money.db"
 const DEVELOPMENT_AUTH_SECRET = "please-change-this-development-secret-before-production"
 
 type SocialProviderConfig = {
@@ -16,17 +17,12 @@ function trimOrUndefined(value: string | undefined) {
   return trimmed ? trimmed : undefined
 }
 
-function getProcessEnvValue(name: string) {
+function getEnvValue(name: string) {
   if (typeof process === "undefined") {
     return undefined
   }
 
   return trimOrUndefined(process.env[name])
-}
-
-function getRuntimeEnvValue(name: string) {
-  const runtimeValue = workerEnv[name as keyof typeof workerEnv]
-  return typeof runtimeValue === "string" ? trimOrUndefined(runtimeValue) : getProcessEnvValue(name)
 }
 
 function splitCommaSeparated(value: string | undefined) {
@@ -42,12 +38,12 @@ function splitCommaSeparated(value: string | undefined) {
 }
 
 function isProductionEnvironment() {
-  return import.meta.env.PROD || getRuntimeEnvValue("NODE_ENV") === "production"
+  return import.meta.env.PROD || getEnvValue("NODE_ENV") === "production"
 }
 
 function getSocialProviderConfig(providerName: string, clientIdEnvName: string, clientSecretEnvName: string): SocialProviderConfig | undefined {
-  const clientId = getRuntimeEnvValue(clientIdEnvName)
-  const clientSecret = getRuntimeEnvValue(clientSecretEnvName)
+  const clientId = getEnvValue(clientIdEnvName)
+  const clientSecret = getEnvValue(clientSecretEnvName)
 
   if (!clientId && !clientSecret) {
     return undefined
@@ -63,27 +59,25 @@ function getSocialProviderConfig(providerName: string, clientIdEnvName: string, 
   }
 }
 
-export function getDatabaseBinding() {
-  const binding = workerEnv.DB
+export function getDatabasePath() {
+  const databaseUrl = getEnvValue("DATABASE_URL") ?? DEFAULT_DATABASE_URL
+  const rawPath = databaseUrl.startsWith("file:") ? databaseUrl.slice(5) : databaseUrl
+  const absolutePath = resolve(process.cwd(), rawPath)
 
-  if (!binding) {
-    throw new Error("Cloudflare D1 binding 'DB' is required.")
-  }
+  mkdirSync(dirname(absolutePath), { recursive: true })
 
-  return binding
+  return absolutePath
 }
 
 export function getBetterAuthBaseUrl() {
-  const configuredUrl = getRuntimeEnvValue("BETTER_AUTH_URL")
+  const configuredUrl = getEnvValue("BETTER_AUTH_URL")
 
   if (configuredUrl) {
     return configuredUrl
   }
 
-  const configuredAllowedHosts = splitCommaSeparated(getRuntimeEnvValue("BETTER_AUTH_ALLOWED_HOSTS"))
-  const allowedHosts = Array.from(
-    new Set([...DEFAULT_LOCAL_AUTH_ALLOWED_HOSTS, ...DEFAULT_CLOUDFLARE_AUTH_ALLOWED_HOSTS, ...configuredAllowedHosts])
-  )
+  const configuredAllowedHosts = splitCommaSeparated(getEnvValue("BETTER_AUTH_ALLOWED_HOSTS"))
+  const allowedHosts = Array.from(new Set([...DEFAULT_LOCAL_AUTH_ALLOWED_HOSTS, ...configuredAllowedHosts]))
 
   return {
     allowedHosts,
@@ -92,7 +86,24 @@ export function getBetterAuthBaseUrl() {
 }
 
 export function getBetterAuthTrustedOrigins() {
-  return splitCommaSeparated(getRuntimeEnvValue("BETTER_AUTH_TRUSTED_ORIGINS"))
+  return splitCommaSeparated(getEnvValue("BETTER_AUTH_TRUSTED_ORIGINS"))
+}
+
+export function getUseSecureCookies() {
+  const override = getEnvValue("BETTER_AUTH_USE_SECURE_COOKIES")
+  if (override) {
+    return override.toLowerCase() === "true"
+  }
+
+  // When a fixed public URL is configured (the usual production case, e.g. behind a
+  // Cloudflare Tunnel), trust its protocol. https => secure cookies; plain http (LAN
+  // testing) => non-secure so the cookie is actually sent back by the browser.
+  const configuredUrl = getEnvValue("BETTER_AUTH_URL")
+  if (configuredUrl) {
+    return configuredUrl.startsWith("https://")
+  }
+
+  return isProductionEnvironment()
 }
 
 export function getConfiguredSocialProviders(): Partial<Record<SocialAuthProvider, SocialProviderConfig>> {
@@ -112,7 +123,7 @@ export function getAvailableSocialAuthProviders() {
 }
 
 export function getBetterAuthSecret() {
-  const secret = getRuntimeEnvValue("BETTER_AUTH_SECRET")
+  const secret = getEnvValue("BETTER_AUTH_SECRET")
 
   if (secret) {
     return secret
@@ -126,17 +137,17 @@ export function getBetterAuthSecret() {
 }
 
 export function getExchangeRateApiKey() {
-  return getRuntimeEnvValue("EXCHANGE_RATE_API_KEY")
+  return getEnvValue("EXCHANGE_RATE_API_KEY")
 }
 
 export function getExchangeRateCacheHours() {
-  return Number.parseInt(getRuntimeEnvValue("EXCHANGE_RATE_CACHE_HOURS") ?? "5", 10)
+  return Number.parseInt(getEnvValue("EXCHANGE_RATE_CACHE_HOURS") ?? "5", 10)
 }
 
 export function getOpenRouterApiKey() {
-  return getRuntimeEnvValue("OPENROUTER_API_KEY") ?? getRuntimeEnvValue("OpenRouter__ApiKey") ?? getRuntimeEnvValue("OPENROUTER_APIKEY")
+  return getEnvValue("OPENROUTER_API_KEY") ?? getEnvValue("OpenRouter__ApiKey") ?? getEnvValue("OPENROUTER_APIKEY")
 }
 
 export function getOpenRouterModel() {
-  return getRuntimeEnvValue("OPENROUTER_MODEL") ?? getRuntimeEnvValue("OpenRouter__Model") ?? "nvidia/llama-3.3-nemotron-super-49b-v1:free"
+  return getEnvValue("OPENROUTER_MODEL") ?? getEnvValue("OpenRouter__Model") ?? "nvidia/llama-3.3-nemotron-super-49b-v1:free"
 }

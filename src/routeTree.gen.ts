@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
 import { Route as ProtectedTripsRouteImport } from './routes/_protected/trips'
 import { Route as ProtectedTransactionsRouteImport } from './routes/_protected/transactions'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
@@ -40,6 +41,11 @@ const ProtectedRoute = ProtectedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthzRoute = ApiHealthzRouteImport.update({
+  id: '/api/healthz',
+  path: '/api/healthz',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedTripsRoute = ProtectedTripsRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof ProtectedSettingsRoute
   '/transactions': typeof ProtectedTransactionsRoute
   '/trips': typeof ProtectedTripsRoute
+  '/api/healthz': typeof ApiHealthzRoute
   '/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
   '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
   '/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/settings': typeof ProtectedSettingsRoute
   '/transactions': typeof ProtectedTransactionsRoute
   '/trips': typeof ProtectedTripsRoute
+  '/api/healthz': typeof ApiHealthzRoute
   '/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
   '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
   '/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
@@ -171,6 +179,7 @@ export interface FileRoutesById {
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/_protected/transactions': typeof ProtectedTransactionsRoute
   '/_protected/trips': typeof ProtectedTripsRoute
+  '/api/healthz': typeof ApiHealthzRoute
   '/_protected/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
   '/_protected/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
   '/_protected/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/trips'
+    | '/api/healthz'
     | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transactions'
     | '/trips'
+    | '/api/healthz'
     | '/analytics/cashflow'
     | '/analytics/categories'
     | '/analytics/comparison'
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/_protected/settings'
     | '/_protected/transactions'
     | '/_protected/trips'
+    | '/api/healthz'
     | '/_protected/analytics/cashflow'
     | '/_protected/analytics/categories'
     | '/_protected/analytics/comparison'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProtectedRoute: typeof ProtectedRouteWithChildren
   SignInRoute: typeof SignInRoute
+  ApiHealthzRoute: typeof ApiHealthzRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiProfileExportBackupRoute: typeof ApiProfileExportBackupRoute
   ApiProfileImportBackupRoute: typeof ApiProfileImportBackupRoute
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/healthz': {
+      id: '/api/healthz'
+      path: '/api/healthz'
+      fullPath: '/api/healthz'
+      preLoaderRoute: typeof ApiHealthzRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected/trips': {
@@ -427,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProtectedRoute: ProtectedRouteWithChildren,
   SignInRoute: SignInRoute,
+  ApiHealthzRoute: ApiHealthzRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiProfileExportBackupRoute: ApiProfileExportBackupRoute,
   ApiProfileImportBackupRoute: ApiProfileImportBackupRoute,

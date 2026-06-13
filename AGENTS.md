@@ -62,7 +62,7 @@ Components should usually consume feature hooks and query options rather than ca
 
 ## Core domain rules
 
-Main tables live in `src\lib\db\schema.ts` and are initialized in `src\lib\db\client.server.ts`.
+Main tables live in `src\lib\db\schema.ts`. The SQLite schema is created and kept current on startup by the migration runner in `src\lib\db\migrate.server.ts`, which applies the SQL files in `migrations\` (recorded in a `_migrations` table) and is wired from `src\lib\db\client.server.ts`.
 
 - Supported currencies are `PLN`, `USD`, `EUR`, `GBP`, and `CAD`.
 - Categories use one self-referential table and parent and child types must match.
@@ -99,6 +99,7 @@ Use `.env.example` as the current environment reference.
 - `BETTER_AUTH_URL`
 - `BETTER_AUTH_ALLOWED_HOSTS`
 - `BETTER_AUTH_TRUSTED_ORIGINS`
+- `BETTER_AUTH_USE_SECURE_COOKIES`
 - `DATABASE_URL`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
