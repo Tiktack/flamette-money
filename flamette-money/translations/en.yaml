@@ -11,6 +11,9 @@ configuration:
   better_auth_use_secure_cookies:
     name: Force secure cookies
     description: Leave unset to derive automatically from the public URL (https => on). Turn off only when accessing over plain http on the LAN.
+  disable_signups:
+    name: Disable new sign-ups
+    description: Block all new account registrations (email and social) on this private server. Existing users can still sign in. The first account can always be created on a fresh instance.
   openrouter_api_key:
     name: OpenRouter API key
     description: Optional. Enables AI receipt scanning.

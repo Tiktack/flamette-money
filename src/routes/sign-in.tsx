@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { getAuthRedirect } from "@/lib/auth/auth-redirect"
 import { authClient } from "@/lib/auth/client"
-import { getAvailableSocialAuthProviders, getCurrentUserProfile } from "@/lib/auth/functions"
+import { getAvailableSocialAuthProviders, getCurrentUserProfile, getSignupAllowed } from "@/lib/auth/functions"
 import { socialAuthProviderMeta, supportedSocialAuthProviders, type SocialAuthProvider } from "@/lib/auth/providers"
 
 type LastLoginMethod = "email" | SocialAuthProvider
@@ -58,6 +58,7 @@ export const Route = createFileRoute("/sign-in")({
   },
   loader: async () => ({
     socialProviders: await getAvailableSocialAuthProviders(),
+    signupAllowed: await getSignupAllowed(),
   }),
   component: SignInPage,
 })
@@ -126,7 +127,7 @@ function SocialLoginButton({
 
 function SignInPage() {
   const search = Route.useSearch()
-  const { socialProviders } = Route.useLoaderData()
+  const { socialProviders, signupAllowed } = Route.useLoaderData()
   const redirectTo = getAuthRedirect(search.redirect)
   const router = useRouter()
   const [mode, setMode] = React.useState<"sign-in" | "sign-up">("sign-in")
@@ -281,23 +282,25 @@ function SignInPage() {
           </form>
         </CardContent>
 
-        <div className="border-t bg-muted/20 px-5 py-4 text-center text-sm text-muted-foreground">
-          {mode === "sign-in" ? (
-            <>
-              Don&apos;t have an account?{" "}
-              <button type="button" onClick={() => switchMode("sign-up")} className="font-medium text-primary underline-offset-4 hover:underline">
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <button type="button" onClick={() => switchMode("sign-in")} className="font-medium text-primary underline-offset-4 hover:underline">
-                Sign in
-              </button>
-            </>
-          )}
-        </div>
+        {signupAllowed && (
+          <div className="border-t bg-muted/20 px-5 py-4 text-center text-sm text-muted-foreground">
+            {mode === "sign-in" ? (
+              <>
+                Don&apos;t have an account?{" "}
+                <button type="button" onClick={() => switchMode("sign-up")} className="font-medium text-primary underline-offset-4 hover:underline">
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button type="button" onClick={() => switchMode("sign-in")} className="font-medium text-primary underline-offset-4 hover:underline">
+                  Sign in
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </Card>
 
       <p className="mt-6 text-xs text-muted-foreground">© {new Date().getFullYear()} Flamette Money</p>

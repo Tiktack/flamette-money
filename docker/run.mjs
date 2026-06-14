@@ -14,6 +14,7 @@ const OPTION_TO_ENV = {
   better_auth_trusted_origins: "BETTER_AUTH_TRUSTED_ORIGINS",
   better_auth_allowed_hosts: "BETTER_AUTH_ALLOWED_HOSTS",
   better_auth_use_secure_cookies: "BETTER_AUTH_USE_SECURE_COOKIES",
+  disable_signups: "DISABLE_SIGNUPS",
   database_url: "DATABASE_URL",
   google_client_id: "GOOGLE_CLIENT_ID",
   google_client_secret: "GOOGLE_CLIENT_SECRET",

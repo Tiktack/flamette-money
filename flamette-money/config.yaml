@@ -10,6 +10,10 @@ image: ghcr.io/tiktack/flamette-money-{arch}
 init: false
 boot: auto
 startup: application
+# Stop the add-on during a Home Assistant backup so the SQLite database (WAL mode) is
+# snapshotted with no in-flight writes; the graceful-shutdown handler also checkpoints the
+# WAL into the main file on stop. This makes /data/flamette-money.db backups consistent.
+backup: cold
 ports:
   8744/tcp: 8744
 ports_description:
@@ -20,6 +24,7 @@ options:
   better_auth_secret: ""
   better_auth_url: ""
   better_auth_trusted_origins: ""
+  disable_signups: false
   openrouter_api_key: ""
   openrouter_model: nvidia/llama-3.3-nemotron-super-49b-v1:free
   exchange_rate_api_key: ""
@@ -32,6 +37,7 @@ schema:
   better_auth_url: str?
   better_auth_trusted_origins: str?
   better_auth_use_secure_cookies: bool?
+  disable_signups: bool?
   openrouter_api_key: password?
   openrouter_model: str?
   exchange_rate_api_key: password?

@@ -1,5 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter"
 import { betterAuth } from "better-auth"
+import { APIError } from "better-auth/api"
 import { lastLoginMethod } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
@@ -9,6 +10,7 @@ import {
   getBetterAuthSecret,
   getBetterAuthTrustedOrigins,
   getConfiguredSocialProviders,
+  getSignupsDisabled,
   getUseSecureCookies,
 } from "@/lib/env.server"
 import * as dbSchema from "@/lib/db/schema"
@@ -53,8 +55,25 @@ function createAuth() {
         strategy: "compact",
       },
     },
-    experimental: {
-      joins: true,
+    databaseHooks: {
+      user: {
+        create: {
+          // Gate new account creation for every method (email and social) in one place.
+          // This fires only when a brand-new user is created, never on sign-in of an
+          // existing user. When sign-ups are disabled we still allow the very first user
+          // so a fresh private instance isn't locked out of creating its owner account.
+          before: async (user) => {
+            if (getSignupsDisabled()) {
+              const existingUser = await getDb().query.users.findFirst({ columns: { id: true } })
+              if (existingUser) {
+                throw new APIError("FORBIDDEN", { message: "New sign-ups are disabled on this server." })
+              }
+            }
+
+            return { data: user }
+          },
+        },
+      },
     },
     database: drizzleAdapter(getDb(), {
       provider: "sqlite",

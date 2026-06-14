@@ -106,6 +106,10 @@ export function getUseSecureCookies() {
   return isProductionEnvironment()
 }
 
+export function getSignupsDisabled() {
+  return getEnvValue("DISABLE_SIGNUPS")?.toLowerCase() === "true"
+}
+
 export function getConfiguredSocialProviders(): Partial<Record<SocialAuthProvider, SocialProviderConfig>> {
   const google = getSocialProviderConfig("Google", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")
   const github = getSocialProviderConfig("GitHub", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET")
