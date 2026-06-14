@@ -10,7 +10,6 @@ export const queryKeys = {
   transactionsFacets: (query?: Record<string, unknown>) => ["transactions-facets", query ?? {}] as const,
   reportsCashflowSeries: (query?: Record<string, unknown>) => ["reports-cashflow-series", query ?? {}] as const,
   reportsCategorySeries: (query?: Record<string, unknown>) => ["reports-category-series", query ?? {}] as const,
-  reportsMonthlyYoy: (query?: Record<string, unknown>) => ["reports-monthly-yoy", query ?? {}] as const,
   reportsPortfolioBalanceSeries: (query?: Record<string, unknown>) => ["reports-portfolio-balance-series", query ?? {}] as const,
   appInfo: () => ["app-info"] as const,
   settings: () => ["settings"] as const,

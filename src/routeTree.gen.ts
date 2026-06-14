@@ -25,7 +25,6 @@ import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile
 import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedAnalyticsPortfolioRouteImport } from './routes/_protected/analytics.portfolio'
-import { Route as ProtectedAnalyticsComparisonRouteImport } from './routes/_protected/analytics.comparison'
 import { Route as ProtectedAnalyticsCategoriesRouteImport } from './routes/_protected/analytics.categories'
 import { Route as ProtectedAnalyticsCashflowRouteImport } from './routes/_protected/analytics.cashflow'
 
@@ -109,12 +108,6 @@ const ProtectedAnalyticsPortfolioRoute =
     path: '/portfolio',
     getParentRoute: () => ProtectedAnalyticsRoute,
   } as any)
-const ProtectedAnalyticsComparisonRoute =
-  ProtectedAnalyticsComparisonRouteImport.update({
-    id: '/comparison',
-    path: '/comparison',
-    getParentRoute: () => ProtectedAnalyticsRoute,
-  } as any)
 const ProtectedAnalyticsCategoriesRoute =
   ProtectedAnalyticsCategoriesRouteImport.update({
     id: '/categories',
@@ -140,7 +133,6 @@ export interface FileRoutesByFullPath {
   '/api/healthz': typeof ApiHealthzRoute
   '/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
   '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
-  '/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
   '/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
@@ -160,7 +152,6 @@ export interface FileRoutesByTo {
   '/api/healthz': typeof ApiHealthzRoute
   '/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
   '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
-  '/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
   '/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
@@ -182,7 +173,6 @@ export interface FileRoutesById {
   '/api/healthz': typeof ApiHealthzRoute
   '/_protected/analytics/cashflow': typeof ProtectedAnalyticsCashflowRoute
   '/_protected/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
-  '/_protected/analytics/comparison': typeof ProtectedAnalyticsComparisonRoute
   '/_protected/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
@@ -204,7 +194,6 @@ export interface FileRouteTypes {
     | '/api/healthz'
     | '/analytics/cashflow'
     | '/analytics/categories'
-    | '/analytics/comparison'
     | '/analytics/portfolio'
     | '/api/auth/$'
     | '/api/profile/export-backup'
@@ -224,7 +213,6 @@ export interface FileRouteTypes {
     | '/api/healthz'
     | '/analytics/cashflow'
     | '/analytics/categories'
-    | '/analytics/comparison'
     | '/analytics/portfolio'
     | '/api/auth/$'
     | '/api/profile/export-backup'
@@ -245,7 +233,6 @@ export interface FileRouteTypes {
     | '/api/healthz'
     | '/_protected/analytics/cashflow'
     | '/_protected/analytics/categories'
-    | '/_protected/analytics/comparison'
     | '/_protected/analytics/portfolio'
     | '/api/auth/$'
     | '/api/profile/export-backup'
@@ -380,13 +367,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAnalyticsPortfolioRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
-    '/_protected/analytics/comparison': {
-      id: '/_protected/analytics/comparison'
-      path: '/comparison'
-      fullPath: '/analytics/comparison'
-      preLoaderRoute: typeof ProtectedAnalyticsComparisonRouteImport
-      parentRoute: typeof ProtectedAnalyticsRoute
-    }
     '/_protected/analytics/categories': {
       id: '/_protected/analytics/categories'
       path: '/categories'
@@ -407,14 +387,12 @@ declare module '@tanstack/react-router' {
 interface ProtectedAnalyticsRouteChildren {
   ProtectedAnalyticsCashflowRoute: typeof ProtectedAnalyticsCashflowRoute
   ProtectedAnalyticsCategoriesRoute: typeof ProtectedAnalyticsCategoriesRoute
-  ProtectedAnalyticsComparisonRoute: typeof ProtectedAnalyticsComparisonRoute
   ProtectedAnalyticsPortfolioRoute: typeof ProtectedAnalyticsPortfolioRoute
 }
 
 const ProtectedAnalyticsRouteChildren: ProtectedAnalyticsRouteChildren = {
   ProtectedAnalyticsCashflowRoute: ProtectedAnalyticsCashflowRoute,
   ProtectedAnalyticsCategoriesRoute: ProtectedAnalyticsCategoriesRoute,
-  ProtectedAnalyticsComparisonRoute: ProtectedAnalyticsComparisonRoute,
   ProtectedAnalyticsPortfolioRoute: ProtectedAnalyticsPortfolioRoute,
 }
 

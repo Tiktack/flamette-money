@@ -265,47 +265,6 @@ export type ImportBackupResponse = {
   skippedRows: number | string
 }
 
-export type MonthlyYoyPointResponse = {
-  month: number | string
-  monthLabel: string
-  values: {
-    [key: string]: number | string
-  }
-  total: number | string
-}
-
-export type MonthlyYoyReportResponse = {
-  type: CategoryType
-  baseCurrency: string
-  startYear: number | string
-  endYear: number | string
-  months: Array<string>
-  series: Array<MonthlyYoySeriesResponse>
-  data: Array<MonthlyYoyPointResponse>
-  yearTotals: Array<MonthlyYoyYearTotalResponse>
-  summary: MonthlyYoySummaryResponse
-}
-
-export type MonthlyYoySeriesResponse = {
-  key: string
-  label: string
-  year: number | string
-  color: string
-  total: number | string
-}
-
-export type MonthlyYoySummaryResponse = {
-  total: number | string
-  previousYearTotal: number | string
-  averagePerMonth: number | string
-  yearCount: number | string
-}
-
-export type MonthlyYoyYearTotalResponse = {
-  year: number | string
-  total: number | string
-}
-
 export type PortfolioAccountResponse = {
   id: string
   name: string
@@ -947,36 +906,6 @@ export type GetApiReportsCategorySeriesResponses = {
 }
 
 export type GetApiReportsCategorySeriesResponse = GetApiReportsCategorySeriesResponses[keyof GetApiReportsCategorySeriesResponses]
-
-export type GetApiReportsMonthlyYoyData = {
-  body?: never
-  path?: never
-  query?: {
-    StartYear?: number | string
-    EndYear?: number | string
-    Type?: CategoryType
-    TripId?: string
-  }
-  url: "/api/reports/monthly-yoy"
-}
-
-export type GetApiReportsMonthlyYoyErrors = {
-  /**
-   * Bad Request
-   */
-  400: HttpValidationProblemDetails
-}
-
-export type GetApiReportsMonthlyYoyError = GetApiReportsMonthlyYoyErrors[keyof GetApiReportsMonthlyYoyErrors]
-
-export type GetApiReportsMonthlyYoyResponses = {
-  /**
-   * OK
-   */
-  200: MonthlyYoyReportResponse
-}
-
-export type GetApiReportsMonthlyYoyResponse = GetApiReportsMonthlyYoyResponses[keyof GetApiReportsMonthlyYoyResponses]
 
 export type GetApiReportsPortfolioBalanceSeriesData = {
   body?: never

@@ -56,7 +56,7 @@ This summary covers the currency and FX implementation for account transfers, an
 
 ### Reports and trips
 
-- Category series, monthly YoY, and portfolio balance series use backend FX conversion.
+- Category series and portfolio balance series use backend FX conversion.
 - Trips totals are computed in base currency on backend.
 
 ### Validation strategy
@@ -79,7 +79,7 @@ This summary covers the currency and FX implementation for account transfers, an
 
 3. Formatting in converted views
 
-- Categories, analytics comparison, analytics portfolio, and trips display currency-formatted values based on backend base-currency response context.
+- Categories, analytics portfolio, and trips display currency-formatted values based on backend base-currency response context.
 
 4. Receipt scan UX
 

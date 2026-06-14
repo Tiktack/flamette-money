@@ -7,7 +7,6 @@ type QueryInvalidation = NonNullable<Parameters<QueryClient["invalidateQueries"]
 const reportInvalidations = [
   { queryKey: ["reports-cashflow-series"] },
   { queryKey: ["reports-category-series"] },
-  { queryKey: ["reports-monthly-yoy"] },
   { queryKey: ["reports-portfolio-balance-series"] },
 ] as const satisfies readonly QueryInvalidation[]
 
@@ -33,7 +32,6 @@ export const tripMutationInvalidations = [
   { queryKey: ["transactions-facets"] },
   { queryKey: ["reports-cashflow-series"] },
   { queryKey: ["reports-category-series"] },
-  { queryKey: ["reports-monthly-yoy"] },
 ] as const satisfies readonly QueryInvalidation[]
 
 export const transactionMutationInvalidations = [

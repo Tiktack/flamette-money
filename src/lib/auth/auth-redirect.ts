@@ -1,4 +1,4 @@
-const defaultAuthRedirect = "/analytics/comparison"
+const defaultAuthRedirect = "/analytics/cashflow"
 
 function isSafeAuthRedirect(path: string) {
   return path.startsWith("/") && path !== "/sign-in" && !path.startsWith("/sign-in?")

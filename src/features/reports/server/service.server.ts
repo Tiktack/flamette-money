@@ -12,9 +12,7 @@ import type {
   CategorySeriesReportResponse,
   GetApiReportsCashflowSeriesData,
   GetApiReportsCategorySeriesData,
-  GetApiReportsMonthlyYoyData,
   GetApiReportsPortfolioBalanceSeriesData,
-  MonthlyYoyReportResponse,
   PortfolioBalanceSeriesResponse,
   ReportBucketResponse,
   ReportInterval,
@@ -32,9 +30,6 @@ type Bucket = {
   start: Date
   end: Date
 }
-
-const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const
-const yearColors = ["blue.6", "teal.6", "grape.6", "orange.6", "red.6", "cyan.6", "violet.6", "lime.6", "pink.6", "indigo.6"] as const
 
 function parseDate(value: string, label: string) {
   const parsed = new Date(value)
@@ -729,130 +724,6 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
       previousAveragePerWeek: roundMoney(previousFullTotal / weekCount),
       dayCount,
       bucketCount: buckets.length,
-    },
-  }
-}
-
-export async function getMonthlyYoyReportData(query?: GetApiReportsMonthlyYoyData["query"]): Promise<MonthlyYoyReportResponse> {
-  const { user, baseCurrency, fx, accountCurrencyById } = await loadReportContext()
-  const currentYear = new Date().getFullYear()
-  const endYear = query?.EndYear ? Number(query.EndYear) : currentYear
-  const startYear = query?.StartYear ? Number(query.StartYear) : Math.max(2000, endYear - 2)
-  const type = query?.Type ?? "Expense"
-  const tripId = query?.TripId ?? null
-
-  if (startYear > endYear) {
-    throw new Error("StartYear cannot be greater than EndYear.")
-  }
-
-  const yearCount = endYear - startYear + 1
-  if (yearCount > 10) {
-    throw new Error("Year range cannot be greater than 10 years.")
-  }
-
-  const rangeStart = new Date(startYear, 0, 1)
-  const rangeEnd = endOfDate(new Date(endYear, 11, 31))
-  const allTransactions = await db.query.transactions.findMany({
-    where: eq(transactions.userId, user.id),
-    orderBy: [asc(transactions.date)],
-  })
-
-  const totalsByYearMonth = new Map<number, number[]>()
-  for (let year = startYear; year <= endYear; year += 1) {
-    totalsByYearMonth.set(
-      year,
-      Array.from({ length: 12 }, () => 0)
-    )
-  }
-
-  for (const transaction of allTransactions) {
-    if (transaction.date < rangeStart || transaction.date > rangeEnd) {
-      continue
-    }
-
-    if (tripId && transaction.tripId !== tripId) {
-      continue
-    }
-
-    if (type === "Income" && transaction.type !== "Income") {
-      continue
-    }
-
-    if (type === "Expense" && !(transaction.type === "Expense" || transaction.type === "Refund" || transaction.isRefund)) {
-      continue
-    }
-
-    const signedAmount = getSignedAmount(type, transaction.type as TransactionType, transaction.amount, transaction.isRefund)
-    if (signedAmount === 0) {
-      continue
-    }
-
-    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
-    const amount = convertAmount(signedAmount, currency, baseCurrency, fx.ratesToBase)
-    const year = transaction.date.getFullYear()
-
-    if (year < startYear || year > endYear) {
-      continue
-    }
-
-    const monthIndex = transaction.date.getMonth()
-    const totals = totalsByYearMonth.get(year)
-    if (!totals) {
-      continue
-    }
-
-    totals[monthIndex] += amount
-  }
-
-  const orderedYears = Array.from({ length: yearCount }, (_, index) => startYear + index)
-  const series = orderedYears.map((year, index) => ({
-    key: String(year),
-    label: String(year),
-    year,
-    color: yearColors[index % yearColors.length]!,
-    total: roundMoney((totalsByYearMonth.get(year) ?? []).reduce((sum, value) => sum + value, 0)),
-  }))
-
-  const data = Array.from({ length: 12 }, (_, monthIndex) => {
-    const values: Record<string, number> = {}
-    let total = 0
-
-    for (const year of orderedYears) {
-      const value = roundMoney(totalsByYearMonth.get(year)?.[monthIndex] ?? 0)
-      values[String(year)] = value
-      total += value
-    }
-
-    return {
-      month: monthIndex + 1,
-      monthLabel: monthLabels[monthIndex]!,
-      values,
-      total: roundMoney(total),
-    }
-  })
-
-  const yearTotals = orderedYears.map((year) => ({
-    year,
-    total: roundMoney((totalsByYearMonth.get(year) ?? []).reduce((sum, value) => sum + value, 0)),
-  }))
-  const reportTotal = roundMoney(yearTotals.reduce((sum, item) => sum + item.total, 0))
-  const latestYearTotal = yearTotals[yearTotals.length - 1]?.total ?? 0
-  const previousYearTotal = yearTotals.length > 1 ? yearTotals[yearTotals.length - 2]!.total : 0
-
-  return {
-    type,
-    baseCurrency,
-    startYear,
-    endYear,
-    months: [...monthLabels],
-    series,
-    data,
-    yearTotals,
-    summary: {
-      total: reportTotal,
-      previousYearTotal,
-      averagePerMonth: roundMoney(latestYearTotal / 12),
-      yearCount: yearTotals.length,
     },
   }
 }

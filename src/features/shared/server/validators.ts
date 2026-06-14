@@ -128,15 +128,6 @@ export const categoryReportSchema = z
   })
   .optional()
 
-export const monthlyYoySchema = z
-  .object({
-    StartYear: z.union([z.number(), z.string()]).optional(),
-    EndYear: z.union([z.number(), z.string()]).optional(),
-    Type: z.enum(categoryTypes).optional(),
-    TripId: z.string().optional(),
-  })
-  .optional()
-
 export const portfolioReportSchema = z
   .object({
     StartDate: z.string().optional(),

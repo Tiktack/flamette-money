@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router"
 
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 
-type AnalyticsRoute = "/analytics/cashflow" | "/analytics/comparison" | "/analytics/portfolio" | "/analytics/categories"
+type AnalyticsRoute = "/analytics/cashflow" | "/analytics/portfolio" | "/analytics/categories"
 
 export function NavDocuments({
   label = "Analytics Views",

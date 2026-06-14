@@ -30,7 +30,7 @@ export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...
     () => [
       {
         title: "Analytics",
-        to: "/analytics/comparison" as const,
+        to: "/analytics/cashflow" as const,
         icon: <HugeiconsIcon icon={ChartRingIcon} strokeWidth={2} />,
         isActive: pathname.startsWith("/analytics"),
         items: [
@@ -38,11 +38,6 @@ export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...
             title: "Cashflow",
             to: "/analytics/cashflow" as const,
             isActive: pathname === "/analytics/cashflow",
-          },
-          {
-            title: "Comparison",
-            to: "/analytics/comparison" as const,
-            isActive: pathname === "/analytics/comparison",
           },
           {
             title: "Portfolio",
@@ -89,7 +84,7 @@ export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5!" render={<Link to="/analytics/comparison" />}>
+            <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5!" render={<Link to="/analytics/cashflow" />}>
               <HugeiconsIcon icon={CommandIcon} strokeWidth={2} className="size-5!" />
               <span className="text-base font-semibold">Flamette Money</span>
             </SidebarMenuButton>

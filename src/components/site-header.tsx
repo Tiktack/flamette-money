@@ -12,7 +12,6 @@ const breadcrumbLabelMap: Record<string, string> = {
   accounts: "Accounts",
   analytics: "Analytics",
   categories: "Categories",
-  comparison: "Comparison",
   portfolio: "Portfolio",
   settings: "Settings",
   transactions: "Transactions",
