@@ -6,7 +6,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarMenuAction,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -77,35 +76,40 @@ export function NavMain({
         ) : null}
 
         <SidebarMenu>
-          {items.map((item) => (
-            <Collapsible key={item.title} defaultOpen={item.isActive} render={<SidebarMenuItem />}>
-              <SidebarMenuButton tooltip={item.title} isActive={item.isActive} render={<Link to={item.to} />}>
-                {item.icon}
-                <span>{item.title}</span>
-              </SidebarMenuButton>
+          {items.map((item) =>
+            item.items?.length ? (
+              <Collapsible key={item.title} defaultOpen={item.isActive} render={<SidebarMenuItem />}>
+                <SidebarMenuButton tooltip={item.title} isActive={item.isActive} render={<CollapsibleTrigger />}>
+                  {item.icon}
+                  <span>{item.title}</span>
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    strokeWidth={2}
+                    className="ml-auto text-sidebar-foreground/60 transition-transform duration-200 group-data-[collapsible=icon]:hidden group-data-[panel-open]/menu-button:rotate-90"
+                  />
+                </SidebarMenuButton>
 
-              {item.items?.length ? (
-                <>
-                  <CollapsibleTrigger render={<SidebarMenuAction className="aria-expanded:rotate-90" />}>
-                    <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
-                    <span className="sr-only">Toggle {item.title}</span>
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {item.items.map((subItem) => (
-                        <SidebarMenuSubItem key={subItem.to}>
-                          <SidebarMenuSubButton render={<Link to={subItem.to} />} isActive={subItem.isActive}>
-                            {subItem.title}
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </>
-              ) : null}
-            </Collapsible>
-          ))}
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {item.items.map((subItem) => (
+                      <SidebarMenuSubItem key={subItem.to}>
+                        <SidebarMenuSubButton render={<Link to={subItem.to} />} isActive={subItem.isActive}>
+                          {subItem.title}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton tooltip={item.title} isActive={item.isActive} render={<Link to={item.to} />}>
+                  {item.icon}
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
