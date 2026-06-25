@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/features/categories/hooks"
@@ -43,127 +42,53 @@ const colorPalette = [
   "#78909C",
 ]
 
-type CategoryFormState = {
+const defaultColor = colorPalette[0]
+const defaultIcon = categoryIconOptions[0].name
+
+type CategoryFields = {
   name: string
   color: string
   icon: string
-  type: CategoryType
-  parentId: string | null
-}
-
-const defaultColor = colorPalette[0]
-
-const emptyForm: CategoryFormState = {
-  name: "",
-  color: defaultColor,
-  icon: categoryIconOptions[0].name,
-  type: "Expense",
-  parentId: null,
 }
 
 function CategoriesPage() {
   const categoriesQuery = useCategories()
-  const createCategory = useCreateCategory()
-  const updateCategory = useUpdateCategory()
   const deleteCategory = useDeleteCategory()
 
   const [typeFilter, setTypeFilter] = React.useState<CategoryType>("Expense")
   const [createOpen, setCreateOpen] = React.useState(false)
-  const [editCategory, setEditCategory] = React.useState<CategoryHierarchy | null>(null)
+  const [editParentId, setEditParentId] = React.useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<CategoryHierarchy | null>(null)
-  const [createForm, setCreateForm] = React.useState<CategoryFormState>(emptyForm)
-  const [editForm, setEditForm] = React.useState<CategoryFormState>(emptyForm)
 
   const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const parentCategories = React.useMemo(() => categories.filter((category) => category.parentId === null), [categories])
   const visibleParents = React.useMemo(() => parentCategories.filter((category) => category.type === typeFilter), [parentCategories, typeFilter])
   const subcategoryCount = React.useMemo(() => visibleParents.reduce((sum, parent) => sum + parent.subcategories.length, 0), [visibleParents])
 
-  const parentOptions = React.useMemo(
-    () => visibleParents.map((category) => ({ value: category.id, label: category.name })),
-    [visibleParents]
+  // Resolve the parent being edited from live query data so its subcategory list stays current,
+  // and keep the last value around so the dialog can animate closed instead of unmounting instantly.
+  const editParent = React.useMemo(
+    () => (editParentId ? (parentCategories.find((category) => category.id === editParentId) ?? null) : null),
+    [parentCategories, editParentId]
   )
-
-  const openCreate = React.useCallback(
-    (parent?: CategoryHierarchy) => {
-      setCreateForm({
-        name: "",
-        color: normalizeHexColor(parent?.color, defaultColor),
-        icon: parent?.icon ?? categoryIconOptions[0].name,
-        type: parent?.type ?? typeFilter,
-        parentId: parent?.id ?? null,
-      })
-      setCreateOpen(true)
-    },
-    [typeFilter]
-  )
+  const lastEditParentRef = React.useRef<CategoryHierarchy | null>(null)
+  if (editParent) {
+    lastEditParentRef.current = editParent
+  }
+  const parentForDialog = editParent ?? lastEditParentRef.current
 
   React.useEffect(() => {
     const handlePageAction = (event: Event) => {
       const customEvent = event as CustomEvent<PageActionType>
 
       if (customEvent.detail === pageActionTypes.createCategory) {
-        openCreate()
+        setCreateOpen(true)
       }
     }
 
     window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
     return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
-  }, [openCreate])
-
-  const openEdit = (category: CategoryHierarchy) => {
-    setEditCategory(category)
-    setEditForm({
-      name: category.name,
-      color: normalizeHexColor(category.color, defaultColor),
-      icon: category.icon,
-      type: category.type,
-      parentId: category.parentId,
-    })
-  }
-
-  const handleCreate = async () => {
-    try {
-      await createCategory.mutateAsync(createForm)
-      setCreateOpen(false)
-    } catch {
-      // surfaced inside the dialog
-    }
-  }
-
-  const handleEdit = async () => {
-    if (!editCategory) {
-      return
-    }
-
-    try {
-      await updateCategory.mutateAsync({
-        id: editCategory.id,
-        request: {
-          name: editForm.name,
-          color: editForm.color,
-          icon: editForm.icon,
-          parentId: editForm.parentId,
-        },
-      })
-      setEditCategory(null)
-    } catch {
-      // surfaced inside the dialog
-    }
-  }
-
-  const handleQuickAddSubcategory = React.useCallback(
-    async (parent: CategoryHierarchy, name: string) => {
-      await createCategory.mutateAsync({
-        name,
-        color: normalizeHexColor(parent.color, defaultColor),
-        icon: parent.icon,
-        type: parent.type,
-        parentId: parent.id,
-      })
-    },
-    [createCategory]
-  )
+  }, [])
 
   const handleDelete = async () => {
     if (!deleteTarget) {
@@ -180,25 +105,19 @@ function CategoriesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as CategoryType)}>
-            <TabsList>
-              <TabsTrigger value="Expense">Expenses</TabsTrigger>
-              <TabsTrigger value="Income">Income</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {!categoriesQuery.isPending && !categoriesQuery.isError ? (
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {visibleParents.length} {visibleParents.length === 1 ? "category" : "categories"} · {subcategoryCount}{" "}
-              {subcategoryCount === 1 ? "subcategory" : "subcategories"}
-            </span>
-          ) : null}
-        </div>
-        <Button onClick={() => openCreate()}>
-          <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
-          New category
-        </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as CategoryType)}>
+          <TabsList>
+            <TabsTrigger value="Expense">Expenses</TabsTrigger>
+            <TabsTrigger value="Income">Income</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {!categoriesQuery.isPending && !categoriesQuery.isError ? (
+          <span className="hidden text-sm text-muted-foreground sm:inline">
+            {visibleParents.length} {visibleParents.length === 1 ? "category" : "categories"} · {subcategoryCount}{" "}
+            {subcategoryCount === 1 ? "subcategory" : "subcategories"}
+          </span>
+        ) : null}
       </div>
 
       {categoriesQuery.isPending ? (
@@ -217,9 +136,9 @@ function CategoriesPage() {
         <EmptyState
           eyebrow="Categories"
           title={`No ${typeFilter.toLowerCase()} categories yet`}
-          description="Create a parent category, then nest subcategories underneath it to organise your transactions."
+          description="Create a parent category, then open it to nest subcategories underneath."
           action={
-            <Button onClick={() => openCreate()}>
+            <Button onClick={() => setCreateOpen(true)}>
               <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
               New category
             </Button>
@@ -228,46 +147,16 @@ function CategoriesPage() {
       ) : (
         <div className="grid items-start gap-3 lg:grid-cols-2">
           {visibleParents.map((category) => (
-            <ParentCategoryCard
-              key={category.id}
-              category={category}
-              onEdit={openEdit}
-              onDelete={setDeleteTarget}
-              onQuickAdd={handleQuickAddSubcategory}
-            />
+            <ParentCategoryCard key={category.id} category={category} onEdit={() => setEditParentId(category.id)} onDelete={() => setDeleteTarget(category)} />
           ))}
         </div>
       )}
 
-      <CategoryDialog
-        open={createOpen}
-        mode="create"
-        title="New category"
-        description="Add a parent category, or attach it under an existing one."
-        parentOptions={parentOptions}
-        value={createForm}
-        onChange={setCreateForm}
-        pending={createCategory.isPending}
-        error={createOpen && createCategory.isError ? getApiErrorMessage(createCategory.error, "Unable to create category.") : null}
-        onOpenChange={setCreateOpen}
-        onSubmit={handleCreate}
-        submitLabel="Create category"
-      />
+      <CreateCategoryDialog open={createOpen} onOpenChange={setCreateOpen} defaultType={typeFilter} />
 
-      <CategoryDialog
-        open={Boolean(editCategory)}
-        mode="edit"
-        title="Edit category"
-        description="Update the name, icon, colour, or where this category sits."
-        parentOptions={parentOptions.filter((option) => option.value !== editCategory?.id)}
-        value={editForm}
-        onChange={setEditForm}
-        pending={updateCategory.isPending}
-        error={editCategory && updateCategory.isError ? getApiErrorMessage(updateCategory.error, "Unable to update category.") : null}
-        onOpenChange={(open) => !open && setEditCategory(null)}
-        onSubmit={handleEdit}
-        submitLabel="Save changes"
-      />
+      {parentForDialog ? (
+        <ParentCategoryDialog parent={parentForDialog} open={Boolean(editParent)} onOpenChange={(open) => !open && setEditParentId(null)} />
+      ) : null}
 
       <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
@@ -275,7 +164,7 @@ function CategoriesPage() {
             <DialogTitle>Delete {deleteTarget?.name}</DialogTitle>
             <DialogDescription>
               {deleteTarget && deleteTarget.subcategories.length > 0
-                ? "This category has subcategories. Remove or reassign them first if deletion is blocked."
+                ? "This category has subcategories. Remove them first if deletion is blocked."
                 : "Deleting a category can fail if transactions still depend on it."}
             </DialogDescription>
           </DialogHeader>
@@ -313,143 +202,434 @@ function CategoryIcon({ icon, color, size = "md" }: { icon: string; color: strin
   )
 }
 
-function ParentCategoryCard({
-  category,
-  onEdit,
-  onDelete,
-  onQuickAdd,
-}: {
-  category: CategoryHierarchy
-  onEdit: (category: CategoryHierarchy) => void
-  onDelete: (category: CategoryHierarchy) => void
-  onQuickAdd: (parent: CategoryHierarchy, name: string) => Promise<void>
-}) {
+function ParentCategoryCard({ category, onEdit, onDelete }: { category: CategoryHierarchy; onEdit: () => void; onDelete: () => void }) {
   const subcategoryCount = category.subcategories.length
 
   return (
     <Card className="border-border/60 bg-card/80 shadow-sm">
       <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2.5">
+          <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
             <CategoryIcon icon={category.icon} color={category.color} />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-tight text-foreground">{category.name}</p>
-              {subcategoryCount > 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {subcategoryCount} {subcategoryCount === 1 ? "subcategory" : "subcategories"}
-                </p>
-              ) : null}
+              <p className="text-xs text-muted-foreground">
+                {subcategoryCount === 0 ? "No subcategories" : `${subcategoryCount} ${subcategoryCount === 1 ? "subcategory" : "subcategories"}`}
+              </p>
             </div>
-          </div>
+          </button>
           <div className="flex shrink-0 items-center gap-0.5 text-muted-foreground">
-            <Button variant="ghost" size="icon-sm" onClick={() => onEdit(category)}>
+            <Button variant="ghost" size="icon-sm" onClick={onEdit}>
               <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
               <span className="sr-only">Edit {category.name}</span>
             </Button>
-            <Button variant="ghost" size="icon-sm" className="hover:text-destructive" onClick={() => onDelete(category)}>
+            <Button variant="ghost" size="icon-sm" className="hover:text-destructive" onClick={onDelete}>
               <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
               <span className="sr-only">Delete {category.name}</span>
             </Button>
           </div>
         </div>
 
-        <div className="mt-2 flex flex-col gap-px border-t border-border/50 pt-1.5">
-          {category.subcategories.map((subcategory) => (
-            <div key={subcategory.id} className="group flex items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-muted/50">
-              <CategoryIcon icon={subcategory.icon} color={subcategory.color} size="sm" />
-              <button type="button" onClick={() => onEdit(subcategory)} className="min-w-0 flex-1 truncate text-left text-sm text-foreground">
-                {subcategory.name}
-              </button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="size-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive focus-visible:opacity-100"
-                onClick={() => onDelete(subcategory)}
-              >
-                <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-4" />
-                <span className="sr-only">Delete {subcategory.name}</span>
-              </Button>
-            </div>
-          ))}
-          <AddSubcategoryRow parent={category} onQuickAdd={onQuickAdd} />
-        </div>
+        {subcategoryCount > 0 ? (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2.5">
+            {category.subcategories.map((subcategory) => {
+              const definition = getCategoryIconDefinition(subcategory.icon)
+              return (
+                <span
+                  key={subcategory.id}
+                  title={subcategory.name}
+                  className="flex size-7 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundColor: normalizeHexColor(subcategory.color, defaultColor) }}
+                >
+                  <HugeiconsIcon icon={definition.icon} strokeWidth={2} className="size-4" />
+                  <span className="sr-only">{subcategory.name}</span>
+                </span>
+              )
+            })}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   )
 }
 
-function AddSubcategoryRow({
-  parent,
-  onQuickAdd,
-}: {
-  parent: CategoryHierarchy
-  onQuickAdd: (parent: CategoryHierarchy, name: string) => Promise<void>
-}) {
-  const [value, setValue] = React.useState("")
-  const [pending, setPending] = React.useState(false)
-  const [error, setError] = React.useState(false)
+function CreateCategoryDialog({ open, onOpenChange, defaultType }: { open: boolean; onOpenChange: (open: boolean) => void; defaultType: CategoryType }) {
+  const createCategory = useCreateCategory()
+  const [type, setType] = React.useState<CategoryType>(defaultType)
+  const [fields, setFields] = React.useState<CategoryFields>({ name: "", color: defaultColor, icon: defaultIcon })
+
+  React.useEffect(() => {
+    if (open) {
+      setType(defaultType)
+      setFields({ name: "", color: defaultColor, icon: defaultIcon })
+      createCategory.reset()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const submit = async () => {
-    const name = value.trim()
-    if (!name || pending) {
+    if (!fields.name.trim() || createCategory.isPending) {
       return
     }
 
-    setPending(true)
-    setError(false)
     try {
-      await onQuickAdd(parent, name)
-      setValue("")
+      await createCategory.mutateAsync({ name: fields.name, color: fields.color, icon: fields.icon, type, parentId: null })
+      onOpenChange(false)
     } catch {
-      setError(true)
-    } finally {
-      setPending(false)
+      // surfaced below
     }
   }
 
   return (
-    <div className="flex items-center gap-2.5 px-1 py-0.5">
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-dashed border-border/70 text-muted-foreground">
-        <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-4" />
-      </span>
-      <Input
-        value={value}
-        onChange={(event) => {
-          setValue(event.target.value)
-          if (error) {
-            setError(false)
-          }
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault()
-            void submit()
-          }
-        }}
-        placeholder="Add subcategory"
-        aria-label={`Add subcategory under ${parent.name}`}
-        aria-invalid={error}
-        disabled={pending}
-        className="h-7 border-transparent bg-transparent px-2 text-sm shadow-none focus-visible:border-input focus-visible:bg-background"
-      />
-      {value.trim() ? (
-        <Button variant="secondary" size="sm" className="h-7" onClick={() => void submit()} disabled={pending}>
-          {pending ? "Adding" : "Add"}
-        </Button>
-      ) : null}
-    </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="dialog-stack sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>New category</DialogTitle>
+          <DialogDescription>Create a top-level category. You can nest subcategories once it exists.</DialogDescription>
+        </DialogHeader>
+        <FieldGroup className="gap-4">
+          <Field>
+            <FieldLabel htmlFor="create-category-name">Name</FieldLabel>
+            <Input
+              id="create-category-name"
+              value={fields.name}
+              autoFocus
+              placeholder="e.g. Groceries"
+              onChange={(event) => setFields((state) => ({ ...state, name: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  void submit()
+                }
+              }}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Type</FieldLabel>
+            <Tabs value={type} onValueChange={(next) => setType(next as CategoryType)}>
+              <TabsList className="w-full">
+                <TabsTrigger value="Expense">Expense</TabsTrigger>
+                <TabsTrigger value="Income">Income</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </Field>
+          <Field>
+            <FieldLabel>Icon</FieldLabel>
+            <CategoryIconPicker value={fields.icon} color={fields.color} onChange={(icon) => setFields((state) => ({ ...state, icon }))} />
+          </Field>
+          <Field>
+            <FieldLabel>Colour</FieldLabel>
+            <ColorField value={fields.color} onChange={(color) => setFields((state) => ({ ...state, color }))} />
+          </Field>
+        </FieldGroup>
+        {createCategory.isError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Save failed</AlertTitle>
+            <AlertDescription>{getApiErrorMessage(createCategory.error, "Unable to create category.")}</AlertDescription>
+          </Alert>
+        ) : null}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => void submit()} disabled={createCategory.isPending || !fields.name.trim()}>
+            {createCategory.isPending ? "Saving" : "Create category"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-function CategoryIconPicker({
-  value,
-  color,
-  onChange,
+type SubEditorState = { mode: "create" | "edit"; subId: string | null }
+
+function ParentCategoryDialog({ parent, open, onOpenChange }: { parent: CategoryHierarchy; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const updateCategory = useUpdateCategory()
+  const [fields, setFields] = React.useState<CategoryFields>({ name: parent.name, color: parent.color, icon: parent.icon })
+
+  const [subOpen, setSubOpen] = React.useState(false)
+  const [subEditor, setSubEditor] = React.useState<SubEditorState>({ mode: "create", subId: null })
+
+  // Reset the parent form only when opening or switching to a different parent, so live query
+  // updates (e.g. a subcategory was added) never clobber in-progress edits.
+  React.useEffect(() => {
+    if (open) {
+      setFields({ name: parent.name, color: parent.color, icon: parent.icon })
+      updateCategory.reset()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, parent.id])
+
+  // Closing the parent should also dismiss any open subcategory editor.
+  React.useEffect(() => {
+    if (!open) {
+      setSubOpen(false)
+    }
+  }, [open])
+
+  const liveSub = subEditor.subId ? (parent.subcategories.find((sub) => sub.id === subEditor.subId) ?? null) : null
+
+  const openCreateSub = () => {
+    setSubEditor({ mode: "create", subId: null })
+    setSubOpen(true)
+  }
+
+  const openEditSub = (sub: CategoryHierarchy) => {
+    setSubEditor({ mode: "edit", subId: sub.id })
+    setSubOpen(true)
+  }
+
+  const saveParent = async () => {
+    if (!fields.name.trim() || updateCategory.isPending) {
+      return
+    }
+
+    try {
+      await updateCategory.mutateAsync({
+        id: parent.id,
+        request: { name: fields.name, color: fields.color, icon: fields.icon, parentId: parent.parentId },
+      })
+      onOpenChange(false)
+    } catch {
+      // surfaced below
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="dialog-stack sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit category</DialogTitle>
+          <DialogDescription>Update this category and manage its subcategories.</DialogDescription>
+        </DialogHeader>
+
+        <FieldGroup className="gap-4">
+          <Field>
+            <FieldLabel htmlFor="parent-category-name">Name</FieldLabel>
+            <Input
+              id="parent-category-name"
+              value={fields.name}
+              onChange={(event) => setFields((state) => ({ ...state, name: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  void saveParent()
+                }
+              }}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>Icon</FieldLabel>
+              <CategoryIconPicker value={fields.icon} color={fields.color} onChange={(icon) => setFields((state) => ({ ...state, icon }))} />
+            </Field>
+            <Field>
+              <FieldLabel>Colour</FieldLabel>
+              <ColorField value={fields.color} onChange={(color) => setFields((state) => ({ ...state, color }))} />
+            </Field>
+          </div>
+        </FieldGroup>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-foreground">Subcategories</span>
+            <Button variant="outline" size="sm" onClick={openCreateSub}>
+              <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+              Add
+            </Button>
+          </div>
+          {parent.subcategories.length > 0 ? (
+            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-lg border border-border/60 p-1">
+              {parent.subcategories.map((sub) => (
+                <div key={sub.id} className="group flex items-center gap-2.5 rounded-md px-1 py-1 transition-colors hover:bg-muted/50">
+                  <CategoryIcon icon={sub.icon} color={sub.color} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{sub.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="size-7 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                    onClick={() => openEditSub(sub)}
+                  >
+                    <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="size-4" />
+                    <span className="sr-only">Edit {sub.name}</span>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-sm text-muted-foreground">
+              No subcategories yet. Use “Add” to create one.
+            </p>
+          )}
+        </div>
+
+        {updateCategory.isError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Save failed</AlertTitle>
+            <AlertDescription>{getApiErrorMessage(updateCategory.error, "Unable to update category.")}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => void saveParent()} disabled={updateCategory.isPending || !fields.name.trim()}>
+            {updateCategory.isPending ? "Saving" : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+
+      <SubcategoryDialog open={subOpen} mode={subEditor.mode} parent={parent} sub={liveSub} onOpenChange={(next) => setSubOpen(next)} />
+    </Dialog>
+  )
+}
+
+function SubcategoryDialog({
+  open,
+  mode,
+  parent,
+  sub,
+  onOpenChange,
 }: {
-  value: string
-  color: string
-  onChange: (icon: string) => void
+  open: boolean
+  mode: "create" | "edit"
+  parent: CategoryHierarchy
+  sub: CategoryHierarchy | null
+  onOpenChange: (open: boolean) => void
 }) {
+  const createCategory = useCreateCategory()
+  const updateCategory = useUpdateCategory()
+  const deleteCategory = useDeleteCategory()
+  const [fields, setFields] = React.useState<CategoryFields>({ name: "", color: parent.color, icon: parent.icon })
+  const [confirmDelete, setConfirmDelete] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    if (mode === "edit" && sub) {
+      setFields({ name: sub.name, color: sub.color, icon: sub.icon })
+    } else {
+      setFields({ name: "", color: parent.color, icon: parent.icon })
+    }
+    setConfirmDelete(false)
+    createCategory.reset()
+    updateCategory.reset()
+    deleteCategory.reset()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, sub?.id])
+
+  const pending = createCategory.isPending || updateCategory.isPending
+  const error = createCategory.isError
+    ? getApiErrorMessage(createCategory.error, "Unable to create subcategory.")
+    : updateCategory.isError
+      ? getApiErrorMessage(updateCategory.error, "Unable to update subcategory.")
+      : deleteCategory.isError
+        ? getApiErrorMessage(deleteCategory.error, "Unable to delete subcategory.")
+        : null
+
+  const submit = async () => {
+    if (!fields.name.trim() || pending) {
+      return
+    }
+
+    try {
+      if (mode === "edit" && sub) {
+        await updateCategory.mutateAsync({
+          id: sub.id,
+          request: { name: fields.name, color: fields.color, icon: fields.icon, parentId: parent.id },
+        })
+      } else {
+        await createCategory.mutateAsync({ name: fields.name, color: fields.color, icon: fields.icon, type: parent.type, parentId: parent.id })
+      }
+      onOpenChange(false)
+    } catch {
+      // surfaced below
+    }
+  }
+
+  const remove = async () => {
+    if (!sub) {
+      return
+    }
+
+    if (!confirmDelete) {
+      setConfirmDelete(true)
+      return
+    }
+
+    try {
+      await deleteCategory.mutateAsync(sub.id)
+      onOpenChange(false)
+    } catch {
+      setConfirmDelete(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="dialog-stack sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{mode === "edit" ? "Edit subcategory" : "New subcategory"}</DialogTitle>
+          <DialogDescription>{mode === "edit" ? `Inside ${parent.name}.` : `Add a subcategory inside ${parent.name}.`}</DialogDescription>
+        </DialogHeader>
+        <FieldGroup className="gap-4">
+          <Field>
+            <FieldLabel htmlFor="sub-category-name">Name</FieldLabel>
+            <Input
+              id="sub-category-name"
+              value={fields.name}
+              autoFocus
+              placeholder="e.g. Fruits & Vegetables"
+              onChange={(event) => setFields((state) => ({ ...state, name: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  void submit()
+                }
+              }}
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field>
+              <FieldLabel>Icon</FieldLabel>
+              <CategoryIconPicker value={fields.icon} color={fields.color} onChange={(icon) => setFields((state) => ({ ...state, icon }))} />
+            </Field>
+            <Field>
+              <FieldLabel>Colour</FieldLabel>
+              <ColorField value={fields.color} onChange={(color) => setFields((state) => ({ ...state, color }))} />
+            </Field>
+          </div>
+        </FieldGroup>
+        {error ? (
+          <Alert variant="destructive">
+            <AlertTitle>Something went wrong</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+        <DialogFooter className="sm:justify-between">
+          {mode === "edit" ? (
+            <Button variant={confirmDelete ? "destructive" : "outline"} onClick={() => void remove()} disabled={deleteCategory.isPending} className="sm:mr-auto">
+              {deleteCategory.isPending ? "Deleting" : confirmDelete ? "Confirm delete" : "Delete"}
+            </Button>
+          ) : null}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void submit()} disabled={pending || !fields.name.trim()}>
+              {pending ? "Saving" : mode === "edit" ? "Save changes" : "Add subcategory"}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function CategoryIconPicker({ value, color, onChange }: { value: string; color: string; onChange: (icon: string) => void }) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState("")
   const selected = getCategoryIconDefinition(value)
@@ -561,145 +741,8 @@ function ColorField({ value, onChange }: { value: string; onChange: (color: stri
             background: "conic-gradient(from 180deg, #f87171, #fbbf24, #34d399, #60a5fa, #a78bfa, #f87171)",
           }}
         />
-        <input
-          type="color"
-          value={resolved}
-          onChange={(event) => onChange(event.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        />
+        <input type="color" value={resolved} onChange={(event) => onChange(event.target.value)} className="absolute inset-0 cursor-pointer opacity-0" />
       </label>
     </div>
-  )
-}
-
-function CategoryDialog({
-  open,
-  mode,
-  title,
-  description,
-  parentOptions,
-  value,
-  onChange,
-  pending,
-  error,
-  onOpenChange,
-  onSubmit,
-  submitLabel,
-}: {
-  open: boolean
-  mode: "create" | "edit"
-  title: string
-  description: string
-  parentOptions: Array<{ value: string; label: string }>
-  value: CategoryFormState
-  onChange: React.Dispatch<React.SetStateAction<CategoryFormState>>
-  pending: boolean
-  error: string | null
-  onOpenChange: (open: boolean) => void
-  onSubmit: () => void
-  submitLabel: string
-}) {
-  const isChild = value.parentId !== null
-  // Type is fixed on edit (backend keeps it) and inherited when nested under a parent.
-  const typeLocked = mode === "edit" || isChild
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <FieldGroup className="gap-4">
-          <Field>
-            <FieldLabel htmlFor={`${mode}-category-name`}>Name</FieldLabel>
-            <Input
-              id={`${mode}-category-name`}
-              value={value.name}
-              autoFocus
-              onChange={(event) => onChange((state) => ({ ...state, name: event.target.value }))}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && value.name.trim() && !pending) {
-                  event.preventDefault()
-                  onSubmit()
-                }
-              }}
-              placeholder="e.g. Groceries"
-            />
-          </Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel>Type</FieldLabel>
-              <Tabs
-                value={value.type}
-                onValueChange={(next) => {
-                  if (typeLocked) {
-                    return
-                  }
-                  onChange((state) => ({ ...state, type: next as CategoryType }))
-                }}
-              >
-                <TabsList className={cn("w-full", typeLocked && "pointer-events-none opacity-60")}>
-                  <TabsTrigger value="Expense">Expense</TabsTrigger>
-                  <TabsTrigger value="Income">Income</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </Field>
-
-            <Field>
-              <FieldLabel>Parent category</FieldLabel>
-              <Select
-                value={value.parentId ?? "none"}
-                onValueChange={(next) =>
-                  onChange((state) => ({
-                    ...state,
-                    parentId: next === "none" ? null : next,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No parent" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="none">No parent (top level)</SelectItem>
-                    {parentOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-
-          <Field>
-            <FieldLabel>Icon</FieldLabel>
-            <CategoryIconPicker value={value.icon} color={value.color} onChange={(icon) => onChange((state) => ({ ...state, icon }))} />
-          </Field>
-
-          <Field>
-            <FieldLabel>Colour</FieldLabel>
-            <ColorField value={value.color} onChange={(color) => onChange((state) => ({ ...state, color }))} />
-          </Field>
-        </FieldGroup>
-        {error ? (
-          <Alert variant="destructive">
-            <AlertTitle>Save failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={onSubmit} disabled={pending || !value.name.trim()}>
-            {pending ? "Saving" : submitLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
