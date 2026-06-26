@@ -23,6 +23,7 @@ import { useTrips } from "@/features/trips/hooks"
 import type { CategoryHierarchy } from "@/features/categories/types"
 import type { ReceiptScanResult } from "@/features/receipt-scan/types"
 import type { TransactionCreateRequest, TransactionDetail, TransactionType, TransactionUpdateRequest } from "@/features/transactions/types"
+import { CategoryIconBadge } from "@/lib/category-icons"
 import { formatDateInput, normalizeHexColor, toNumber } from "@/lib/finance"
 
 export type TransactionEditorDialogProps = {
@@ -550,13 +551,27 @@ function TransactionFormFields({
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder="Select category">
+                  {(value) => {
+                    const selected = typeof value === "string" && value ? categoryMap.get(value) : null
+                    if (!selected) {
+                      return "Select category"
+                    }
+                    return (
+                      <>
+                        <CategoryIconBadge icon={selected.icon} color={selected.color} className="size-5 rounded-md" iconClassName="size-3" />
+                        <span>{selected.name}</span>
+                      </>
+                    )
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
                   {allowedParents.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
-                      {category.name}
+                      <CategoryIconBadge icon={category.icon} color={category.color} className="size-5 rounded-md" iconClassName="size-3" />
+                      <span>{category.name}</span>
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -610,6 +625,7 @@ function TransactionFormFields({
                       }))
                     }
                   >
+                    <CategoryIconBadge icon={subcategory.icon} color={subcategory.color} className="size-4 rounded-[5px]" iconClassName="size-2.5" />
                     {subcategory.name}
                   </Button>
                 ))}
@@ -847,13 +863,27 @@ function TransactionFormFields({
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Category" />
+                          <SelectValue placeholder="Category">
+                            {(value) => {
+                              const selected = typeof value === "string" && value ? categoryMap.get(value) : null
+                              if (!selected) {
+                                return "Category"
+                              }
+                              return (
+                                <>
+                                  <CategoryIconBadge icon={selected.icon} color={selected.color} className="size-5 rounded-md" iconClassName="size-3" />
+                                  <span>{selected.name}</span>
+                                </>
+                              )
+                            }}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
                             {allowedParents.map((category) => (
                               <SelectItem key={category.id} value={category.id}>
-                                {category.name}
+                                <CategoryIconBadge icon={category.icon} color={category.color} className="size-5 rounded-md" iconClassName="size-3" />
+                                <span>{category.name}</span>
                               </SelectItem>
                             ))}
                           </SelectGroup>
@@ -884,6 +914,7 @@ function TransactionFormFields({
                                 }))
                               }
                             >
+                              <CategoryIconBadge icon={subcategory.icon} color={subcategory.color} className="size-4 rounded-[5px]" iconClassName="size-2.5" />
                               {subcategory.name}
                             </Button>
                           ))}

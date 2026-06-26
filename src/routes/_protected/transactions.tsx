@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { getAccountIconDefinition } from "@/lib/account-icons"
+import { CategoryIconBadge, getCategoryIconDefinition } from "@/lib/category-icons"
 import { useAccounts } from "@/features/accounts/hooks"
 import { useCategories } from "@/features/categories/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
@@ -214,7 +215,7 @@ function TransactionsPage() {
         label: category.name,
         value: category.id,
         count: categoryCounts.get(category.id) ?? 0,
-        icon: Tag01Icon,
+        icon: getCategoryIconDefinition(category.icon).icon,
         color: normalizeHexColor(category.color, "#D96B4F"),
         group: category.type,
       })),
@@ -283,7 +284,23 @@ function TransactionsPage() {
       {
         accessorKey: "categoryId",
         header: "Category",
-        cell: ({ row }) => <span className="text-sm text-foreground">{getCategoryLabel(row.original, categoryMap)}</span>,
+        cell: ({ row }) => {
+          const transaction = row.original
+          const label = getCategoryLabel(transaction, categoryMap)
+          const categoryId = transaction.subCategoryId ?? transaction.categoryId
+          const category = transaction.type === "Transfer" || !categoryId ? null : categoryMap.get(categoryId)
+
+          if (!category) {
+            return <span className="text-sm text-muted-foreground">{label}</span>
+          }
+
+          return (
+            <div className="flex items-center gap-2">
+              <CategoryIconBadge icon={category.icon} color={category.color} className="size-6 rounded-md" iconClassName="size-3.5" />
+              <span className="truncate text-sm text-foreground">{label}</span>
+            </div>
+          )
+        },
       },
       {
         accessorFn: (row) => toNumber(row.amount),

@@ -14,7 +14,9 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
+import { useCategories } from "@/features/categories/hooks"
 import { useCategorySeriesReport } from "@/features/reports/hooks"
+import { CategoryIconBadge } from "@/lib/category-icons"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 import { MetricCard } from "@/components/metric-card"
@@ -59,6 +61,17 @@ function AnalyticsCategoriesPage() {
   }, [aggregation, groupTripsAsCategory, mode, resolvedDateRange.end, resolvedDateRange.start])
 
   const reportQuery = useCategorySeriesReport(query)
+  const categoriesQuery = useCategories()
+  const categoryIconById = React.useMemo(() => {
+    const map = new Map<string, string>()
+    for (const category of categoriesQuery.data ?? []) {
+      map.set(category.id, category.icon)
+      for (const subcategory of category.subcategories) {
+        map.set(subcategory.id, subcategory.icon)
+      }
+    }
+    return map
+  }, [categoriesQuery.data])
   const report = React.useMemo(() => {
     const payload = reportQuery.data
     const series = (payload?.series ?? []).map((entry) => ({
@@ -193,18 +206,25 @@ function AnalyticsCategoriesPage() {
               </ChartContainer>
 
               <div className="grid gap-3">
-                {report.series.map((entry) => (
-                  <div key={entry.key} className="grid gap-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                        <span className="font-mono text-[12px] font-medium tracking-[0.04em] text-foreground">{entry.label}</span>
+                {report.series.map((entry) => {
+                  const iconToken = categoryIconById.get(entry.key)
+                  return (
+                    <div key={entry.key} className="grid gap-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {iconToken ? (
+                            <CategoryIconBadge icon={iconToken} color={entry.color} className="size-5 rounded-md" iconClassName="size-3" />
+                          ) : (
+                            <span className="size-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                          )}
+                          <span className="truncate font-mono text-[12px] font-medium tracking-[0.04em] text-foreground">{entry.label}</span>
+                        </div>
+                        <span className="font-mono text-[12px] tracking-[0.04em] text-muted-foreground">{formatCurrency(entry.total, report.baseCurrency)}</span>
                       </div>
-                      <span className="font-mono text-[12px] tracking-[0.04em] text-muted-foreground">{formatCurrency(entry.total, report.baseCurrency)}</span>
+                      <Progress value={entry.percent} className="h-1" />
                     </div>
-                    <Progress value={entry.percent} className="h-1" />
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

@@ -79,6 +79,9 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { normalizeHexColor } from "@/lib/finance"
+import { cn } from "@/lib/utils"
+
 type HugeIcon = ComponentProps<typeof HugeiconsIcon>["icon"]
 
 export type CategoryIconDefinition = {
@@ -231,3 +234,27 @@ export function getCategoryIconDefinition(iconName?: string | null): CategoryIco
 }
 
 export const categoryIconGroups = Array.from(new Set(categoryIconOptions.map((item) => item.group)))
+
+/** Colored icon chip for a category/subcategory. Reused across categories, transactions, and reports. */
+export function CategoryIconBadge({
+  icon,
+  color,
+  className,
+  iconClassName,
+}: {
+  icon?: string | null
+  color?: string | null
+  className?: string
+  iconClassName?: string
+}) {
+  const definition = getCategoryIconDefinition(icon)
+
+  return (
+    <span
+      className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg text-white", className)}
+      style={{ backgroundColor: normalizeHexColor(color, "#78909C") }}
+    >
+      <HugeiconsIcon icon={definition.icon} strokeWidth={2} className={cn("size-4", iconClassName)} />
+    </span>
+  )
+}
