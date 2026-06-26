@@ -9,7 +9,7 @@
     "es2022": true,
     "node": true
   },
-  "ignorePatterns": [".agents/**", ".claude/**", ".github/**", "dist/**", "src/lib/api/generated/**", "src/routeTree.gen.ts"],
+  "ignorePatterns": [".agents/**", ".claude/**", ".github/**", "dist/**", "src/components/charts/**", "src/lib/api/generated/**", "src/routeTree.gen.ts"],
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "import"],
   "rules": {
     "unicorn/no-array-sort": "off",

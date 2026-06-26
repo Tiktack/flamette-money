@@ -29,7 +29,7 @@ Flamette Money is a full-stack **TanStack Start** personal finance app focused o
 - **Database:** SQLite via `better-sqlite3` + Drizzle ORM
 - **State/query:** TanStack React Query
 - **UI:** shadcn/ui + Tailwind CSS 4
-- **Charts/tables:** Recharts + TanStack Table
+- **Charts/tables:** bklit charts (`src\components\charts\`, visx + motion, added via the `@bklit` shadcn registry) + TanStack Table
 - **Validation:** Zod
 
 ## Repository layout

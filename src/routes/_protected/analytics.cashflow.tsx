@@ -2,22 +2,34 @@ import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
 import { AddMoneyCircleIcon, ChartDownIcon, ChartUpIcon, CreditCardIcon } from "@hugeicons/core-free-icons"
-import { Bar, CartesianGrid, Cell, ComposedChart, Label, Line, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart, ReferenceLine, XAxis } from "recharts"
 
 import { MetricCard } from "@/components/metric-card"
 
 import { EmptyState } from "@/components/empty-state"
 import { useCashflowSeriesReport } from "@/features/reports/hooks"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { ComposedChart } from "@/components/charts/composed-chart"
+import { SeriesBar } from "@/components/charts/series-bar"
+import { Line } from "@/components/charts/line"
+import { Grid } from "@/components/charts/grid"
+import { XAxis } from "@/components/charts/x-axis"
+import { YAxis } from "@/components/charts/y-axis"
+import { ChartTooltip } from "@/components/charts/tooltip"
+import { RingChart } from "@/components/charts/ring-chart"
+import { Ring } from "@/components/charts/ring"
+import { RingCenter } from "@/components/charts/ring-center"
+import { bucketKeyToDate, formatCompactNumber } from "@/lib/chart-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
-const POSITIVE_NET_COLOR = "#2f8f5b"
-const NEGATIVE_NET_COLOR = "#cb5a5a"
+const INCOME_COLOR = "#2d7ff9"
+const SPENDING_COLOR = "#f08c44"
+const NET_COLOR = "#2f8f5b"
+const SAVED_COLOR = "#2f8f5b"
+const OVERSPENT_COLOR = "#cb5a5a"
 
 export const Route = createFileRoute("/_protected/analytics/cashflow")({
   component: AnalyticsCashflowPage,
@@ -53,24 +65,14 @@ function AnalyticsCashflowPage() {
 
   const chartData = React.useMemo(
     () =>
-      (report?.data ?? []).map((point) => {
-        const netVal = toNumber(point.net)
-        return {
-          period: point.bucketLabel,
-          income: toNumber(point.income),
-          spending: toNumber(point.spending),
-          net: netVal,
-          netFill: netVal >= 0 ? POSITIVE_NET_COLOR : NEGATIVE_NET_COLOR,
-        }
-      }),
+      (report?.data ?? []).map((point, index) => ({
+        date: bucketKeyToDate(point.bucketKey, index),
+        income: toNumber(point.income),
+        spending: toNumber(point.spending),
+        net: toNumber(point.net),
+      })),
     [report?.data]
   )
-
-  const chartConfig: ChartConfig = {
-    net: { label: "Net", color: POSITIVE_NET_COLOR },
-    income: { label: "Income", color: "#2d7ff9" },
-    spending: { label: "Spending", color: "#f08c44" },
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -132,7 +134,7 @@ function AnalyticsCashflowPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>Cashflow</CardTitle>
-                  <CardDescription>Bars show net profit or loss; lines track income and spending.</CardDescription>
+                  <CardDescription>Bars show net result; lines track income and spending.</CardDescription>
                 </div>
                 <Select value={interval} onValueChange={(v) => setInterval((v as typeof interval) ?? "Auto")}>
                   <SelectTrigger className="w-[120px]">
@@ -151,34 +153,21 @@ function AnalyticsCashflowPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <ChartContainer className="h-[380px] w-full" config={chartConfig}>
-                <ComposedChart responsive data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
-                  <CartesianGrid vertical={false} />
-                  <ReferenceLine stroke="hsl(var(--border))" strokeDasharray="4 4" y={0} />
-                  <XAxis axisLine={false} dataKey="period" tickLine={false} />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value, name) => (
-                          <div className="flex min-w-[140px] items-center justify-between gap-3">
-                            <span className="text-muted-foreground">{formatSeriesLabel(name ?? "")}</span>
-                            <span className="font-mono font-medium text-foreground tabular-nums">{formatCurrency(value as number | string, baseCurrency)}</span>
-                          </div>
-                        )}
-                        indicator="line"
-                      />
-                    }
-                  />
-                  <ChartLegend content={<ChartLegendContent />} />
-                  <Bar dataKey="net" fill="var(--color-net)" radius={[7, 7, 0, 0]}>
-                    {chartData.map((entry) => (
-                      <Cell key={entry.period} fill={entry.netFill} />
-                    ))}
-                  </Bar>
-                  <Line dataKey="income" dot={false} name="Income" stroke="var(--color-income)" strokeWidth={2.5} type="monotone" />
-                  <Line dataKey="spending" dot={false} name="Spending" stroke="var(--color-spending)" strokeWidth={2.5} type="monotone" />
-                </ComposedChart>
-              </ChartContainer>
+              <ComposedChart data={chartData} xDataKey="date" aspectRatio="" className="h-[360px] w-full" margin={{ top: 16, right: 16, bottom: 28, left: 48 }}>
+                <Grid highlightRowValues={[0]} />
+                <XAxis />
+                <YAxis formatValue={(value) => formatCompactNumber(value)} />
+                <ChartTooltip
+                  rows={(point) => [
+                    { color: NET_COLOR, label: "Net", value: formatCurrency(point.net as number, baseCurrency) },
+                    { color: INCOME_COLOR, label: "Income", value: formatCurrency(point.income as number, baseCurrency) },
+                    { color: SPENDING_COLOR, label: "Spending", value: formatCurrency(point.spending as number, baseCurrency) },
+                  ]}
+                />
+                <SeriesBar dataKey="net" fill={NET_COLOR} negativeFill={OVERSPENT_COLOR} radius={6} />
+                <Line dataKey="income" stroke={INCOME_COLOR} fadeEdges={false} />
+                <Line dataKey="spending" stroke={SPENDING_COLOR} fadeEdges={false} />
+              </ComposedChart>
             </CardContent>
           </Card>
         </>
@@ -191,61 +180,38 @@ function AnalyticsCashflowPage() {
 
 function SavingsRadialCard({ savingsRate, income, spending, net }: { savingsRate: number; income: number; spending: number; net: number }) {
   const isOverspent = net < 0
-  const displayPercent = isOverspent ? (income > 0 ? (spending / income) * 100 : 100) : Math.max(0, savingsRate)
-  const fillPercent = isOverspent ? 100 : Math.min(Math.max(0, savingsRate), 100)
+  const overspentPercent = income > 0 ? (spending / income) * 100 : 100
+  const displayValue = isOverspent ? overspentPercent : Math.max(0, savingsRate)
+  const color = isOverspent ? OVERSPENT_COLOR : SAVED_COLOR
 
-  const chartData = [{ name: "rate", value: 1 }]
-  const chartConfig: ChartConfig = {
-    rate: {
-      label: isOverspent ? "Overspent" : "Savings rate",
-      color: isOverspent ? "hsl(0 72% 51%)" : "hsl(152 57% 38%)",
+  const ringData = [
+    {
+      label: isOverspent ? "overspent" : "saved",
+      value: displayValue,
+      maxValue: isOverspent ? Math.max(displayValue, 1) : 100,
+      color,
     },
-  }
-
-  // Encode the percentage into endAngle so we don't fight recharts' auto-domain.
-  // startAngle=90 is 12 o'clock; subtract clockwise degrees for fill%.
-  const radialEndAngle = 90 - (fillPercent / 100) * 360
+  ]
 
   return (
     <Card
       size="sm"
       className="relative min-w-0 overflow-hidden border-border bg-card/95 shadow-none before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent"
     >
-      <CardContent className="flex items-center justify-center px-3 pt-3">
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[98px]">
-          <RadialBarChart data={chartData} startAngle={90} endAngle={radialEndAngle} innerRadius={34} outerRadius={46}>
-            <PolarGrid gridType="circle" radialLines={false} stroke="none" className="first:fill-muted last:fill-background" polarRadius={[46, 34]} />
-            <RadialBar dataKey="value" cornerRadius={4} fill="var(--color-rate)" />
-            <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                        <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-base font-bold">
-                          {displayPercent.toFixed(1)}%
-                        </tspan>
-                        <tspan x={viewBox.cx} y={(viewBox.cy ?? 0) + 15} className="fill-muted-foreground text-[10px]">
-                          {isOverspent ? "overspent" : "saved"}
-                        </tspan>
-                      </text>
-                    )
-                  }
-                }}
-              />
-            </PolarRadiusAxis>
-          </RadialBarChart>
-        </ChartContainer>
+      <CardContent className="flex items-center justify-center px-3 py-2">
+        <div className="size-[108px]">
+          <RingChart data={ringData} strokeWidth={11} baseInnerRadius={38} ringGap={0}>
+            <Ring index={0} lineCap="round" />
+            <RingCenter
+              defaultLabel={isOverspent ? "overspent" : "saved"}
+              suffix="%"
+              formatOptions={{ maximumFractionDigits: 1 }}
+              valueClassName="text-base font-bold text-foreground"
+              labelClassName="mt-0.5 text-[10px] text-muted-foreground"
+            />
+          </RingChart>
+        </div>
       </CardContent>
     </Card>
   )
-}
-
-/* ── Helpers ─────────────────────────────────────────────────── */
-
-function formatSeriesLabel(name: string | number) {
-  if (name === "net") return "Net"
-  if (name === "income") return "Income"
-  if (name === "spending") return "Spending"
-  return String(name)
 }

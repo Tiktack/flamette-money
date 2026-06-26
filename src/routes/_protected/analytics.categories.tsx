@@ -3,11 +3,19 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Bar, BarChart, BarStack, CartesianGrid, Cell, Pie, PieChart, XAxis } from "recharts"
 
 import { EmptyState } from "@/components/empty-state"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { ComposedChart } from "@/components/charts/composed-chart"
+import { SeriesBar } from "@/components/charts/series-bar"
+import { Grid } from "@/components/charts/grid"
+import { XAxis } from "@/components/charts/x-axis"
+import { YAxis } from "@/components/charts/y-axis"
+import { PieChart } from "@/components/charts/pie-chart"
+import { PieSlice } from "@/components/charts/pie-slice"
+import { PieCenter } from "@/components/charts/pie-center"
+import { ChartTooltip } from "@/components/charts/tooltip"
+import { bucketKeyToDate, formatCompactNumber } from "@/lib/chart-utils"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -82,8 +90,8 @@ function AnalyticsCategoriesPage() {
       percent: toNumber(entry.percentageOfMax),
     }))
 
-    const data = (payload?.data ?? []).map((point) => {
-      const row: Record<string, number | string> = { period: point.bucketLabel }
+    const data = (payload?.data ?? []).map((point, index) => {
+      const row: Record<string, number | string | Date> = { date: bucketKeyToDate(point.bucketKey, index) }
       for (const seriesEntry of series) {
         row[seriesEntry.key] = toNumber(point.values?.[seriesEntry.key] ?? 0)
       }
@@ -103,16 +111,8 @@ function AnalyticsCategoriesPage() {
     }
   }, [reportQuery.data])
 
-  const chartConfig = React.useMemo(
-    () =>
-      report.series.reduce<ChartConfig>((config, entry) => {
-        config[entry.key] = { label: entry.label, color: entry.color }
-        return config
-      }, {}),
-    [report.series]
-  )
-
   const donutData = report.series.filter((entry) => entry.total > 0)
+  const pieData = React.useMemo(() => donutData.map((entry) => ({ label: entry.label, value: entry.total, color: entry.color })), [donutData])
   const insightCards = React.useMemo(
     () => [
       {
@@ -194,16 +194,19 @@ function AnalyticsCategoriesPage() {
               <CardDescription>{report.series.length} categories in active range</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 px-4 pt-0 pb-4">
-              <ChartContainer className="mx-auto h-[220px] w-full max-w-[280px]" config={chartConfig}>
-                <PieChart>
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                  <Pie data={donutData} dataKey="total" nameKey="label" innerRadius={60} outerRadius={92} strokeWidth={0}>
-                    {donutData.map((entry) => (
-                      <Cell key={entry.key} fill={entry.color} />
-                    ))}
-                  </Pie>
+              <div className="flex justify-center py-2">
+                <PieChart data={pieData} size={216} innerRadius={66} cornerRadius={3} padAngle={0.025} hoverOffset={8}>
+                  {pieData.map((slice, index) => (
+                    <PieSlice key={donutData[index]!.key} index={index} color={slice.color} />
+                  ))}
+                  <PieCenter
+                    defaultLabel={mode === "Expense" ? "Spent" : "Earned"}
+                    formatOptions={{ notation: "compact", style: "currency", currency: report.baseCurrency, maximumFractionDigits: 1 }}
+                    valueClassName="font-bold tabular-nums leading-none text-[clamp(0.65rem,16cqw,1.3rem)] text-foreground"
+                    labelClassName="mt-0.5 max-w-full truncate leading-tight text-[clamp(0.6rem,8cqw,0.7rem)] text-muted-foreground"
+                  />
                 </PieChart>
-              </ChartContainer>
+              </div>
 
               <div className="grid gap-3">
                 {report.series.map((entry) => {
@@ -269,18 +272,25 @@ function AnalyticsCategoriesPage() {
               </div>
             </CardHeader>
             <CardContent className="px-4 pt-0 pb-4">
-              <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-                <BarChart data={report.data} margin={{ left: 8, right: 8, top: 12 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis axisLine={false} dataKey="period" tickLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  <BarStack radius={3}>
-                    {report.series.map((series) => (
-                      <Bar key={series.key} dataKey={series.key} stackId="categories" fill={`var(--color-${series.key})`} />
-                    ))}
-                  </BarStack>
-                </BarChart>
-              </ChartContainer>
+              <ComposedChart data={report.data} xDataKey="date" stacked aspectRatio="" className="h-[360px] w-full" margin={{ top: 16, right: 16, bottom: 28, left: 44 }}>
+                <Grid />
+                <XAxis />
+                <YAxis formatValue={(value) => formatCompactNumber(value)} />
+                <ChartTooltip
+                  rows={(point) =>
+                    report.series
+                      .filter((series) => toNumber(point[series.key] as number) > 0)
+                      .map((series) => ({
+                        color: series.color,
+                        label: series.label,
+                        value: formatCurrency(point[series.key] as number, report.baseCurrency),
+                      }))
+                  }
+                />
+                {report.series.map((series) => (
+                  <SeriesBar key={series.key} dataKey={series.key} fill={series.color} radius={0} />
+                ))}
+              </ComposedChart>
             </CardContent>
           </Card>
         </div>

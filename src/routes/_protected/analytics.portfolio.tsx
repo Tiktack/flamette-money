@@ -3,12 +3,15 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { ArrowDown01Icon, ArrowUp01Icon, ChartUpIcon, CreditCardIcon, Wallet01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts"
 
 import { MetricCard } from "@/components/metric-card"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
-import { computeNiceDomainTicks, formatCompactNumber, formatTimeSeriesAxisLabel } from "@/lib/chart-utils"
+import { AreaChart, Area } from "@/components/charts/area-chart"
+import { Grid } from "@/components/charts/grid"
+import { XAxis } from "@/components/charts/x-axis"
+import { YAxis } from "@/components/charts/y-axis"
+import { ChartTooltip } from "@/components/charts/tooltip"
+import { formatCompactNumber } from "@/lib/chart-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
@@ -17,6 +20,8 @@ import { usePortfolioBalanceSeriesReport } from "@/features/reports/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
 import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+
+const BALANCE_COLOR = "var(--chart-2)"
 
 export const Route = createFileRoute("/_protected/analytics/portfolio")({
   component: AnalyticsPortfolioPage,
@@ -53,100 +58,47 @@ function AnalyticsPortfolioPage() {
 
   const reportQuery = usePortfolioBalanceSeriesReport(query)
   const resolvedBaseCurrency = reportQuery.data?.baseCurrency ?? baseCurrency
-  const today = React.useMemo(() => new Date(), [])
-  const todayStart = React.useMemo(() => new Date(today.getFullYear(), today.getMonth(), today.getDate()), [today])
-  const todayEnd = React.useMemo(() => new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999), [today])
+  const points = reportQuery.data?.points
+
+  // Real balances up to today; the remaining buckets hold the last known balance
+  // flat and render as a dashed projection tail.
   const chartPresentation = React.useMemo(() => {
-    const points = reportQuery.data?.points ?? []
-    const startDate = reportQuery.data?.startDate ? new Date(reportQuery.data.startDate) : null
-    const endDate = reportQuery.data?.endDate ? new Date(reportQuery.data.endDate) : null
-    const reportInterval = reportQuery.data?.interval
-
-    let currentBucketIndex = -1
-
-    const hasProjection = startDate !== null && endDate !== null && startDate.getTime() <= todayEnd.getTime() && endDate.getTime() > todayEnd.getTime()
-
-    const tickLabels = new Map<string, string>()
-    const data = points.map((point, index) => {
-      const bucketEnd = new Date(point.bucketDate)
-      const bucketStart = index === 0 ? (startDate ?? bucketEnd) : new Date(new Date(points[index - 1]!.bucketDate).getTime() + 1)
-      const rawBalance = toNumber(point.totalBalance)
-      const tickLabel = formatTimeSeriesAxisLabel({
-        interval: reportInterval,
-        rangeStart: startDate,
-        rangeEnd: endDate,
-        bucketStart,
-      })
-
-      if (currentBucketIndex === -1 && bucketStart.getTime() <= todayEnd.getTime() && bucketEnd.getTime() >= todayStart.getTime()) {
-        currentBucketIndex = index
-      }
-
-      tickLabels.set(point.bucketLabel, tickLabel)
-
-      return {
-        period: point.bucketLabel,
-        balance: hasProjection && currentBucketIndex >= 0 && index > currentBucketIndex ? null : rawBalance,
-        rawBalance,
+    const series = points ?? []
+    const today = Date.now()
+    let lastActualIndex = -1
+    series.forEach((point, index) => {
+      if (new Date(point.bucketDate).getTime() <= today) {
+        lastActualIndex = index
       }
     })
 
-    return {
-      data,
-      hasProjection: hasProjection && currentBucketIndex >= 0 && currentBucketIndex < points.length - 1,
-      currentBucketIndex,
-      tickLabels,
-    }
-  }, [reportQuery.data?.endDate, reportQuery.data?.interval, reportQuery.data?.points, reportQuery.data?.startDate, todayStart, todayEnd])
+    const lastActualBalance = lastActualIndex >= 0 ? toNumber(series[lastActualIndex]!.totalBalance) : 0
+    const hasProjection = lastActualIndex >= 0 && lastActualIndex < series.length - 1
+
+    const data = series.map((point, index) => ({
+      date: new Date(point.bucketDate),
+      balance: hasProjection && index > lastActualIndex ? lastActualBalance : toNumber(point.totalBalance),
+    }))
+
+    return { data, dashFromIndex: hasProjection ? lastActualIndex : undefined }
+  }, [points])
+
   const chartData = chartPresentation.data
-  const projectionSegment = React.useMemo(() => {
-    if (!chartPresentation.hasProjection || chartPresentation.currentBucketIndex < 0 || chartData.length < 2) {
-      return null
-    }
-
-    const lastActualPoint = chartData[chartPresentation.currentBucketIndex]
-    const lastPoint = chartData[chartData.length - 1]
-
-    if (!lastActualPoint || !lastPoint) {
-      return null
-    }
-
-    return [
-      { x: lastActualPoint.period, y: lastActualPoint.rawBalance },
-      { x: lastPoint.period, y: lastActualPoint.rawBalance },
-    ] as const
-  }, [chartData, chartPresentation.hasProjection, chartPresentation.currentBucketIndex])
-
-  const yAxisConfig = React.useMemo(() => {
-    const values = chartData.map((d) => d.rawBalance).filter((v) => typeof v === "number" && isFinite(v))
-    const { domain, ticks } = computeNiceDomainTicks(values, {
-      tickCount: 4,
-      paddingFraction: 0.08,
-    })
-    return { domain, ticks }
-  }, [chartData])
   const summary = reportQuery.data?.summary
   const startBalance = formatCurrency(summary?.startBalance, resolvedBaseCurrency)
   const endBalance = formatCurrency(summary?.endBalance, resolvedBaseCurrency)
   const delta = toNumber(summary?.delta)
   const deltaPercent = toNumber(summary?.deltaPercent)
   const peakBalance = React.useMemo(() => {
-    const points = reportQuery.data?.points ?? []
+    const series = points ?? []
 
-    if (points.length === 0) {
+    if (series.length === 0) {
       return formatCurrency(0, resolvedBaseCurrency)
     }
 
-    const peakPoint = points.reduce((currentPeak, point) => (toNumber(point.totalBalance) > toNumber(currentPeak.totalBalance) ? point : currentPeak))
+    const peakPoint = series.reduce((currentPeak, point) => (toNumber(point.totalBalance) > toNumber(currentPeak.totalBalance) ? point : currentPeak))
     return formatCurrency(peakPoint.totalBalance, resolvedBaseCurrency)
-  }, [reportQuery.data?.points, resolvedBaseCurrency])
-
-  const chartConfig: ChartConfig = {
-    balance: {
-      label: `Balance (${resolvedBaseCurrency})`,
-      color: "var(--chart-2)",
-    },
-  }
+  }, [points, resolvedBaseCurrency])
 
   return (
     <div className="flex flex-col gap-6">
@@ -223,29 +175,21 @@ function AnalyticsPortfolioPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <ChartContainer className="h-[360px] w-full" config={chartConfig}>
-                <AreaChart data={chartData} margin={{ left: 8, right: 8, top: 12 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    axisLine={false}
-                    dataKey="period"
-                    tickFormatter={(value) => chartPresentation.tickLabels.get(String(value)) ?? String(value)}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    domain={yAxisConfig.domain}
-                    ticks={yAxisConfig.ticks}
-                    tickFormatter={(v) => formatCompactNumber(Number(v ?? 0))}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                  {projectionSegment ? (
-                    <ReferenceLine ifOverflow="extendDomain" segment={projectionSegment} stroke="var(--color-balance)" strokeDasharray="4 4" strokeWidth={2} />
-                  ) : null}
-                  <Area dataKey="balance" fill="var(--color-balance)" fillOpacity={0.18} stroke="var(--color-balance)" type="linear" />
-                </AreaChart>
-              </ChartContainer>
+              <AreaChart data={chartData} xDataKey="date" aspectRatio="" className="h-[360px] w-full" margin={{ top: 16, right: 16, bottom: 28, left: 48 }}>
+                <Grid />
+                <XAxis />
+                <YAxis formatValue={(value) => formatCompactNumber(value)} />
+                <ChartTooltip
+                  rows={(point) => [
+                    {
+                      color: BALANCE_COLOR,
+                      label: `Balance (${resolvedBaseCurrency})`,
+                      value: formatCurrency(point.balance as number, resolvedBaseCurrency),
+                    },
+                  ]}
+                />
+                <Area dataKey="balance" fill={BALANCE_COLOR} fillOpacity={0.2} stroke={BALANCE_COLOR} dashFromIndex={chartPresentation.dashFromIndex} />
+              </AreaChart>
             </CardContent>
           </Card>
         </>

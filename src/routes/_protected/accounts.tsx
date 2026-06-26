@@ -4,8 +4,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { type ColumnDef, type Table as TanstackTable } from "@tanstack/react-table"
 import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, TransactionIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Line, LineChart, ResponsiveContainer } from "recharts"
 
+import { LineChart } from "@/components/charts/line-chart"
+import { Line } from "@/components/charts/line"
 import { DataTable } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -214,15 +215,16 @@ function AccountsPage() {
         enableSorting: false,
         cell: ({ row }) => {
           const color = normalizeHexColor(row.original.color)
-          const sparkline = buildTrendSeries(buildSeed(row.original.id))
+          const sparkline = buildTrendSeries(buildSeed(row.original.id)).map((point) => ({
+            date: new Date(2000, 0, 1 + point.index),
+            value: point.value,
+          }))
 
           return (
             <div className="h-10 w-28">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sparkline}>
-                  <Line dataKey="value" dot={false} stroke={color} strokeWidth={2} type="monotone" />
-                </LineChart>
-              </ResponsiveContainer>
+              <LineChart data={sparkline} aspectRatio="" className="h-full" margin={{ top: 6, right: 4, bottom: 6, left: 4 }} animationDuration={700}>
+                <Line dataKey="value" stroke={color} strokeWidth={2} fadeEdges={false} showHighlight={false} />
+              </LineChart>
             </div>
           )
         },

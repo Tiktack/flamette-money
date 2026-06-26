@@ -1,3 +1,5 @@
 .agents
 .claude
 .github
+src/components/charts
+src/components/shimmering-text.tsx
