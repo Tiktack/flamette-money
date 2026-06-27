@@ -226,6 +226,10 @@ export function Area({
     [dataKey, yScale]
   );
 
+  // Close the area fill to the zero baseline (clamped to the plot) so values
+  // below zero fill upward to zero instead of down to the chart floor.
+  const baselineY = Math.min(innerHeight, Math.max(0, yScale(0) ?? innerHeight));
+
   const hasDashTail = resolveDashTailBounds(dashFromIndex, data.length);
   // The stroke gradient is only emitted when at least one edge fades, so fall
   // back to the resolved solid color otherwise — avoids an invalid url(#...).
@@ -253,6 +257,7 @@ export function Area({
           fill={areaFill}
           x={(d) => xScale(xAccessor(d)) ?? 0}
           y={getY}
+          y0={baselineY}
           yScale={yScale}
         />
       ) : null}
