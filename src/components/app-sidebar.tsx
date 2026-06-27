@@ -80,7 +80,7 @@ export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...
   )
 
   return (
-    <Sidebar variant="inset" collapsible="icon" {...props}>
+    <Sidebar variant="sidebar" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
