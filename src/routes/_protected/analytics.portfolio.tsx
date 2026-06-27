@@ -11,6 +11,7 @@ import { Grid } from "@/components/charts/grid"
 import { XAxis } from "@/components/charts/x-axis"
 import { YAxis } from "@/components/charts/y-axis"
 import { ChartTooltip } from "@/components/charts/tooltip"
+import { ProjectionLine } from "@/components/charts/projection-line"
 import { ChartMarkers } from "@/components/charts/markers"
 import { ChartTripMarkerTooltip } from "@/components/chart-trip-marker-tooltip"
 import { useTrips } from "@/features/trips/hooks"
@@ -75,15 +76,28 @@ function AnalyticsPortfolioPage() {
       }
     })
 
-    const lastActualBalance = lastActualIndex >= 0 ? toNumber(series[lastActualIndex]!.totalBalance) : 0
     const hasProjection = lastActualIndex >= 0 && lastActualIndex < series.length - 1
+    const lastIndex = hasProjection ? lastActualIndex : series.length - 1
 
-    const data = series.map((point, index) => ({
+    // The area shows only actual balances; the future is drawn as a flat dashed
+    // projection line that holds the last known balance to the end of the range.
+    const data = series.slice(0, lastIndex + 1).map((point) => ({
       date: new Date(point.bucketDate),
-      balance: hasProjection && index > lastActualIndex ? lastActualBalance : toNumber(point.totalBalance),
+      balance: toNumber(point.totalBalance),
     }))
 
-    return { data, dashFromIndex: hasProjection ? lastActualIndex : undefined }
+    let projection: Array<{ date: Date; value: number }> | null = null
+    if (hasProjection) {
+      const anchor = series[lastActualIndex]!
+      const horizon = series[series.length - 1]!
+      const anchorBalance = toNumber(anchor.totalBalance)
+      projection = [
+        { date: new Date(anchor.bucketDate), value: anchorBalance },
+        { date: new Date(horizon.bucketDate), value: anchorBalance },
+      ]
+    }
+
+    return { data, projection }
   }, [points])
 
   const chartData = chartPresentation.data
@@ -198,7 +212,10 @@ function AnalyticsPortfolioPage() {
                 >
                   <ChartTripMarkerTooltip markers={tripMarkers} />
                 </ChartTooltip>
-                <Area dataKey="balance" fill={BALANCE_COLOR} fillOpacity={0.2} stroke={BALANCE_COLOR} dashFromIndex={chartPresentation.dashFromIndex} />
+                <Area dataKey="balance" fill={BALANCE_COLOR} fillOpacity={0.2} stroke={BALANCE_COLOR} />
+                {chartPresentation.projection ? (
+                  <ProjectionLine data={chartPresentation.projection} stroke={BALANCE_COLOR} strokeDasharray="4 4" showEndMarker={false} />
+                ) : null}
                 <ChartMarkers items={tripMarkers} />
               </AreaChart>
             </CardContent>

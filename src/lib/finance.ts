@@ -81,31 +81,6 @@ export function initials(value: string) {
   )
 }
 
-export function buildSeed(value: string) {
-  let hash = 0
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) | 0
-  }
-
-  return Math.abs(hash)
-}
-
-export function buildTrendSeries(seed: number, points = 12) {
-  const values: Array<{ index: number; value: number }> = []
-  let next = seed || 1
-  let current = (seed % 40) + 30
-
-  for (let index = 0; index < points; index += 1) {
-    next = (next * 9301 + 49297) % 233280
-    const delta = (next / 233280 - 0.5) * 12
-    current = Math.max(6, current + delta)
-    values.push({ index, value: Number(current.toFixed(2)) })
-  }
-
-  return values
-}
-
 export function transactionTone(type: TransactionType, isRefund?: boolean) {
   if (isRefund || type === "Refund") {
     return "text-foreground"

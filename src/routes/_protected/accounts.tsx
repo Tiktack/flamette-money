@@ -5,8 +5,6 @@ import { type ColumnDef, type Table as TanstackTable } from "@tanstack/react-tab
 import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, TransactionIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { LineChart } from "@/components/charts/line-chart"
-import { Line } from "@/components/charts/line"
 import { DataTable } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -24,7 +22,7 @@ import { useAppInfo } from "@/features/app/hooks"
 import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from "@/features/accounts/hooks"
 import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { AccountListItem, AccountType } from "@/features/accounts/types"
-import { buildSeed, buildTrendSeries, formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
+import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/_protected/accounts")({
@@ -205,26 +203,6 @@ function AccountsPage() {
           return (
             <div className={amount < 0 ? "text-right font-medium text-destructive" : "text-right font-medium text-foreground"}>
               {formatCurrency(row.original.currentBalance, row.original.currency)}
-            </div>
-          )
-        },
-      },
-      {
-        id: "activity",
-        header: "Activity",
-        enableSorting: false,
-        cell: ({ row }) => {
-          const color = normalizeHexColor(row.original.color)
-          const sparkline = buildTrendSeries(buildSeed(row.original.id)).map((point) => ({
-            date: new Date(2000, 0, 1 + point.index),
-            value: point.value,
-          }))
-
-          return (
-            <div className="h-10 w-28">
-              <LineChart data={sparkline} aspectRatio="" className="h-full" margin={{ top: 6, right: 4, bottom: 6, left: 4 }} animationDuration={700}>
-                <Line dataKey="value" stroke={color} strokeWidth={2} fadeEdges={false} showHighlight={false} />
-              </LineChart>
             </div>
           )
         },
