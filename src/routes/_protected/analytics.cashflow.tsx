@@ -18,7 +18,10 @@ import { ChartTooltip } from "@/components/charts/tooltip"
 import { RingChart } from "@/components/charts/ring-chart"
 import { Ring } from "@/components/charts/ring"
 import { RingCenter } from "@/components/charts/ring-center"
-import { bucketKeyToDate, formatCompactNumber } from "@/lib/chart-utils"
+import { ChartMarkers } from "@/components/charts/markers"
+import { ChartTripMarkerTooltip } from "@/components/chart-trip-marker-tooltip"
+import { useTrips } from "@/features/trips/hooks"
+import { bucketKeyToDate, buildTripMarkers, formatCompactNumber } from "@/lib/chart-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getApiErrorMessage } from "@/features/shared/errors"
@@ -72,6 +75,12 @@ function AnalyticsCashflowPage() {
         net: toNumber(point.net),
       })),
     [report?.data]
+  )
+
+  const tripsQuery = useTrips()
+  const tripMarkers = React.useMemo(
+    () => buildTripMarkers(tripsQuery.data ?? [], chartData.map((point) => point.date)),
+    [tripsQuery.data, chartData]
   )
 
   return (
@@ -153,7 +162,7 @@ function AnalyticsCashflowPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <ComposedChart data={chartData} xDataKey="date" aspectRatio="" className="h-[360px] w-full" margin={{ top: 16, right: 16, bottom: 28, left: 48 }}>
+              <ComposedChart data={chartData} xDataKey="date" aspectRatio="" className="h-[360px] w-full" margin={{ top: 40, right: 16, bottom: 28, left: 48 }}>
                 <Grid highlightRowValues={[0]} />
                 <XAxis />
                 <YAxis formatValue={(value) => formatCompactNumber(value)} />
@@ -163,10 +172,13 @@ function AnalyticsCashflowPage() {
                     { color: INCOME_COLOR, label: "Income", value: formatCurrency(point.income as number, baseCurrency) },
                     { color: SPENDING_COLOR, label: "Spending", value: formatCurrency(point.spending as number, baseCurrency) },
                   ]}
-                />
+                >
+                  <ChartTripMarkerTooltip markers={tripMarkers} />
+                </ChartTooltip>
                 <SeriesBar dataKey="net" fill={NET_COLOR} negativeFill={OVERSPENT_COLOR} radius={6} />
                 <Line dataKey="income" stroke={INCOME_COLOR} fadeEdges={false} />
                 <Line dataKey="spending" stroke={SPENDING_COLOR} fadeEdges={false} />
+                <ChartMarkers items={tripMarkers} />
               </ComposedChart>
             </CardContent>
           </Card>

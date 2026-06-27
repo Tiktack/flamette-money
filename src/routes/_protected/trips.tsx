@@ -21,7 +21,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useSettings } from "@/features/settings/hooks"
 import { useCreateTrip, useTrips, useUpdateTrip } from "@/features/trips/hooks"
-import { COUNTRY_OPTIONS } from "@/lib/countries"
+import { COUNTRY_OPTIONS, countryFlag } from "@/lib/countries"
 import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
 import type { TripListItem } from "@/features/trips/types"
 import { formatCurrency, formatDateLabel, toNumber } from "@/lib/finance"
@@ -341,12 +341,6 @@ function TripCard({
       </CardFooter>
     </Card>
   )
-}
-
-function countryFlag(code: string) {
-  const c = code.toUpperCase()
-  if (c.length !== 2) return "🌍"
-  return String.fromCodePoint(...[...c].map((ch) => 0x1f1e6 - 65 + ch.charCodeAt(0)))
 }
 
 function TripDialog({

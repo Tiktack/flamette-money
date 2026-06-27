@@ -11,7 +11,10 @@ import { Grid } from "@/components/charts/grid"
 import { XAxis } from "@/components/charts/x-axis"
 import { YAxis } from "@/components/charts/y-axis"
 import { ChartTooltip } from "@/components/charts/tooltip"
-import { formatCompactNumber } from "@/lib/chart-utils"
+import { ChartMarkers } from "@/components/charts/markers"
+import { ChartTripMarkerTooltip } from "@/components/chart-trip-marker-tooltip"
+import { useTrips } from "@/features/trips/hooks"
+import { buildTripMarkers, formatCompactNumber } from "@/lib/chart-utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
@@ -84,6 +87,11 @@ function AnalyticsPortfolioPage() {
   }, [points])
 
   const chartData = chartPresentation.data
+  const tripsQuery = useTrips()
+  const tripMarkers = React.useMemo(
+    () => buildTripMarkers(tripsQuery.data ?? [], chartData.map((point) => point.date)),
+    [tripsQuery.data, chartData]
+  )
   const summary = reportQuery.data?.summary
   const startBalance = formatCurrency(summary?.startBalance, resolvedBaseCurrency)
   const endBalance = formatCurrency(summary?.endBalance, resolvedBaseCurrency)
@@ -175,7 +183,7 @@ function AnalyticsPortfolioPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <AreaChart data={chartData} xDataKey="date" aspectRatio="" className="h-[360px] w-full" margin={{ top: 16, right: 16, bottom: 28, left: 48 }}>
+              <AreaChart data={chartData} xDataKey="date" aspectRatio="" className="h-[360px] w-full" margin={{ top: 40, right: 16, bottom: 28, left: 48 }}>
                 <Grid />
                 <XAxis />
                 <YAxis formatValue={(value) => formatCompactNumber(value)} />
@@ -187,8 +195,11 @@ function AnalyticsPortfolioPage() {
                       value: formatCurrency(point.balance as number, resolvedBaseCurrency),
                     },
                   ]}
-                />
+                >
+                  <ChartTripMarkerTooltip markers={tripMarkers} />
+                </ChartTooltip>
                 <Area dataKey="balance" fill={BALANCE_COLOR} fillOpacity={0.2} stroke={BALANCE_COLOR} dashFromIndex={chartPresentation.dashFromIndex} />
+                <ChartMarkers items={tripMarkers} />
               </AreaChart>
             </CardContent>
           </Card>

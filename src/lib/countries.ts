@@ -197,6 +197,15 @@ export const COUNTRIES: Record<string, string> = {
   ZW: "Zimbabwe",
 }
 
+/** ISO 3166-1 alpha-2 code → flag emoji (built from regional indicator symbols). */
+export function countryFlag(code: string): string {
+  const c = code.trim().toUpperCase()
+  if (c.length !== 2) {
+    return "🌍"
+  }
+  return String.fromCodePoint(...[...c].map((ch) => 0x1f1e6 - 65 + ch.charCodeAt(0)))
+}
+
 /** ISO alpha-2 → ISO alpha-3 for matching react-simple-maps topology data. */
 export const ALPHA2_TO_ALPHA3: Record<string, string> = {
   AF: "AFG",
