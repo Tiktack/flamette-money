@@ -347,6 +347,14 @@ function TransactionFormFields({
     [categories, form.categoryId]
   )
 
+  const originalTransactionOptions = recentTransactions
+    .filter((transaction) => transaction.type !== "Refund")
+    .slice(0, 100)
+    .map((transaction) => ({
+      value: transaction.id,
+      label: `${transaction.date.slice(0, 10)} · ${accountMap.get(transaction.accountId)?.name ?? "Account"} · ${toNumber(transaction.amount).toFixed(2)}`,
+    }))
+
   return (
     <div className="grid gap-5">
       {/* Transaction type selector */}
@@ -390,6 +398,7 @@ function TransactionFormFields({
           <FieldLabel>{requiresTarget ? "Source account" : "Account"}</FieldLabel>
           <Select
             value={form.accountId}
+            items={accountsData.map((account) => ({ value: account.id, label: account.name }))}
             onValueChange={(value) => {
               const nextAccountId = value ?? ""
               setForm((state) => ({
@@ -466,6 +475,7 @@ function TransactionFormFields({
             <FieldLabel>Target account</FieldLabel>
             <Select
               value={form.targetAccountId ?? ""}
+              items={accountsData.map((account) => ({ value: account.id, label: account.name }))}
               onValueChange={(value) => {
                 const nextTargetAccountId = value ?? null
                 setForm((state) => ({
@@ -584,6 +594,7 @@ function TransactionFormFields({
               <FieldLabel>Trip</FieldLabel>
               <Select
                 value={form.tripId ?? "none"}
+                items={[{ value: "none", label: "No trip" }, ...tripsData.map((trip) => ({ value: trip.id, label: trip.name }))]}
                 onValueChange={(value) =>
                   setForm((state) => ({
                     ...state,
@@ -641,6 +652,7 @@ function TransactionFormFields({
           <FieldLabel>Original transaction</FieldLabel>
           <Select
             value={form.originalTransactionId || ""}
+            items={originalTransactionOptions}
             onValueChange={(value) =>
               setForm((state) => ({
                 ...state,
@@ -653,14 +665,11 @@ function TransactionFormFields({
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {recentTransactions
-                  .filter((transaction) => transaction.type !== "Refund")
-                  .slice(0, 100)
-                  .map((transaction) => (
-                    <SelectItem key={transaction.id} value={transaction.id}>
-                      {transaction.date.slice(0, 10)} · {accountMap.get(transaction.accountId)?.name ?? "Account"} · {toNumber(transaction.amount).toFixed(2)}
-                    </SelectItem>
-                  ))}
+                {originalTransactionOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -1219,6 +1228,7 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
                       <FieldLabel>Account</FieldLabel>
                       <Select
                         value={form.accountId}
+                        items={accountsData.map((account) => ({ value: account.id, label: account.name }))}
                         onValueChange={(value) => {
                           const nextAccountId = value ?? ""
                           setForm((state) => ({

@@ -283,7 +283,11 @@ function AccountsPage() {
 
             return (
               <>
-                <Select value={typeValue} onValueChange={(value) => table.getColumn("type")?.setFilterValue(value === "all-types" ? undefined : value)}>
+                <Select
+                  value={typeValue}
+                  items={[{ value: "all-types", label: "All types" }, ...accountTypeOptions.map((type) => ({ value: type, label: accountTypeMeta[type].label }))]}
+                  onValueChange={(value) => table.getColumn("type")?.setFilterValue(value === "all-types" ? undefined : value)}
+                >
                   <SelectTrigger size="sm" className="w-[148px]">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
@@ -301,6 +305,7 @@ function AccountsPage() {
 
                 <Select
                   value={currencyValue}
+                  items={[{ value: "all-currencies", label: "All currencies" }, ...currencyOptions.map((currency) => ({ value: currency, label: currency }))]}
                   onValueChange={(value) => table.getColumn("currency")?.setFilterValue(value === "all-currencies" ? undefined : value)}
                 >
                   <SelectTrigger size="sm" className="w-[148px]">
@@ -517,7 +522,11 @@ function AccountDialog({
           </Field>
           <Field>
             <FieldLabel>Account icon</FieldLabel>
-            <Select value={value.icon} onValueChange={(next) => onChange((state) => ({ ...state, icon: next ?? state.icon }))}>
+            <Select
+              value={value.icon}
+              items={accountIconOptions.map((icon) => ({ value: icon.name, label: icon.label }))}
+              onValueChange={(next) => onChange((state) => ({ ...state, icon: next ?? state.icon }))}
+            >
               <SelectTrigger>
                 <HugeiconsIcon icon={selectedIcon.icon} strokeWidth={2} className="text-muted-foreground" />
                 <SelectValue placeholder="Icon" />

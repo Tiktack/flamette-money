@@ -382,7 +382,11 @@ function TripDialog({
           </Field>
           <Field className="md:col-span-2">
             <FieldLabel>Country</FieldLabel>
-            <Select value={value.country} onValueChange={(val) => onChange((state) => ({ ...state, country: val as string }))}>
+            <Select
+              value={value.country}
+              items={[{ value: "", label: "None" }, ...COUNTRY_OPTIONS.map((option) => ({ value: option.value, label: option.label }))]}
+              onValueChange={(val) => onChange((state) => ({ ...state, country: val as string }))}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a country" />
               </SelectTrigger>

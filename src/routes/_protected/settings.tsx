@@ -298,6 +298,10 @@ function SettingsPage() {
               <FieldLabel>Source</FieldLabel>
               <Select
                 value={importType}
+                items={[
+                  { value: "flamette", label: importFormatLabels.flamette },
+                  { value: "one-money", label: importFormatLabels["one-money"] },
+                ]}
                 onValueChange={(value) => {
                   if (!value) {
                     return
