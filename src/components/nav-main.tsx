@@ -20,6 +20,7 @@ type AppRoute =
   | "/analytics/cashflow"
   | "/analytics/portfolio"
   | "/analytics/categories"
+  | "/analytics/compare"
   | "/accounts"
   | "/categories"
   | "/trips"

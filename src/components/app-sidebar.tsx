@@ -49,6 +49,11 @@ export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...
             to: "/analytics/categories" as const,
             isActive: pathname === "/analytics/categories",
           },
+          {
+            title: "Compare",
+            to: "/analytics/compare" as const,
+            isActive: pathname === "/analytics/compare",
+          },
         ],
       },
       {

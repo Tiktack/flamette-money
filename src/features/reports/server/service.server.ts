@@ -10,8 +10,10 @@ import { getRatesToBase } from "@/lib/exchange-rate.server"
 import type {
   CashflowSeriesReportResponse,
   CategorySeriesReportResponse,
+  ComparisonReportResponse,
   GetApiReportsCashflowSeriesData,
   GetApiReportsCategorySeriesData,
+  GetApiReportsComparisonData,
   GetApiReportsPortfolioBalanceSeriesData,
   PortfolioBalanceSeriesResponse,
   ReportBucketResponse,
@@ -884,5 +886,279 @@ export async function getPortfolioBalanceSeriesReportData(query?: GetApiReportsP
       pointCount: points.length,
       dayCount,
     },
+  }
+}
+
+type ComparisonBucketPoint = {
+  bucketKey: string
+  label: string
+  income: number
+  spending: number
+  net: number
+}
+
+type ComparisonAggregate = {
+  income: number
+  spending: number
+  net: number
+  points: ComparisonBucketPoint[]
+}
+
+function filterCashflowTransactions(rows: ReportTransaction[], start: Date, end: Date) {
+  const endBoundary = endOfDate(end)
+  return rows.filter((transaction) => {
+    if (transaction.date < start || transaction.date > endBoundary) {
+      return false
+    }
+
+    return transaction.type === "Income" || transaction.type === "Expense" || transaction.type === "Refund" || transaction.isRefund
+  })
+}
+
+function filterCategoryTransactions(rows: ReportTransaction[], start: Date, end: Date, type: CategoryType) {
+  const endBoundary = endOfDate(end)
+  return rows.filter((transaction) => {
+    if (transaction.date < start || transaction.date > endBoundary) {
+      return false
+    }
+
+    if (type === "Income") {
+      return transaction.type === "Income"
+    }
+
+    return transaction.type === "Expense" || transaction.type === "Refund" || transaction.isRefund
+  })
+}
+
+function aggregateComparisonCashflow(
+  rows: ReportTransaction[],
+  startDate: Date,
+  endDate: Date,
+  interval: ReportInterval,
+  baseCurrency: string,
+  ratesToBase: Record<string, number>,
+  accountCurrencyById: Map<string, string>
+): ComparisonAggregate {
+  const buckets = buildBuckets(startDate, endDate, interval)
+  const bucketTotals = new Map<string, { income: number; spending: number }>()
+  let income = 0
+  let spending = 0
+
+  for (const transaction of rows) {
+    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
+    const incomeAmount = convertAmount(getIncomeAmount(transaction.type as TransactionType, transaction.amount), currency, baseCurrency, ratesToBase)
+    const spendingAmount = convertAmount(
+      getSpendingAmount(transaction.type as TransactionType, transaction.amount, transaction.isRefund),
+      currency,
+      baseCurrency,
+      ratesToBase
+    )
+
+    if (incomeAmount === 0 && spendingAmount === 0) {
+      continue
+    }
+
+    const bucketKey = resolveBucketKey(startDate, transaction.date, interval)
+    const bucket = bucketTotals.get(bucketKey) ?? { income: 0, spending: 0 }
+    bucket.income += incomeAmount
+    bucket.spending += spendingAmount
+    bucketTotals.set(bucketKey, bucket)
+    income += incomeAmount
+    spending += spendingAmount
+  }
+
+  const points = buckets.map((bucket) => {
+    const totals = bucketTotals.get(bucket.key)
+    const bucketIncome = roundMoney(totals?.income ?? 0)
+    const bucketSpending = roundMoney(totals?.spending ?? 0)
+
+    return {
+      bucketKey: bucket.key,
+      label: bucket.label,
+      income: bucketIncome,
+      spending: bucketSpending,
+      net: roundMoney(bucketIncome - bucketSpending),
+    }
+  })
+
+  return {
+    income: roundMoney(income),
+    spending: roundMoney(spending),
+    net: roundMoney(income - spending),
+    points,
+  }
+}
+
+function aggregateComparisonCategoryTotals(
+  rows: ReportTransaction[],
+  type: CategoryType,
+  baseCurrency: string,
+  ratesToBase: Record<string, number>,
+  accountCurrencyById: Map<string, string>,
+  categoryById: Map<string, ReportCategory>
+): Map<string, number> {
+  const totals = new Map<string, number>()
+
+  for (const transaction of rows) {
+    const signedAmount = getSignedAmount(type, transaction.type as TransactionType, transaction.amount, transaction.isRefund)
+
+    if (signedAmount === 0) {
+      continue
+    }
+
+    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
+    const amount = convertAmount(signedAmount, currency, baseCurrency, ratesToBase)
+    const categoryId = resolveTopLevelCategoryId(transaction.categoryId, transaction.subCategoryId, categoryById)
+    totals.set(categoryId, (totals.get(categoryId) ?? 0) + amount)
+  }
+
+  return totals
+}
+
+export async function getComparisonReportData(query?: GetApiReportsComparisonData["query"]): Promise<ComparisonReportResponse> {
+  const { user, baseCurrency, fx, accountCurrencyById } = await loadReportContext()
+  const type = query?.Type ?? "Expense"
+
+  const today = asDateOnly(new Date())
+  const defaultAStart = new Date(today.getFullYear(), today.getMonth(), 1)
+  const defaultAEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  const defaultBStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+  const defaultBEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+
+  const aStart = query?.PeriodAStart ? asDateOnly(parseDate(query.PeriodAStart, "PeriodAStart")) : defaultAStart
+  const aEnd = query?.PeriodAEnd ? asDateOnly(parseDate(query.PeriodAEnd, "PeriodAEnd")) : defaultAEnd
+  const bStart = query?.PeriodBStart ? asDateOnly(parseDate(query.PeriodBStart, "PeriodBStart")) : defaultBStart
+  const bEnd = query?.PeriodBEnd ? asDateOnly(parseDate(query.PeriodBEnd, "PeriodBEnd")) : defaultBEnd
+
+  if (aStart > aEnd) {
+    throw new Error("PeriodAStart cannot be after PeriodAEnd.")
+  }
+
+  if (bStart > bEnd) {
+    throw new Error("PeriodBStart cannot be after PeriodBEnd.")
+  }
+
+  // Both periods share one interval so the series aligns bucket-for-bucket by
+  // ordinal position (day 1 vs day 1, month 1 vs month 1) regardless of the
+  // calendar gap between them.
+  const interval = resolveReportInterval(aStart, aEnd, query?.Interval)
+
+  const categoryRows = await db.query.categories.findMany({
+    where: eq(categories.userId, user.id),
+  })
+  const categoryById = new Map(categoryRows.map((category) => [category.id, category]))
+
+  const allTransactions = await db.query.transactions.findMany({
+    where: eq(transactions.userId, user.id),
+    orderBy: [asc(transactions.date)],
+  })
+
+  const periodACashflow = aggregateComparisonCashflow(
+    filterCashflowTransactions(allTransactions, aStart, aEnd),
+    aStart,
+    aEnd,
+    interval,
+    baseCurrency,
+    fx.ratesToBase,
+    accountCurrencyById
+  )
+  const periodBCashflow = aggregateComparisonCashflow(
+    filterCashflowTransactions(allTransactions, bStart, bEnd),
+    bStart,
+    bEnd,
+    interval,
+    baseCurrency,
+    fx.ratesToBase,
+    accountCurrencyById
+  )
+
+  const seriesLength = Math.max(periodACashflow.points.length, periodBCashflow.points.length)
+  const series = Array.from({ length: seriesLength }, (_, index) => {
+    const a = periodACashflow.points[index] ?? null
+    const b = periodBCashflow.points[index] ?? null
+
+    return {
+      index,
+      label: a?.label ?? b?.label ?? String(index + 1),
+      aBucketKey: a?.bucketKey ?? null,
+      bBucketKey: b?.bucketKey ?? null,
+      aLabel: a?.label ?? null,
+      bLabel: b?.label ?? null,
+      aIncome: a ? a.income : null,
+      aSpending: a ? a.spending : null,
+      aNet: a ? a.net : null,
+      bIncome: b ? b.income : null,
+      bSpending: b ? b.spending : null,
+      bNet: b ? b.net : null,
+    }
+  })
+
+  const periodATotals = aggregateComparisonCategoryTotals(
+    filterCategoryTransactions(allTransactions, aStart, aEnd, type),
+    type,
+    baseCurrency,
+    fx.ratesToBase,
+    accountCurrencyById,
+    categoryById
+  )
+  const periodBTotals = aggregateComparisonCategoryTotals(
+    filterCategoryTransactions(allTransactions, bStart, bEnd, type),
+    type,
+    baseCurrency,
+    fx.ratesToBase,
+    accountCurrencyById,
+    categoryById
+  )
+
+  const moverKeys = new Set<string>([...periodATotals.keys(), ...periodBTotals.keys()])
+  const categoryMovers = [...moverKeys]
+    .map((key) => {
+      const aTotal = roundMoney(periodATotals.get(key) ?? 0)
+      const bTotal = roundMoney(periodBTotals.get(key) ?? 0)
+      const delta = roundMoney(aTotal - bTotal)
+      const deltaPercent = bTotal !== 0 ? roundMoney((delta / Math.abs(bTotal)) * 100) : null
+
+      let label = "Uncategorized"
+      let color = "gray.6"
+      if (key !== "uncategorized") {
+        const category = categoryById.get(key)
+        if (category) {
+          label = category.name
+          color = category.color
+        }
+      }
+
+      return { key, label, color, aTotal, bTotal, delta, deltaPercent }
+    })
+    .filter((mover) => mover.aTotal !== 0 || mover.bTotal !== 0)
+    .sort((left, right) => Math.abs(right.delta) - Math.abs(left.delta))
+
+  const aDayCount = Math.max(1, Math.floor((aEnd.getTime() - aStart.getTime()) / 86_400_000) + 1)
+  const bDayCount = Math.max(1, Math.floor((bEnd.getTime() - bStart.getTime()) / 86_400_000) + 1)
+
+  return {
+    type,
+    baseCurrency,
+    interval,
+    periodA: {
+      startDate: aStart.toISOString(),
+      endDate: aEnd.toISOString(),
+      income: periodACashflow.income,
+      spending: periodACashflow.spending,
+      net: periodACashflow.net,
+      savingsRate: calculateSavingsRate(periodACashflow.income, periodACashflow.net),
+      dayCount: aDayCount,
+    },
+    periodB: {
+      startDate: bStart.toISOString(),
+      endDate: bEnd.toISOString(),
+      income: periodBCashflow.income,
+      spending: periodBCashflow.spending,
+      net: periodBCashflow.net,
+      savingsRate: calculateSavingsRate(periodBCashflow.income, periodBCashflow.net),
+      dayCount: bDayCount,
+    },
+    series,
+    categoryMovers,
   }
 }

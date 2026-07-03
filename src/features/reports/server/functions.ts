@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start"
 
-import { cashflowReportSchema, categoryReportSchema, portfolioReportSchema } from "@/features/shared/server/validators"
+import { cashflowReportSchema, categoryReportSchema, comparisonReportSchema, portfolioReportSchema } from "@/features/shared/server/validators"
 
-import { getCashflowSeriesReportData, getCategorySeriesReportData, getPortfolioBalanceSeriesReportData } from "./service.server"
+import { getCashflowSeriesReportData, getCategorySeriesReportData, getComparisonReportData, getPortfolioBalanceSeriesReportData } from "./service.server"
 
 export const getCashflowSeriesReport = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => cashflowReportSchema.parse(data))
@@ -17,3 +17,7 @@ export const getPortfolioBalanceSeriesReport = createServerFn({
 })
   .inputValidator((data: unknown) => portfolioReportSchema.parse(data))
   .handler(async ({ data }) => getPortfolioBalanceSeriesReportData(data))
+
+export const getComparisonReport = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => comparisonReportSchema.parse(data))
+  .handler(async ({ data }) => getComparisonReportData(data))

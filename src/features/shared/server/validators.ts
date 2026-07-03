@@ -137,3 +137,14 @@ export const portfolioReportSchema = z
     AccountIds: z.array(z.string()).optional(),
   })
   .optional()
+
+export const comparisonReportSchema = z
+  .object({
+    PeriodAStart: z.string().optional(),
+    PeriodAEnd: z.string().optional(),
+    PeriodBStart: z.string().optional(),
+    PeriodBEnd: z.string().optional(),
+    Type: z.enum(categoryTypes).optional(),
+    Interval: reportIntervalSchema.optional(),
+  })
+  .optional()

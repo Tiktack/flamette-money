@@ -94,6 +94,51 @@ export type CategorySeriesReportResponse = {
 
 export type CategoryType = "Income" | "Expense"
 
+export type ComparisonPeriodSummaryResponse = {
+  startDate: string
+  endDate: string
+  income: number | string
+  spending: number | string
+  net: number | string
+  savingsRate: number | string
+  dayCount: number | string
+}
+
+export type ComparisonSeriesPointResponse = {
+  index: number | string
+  label: string
+  aBucketKey: null | string
+  bBucketKey: null | string
+  aLabel: null | string
+  bLabel: null | string
+  aIncome: null | number | string
+  aSpending: null | number | string
+  aNet: null | number | string
+  bIncome: null | number | string
+  bSpending: null | number | string
+  bNet: null | number | string
+}
+
+export type ComparisonCategoryMoverResponse = {
+  key: string
+  label: string
+  color: string
+  aTotal: number | string
+  bTotal: number | string
+  delta: number | string
+  deltaPercent: null | number | string
+}
+
+export type ComparisonReportResponse = {
+  type: CategoryType
+  baseCurrency: string
+  interval: ReportInterval
+  periodA: ComparisonPeriodSummaryResponse
+  periodB: ComparisonPeriodSummaryResponse
+  series: Array<ComparisonSeriesPointResponse>
+  categoryMovers: Array<ComparisonCategoryMoverResponse>
+}
+
 export type CreateAccountRequest = {
   name: string
   description: null | string
@@ -906,6 +951,38 @@ export type GetApiReportsCategorySeriesResponses = {
 }
 
 export type GetApiReportsCategorySeriesResponse = GetApiReportsCategorySeriesResponses[keyof GetApiReportsCategorySeriesResponses]
+
+export type GetApiReportsComparisonData = {
+  body?: never
+  path?: never
+  query?: {
+    PeriodAStart?: string
+    PeriodAEnd?: string
+    PeriodBStart?: string
+    PeriodBEnd?: string
+    Type?: CategoryType
+    Interval?: ReportInterval
+  }
+  url: "/api/reports/comparison"
+}
+
+export type GetApiReportsComparisonErrors = {
+  /**
+   * Bad Request
+   */
+  400: HttpValidationProblemDetails
+}
+
+export type GetApiReportsComparisonError = GetApiReportsComparisonErrors[keyof GetApiReportsComparisonErrors]
+
+export type GetApiReportsComparisonResponses = {
+  /**
+   * OK
+   */
+  200: ComparisonReportResponse
+}
+
+export type GetApiReportsComparisonResponse = GetApiReportsComparisonResponses[keyof GetApiReportsComparisonResponses]
 
 export type GetApiReportsPortfolioBalanceSeriesData = {
   body?: never

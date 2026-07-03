@@ -1,10 +1,15 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query"
 
-import { getCashflowSeriesReport, getCategorySeriesReport, getPortfolioBalanceSeriesReport } from "./server/functions"
+import { getCashflowSeriesReport, getCategorySeriesReport, getComparisonReport, getPortfolioBalanceSeriesReport } from "./server/functions"
 
 import { queryKeys } from "@/features/shared/query-keys"
 
-import type { GetApiReportsCashflowSeriesData, GetApiReportsCategorySeriesData, GetApiReportsPortfolioBalanceSeriesData } from "./types"
+import type {
+  GetApiReportsCashflowSeriesData,
+  GetApiReportsCategorySeriesData,
+  GetApiReportsComparisonData,
+  GetApiReportsPortfolioBalanceSeriesData,
+} from "./types"
 
 export const cashflowSeriesQueryOptions = (query?: GetApiReportsCashflowSeriesData["query"]) =>
   queryOptions({
@@ -24,5 +29,12 @@ export const portfolioBalanceSeriesQueryOptions = (query?: GetApiReportsPortfoli
   queryOptions({
     queryKey: queryKeys.reportsPortfolioBalanceSeries(query),
     queryFn: () => getPortfolioBalanceSeriesReport({ data: query }),
+    placeholderData: keepPreviousData,
+  })
+
+export const comparisonQueryOptions = (query?: GetApiReportsComparisonData["query"]) =>
+  queryOptions({
+    queryKey: queryKeys.reportsComparison(query),
+    queryFn: () => getComparisonReport({ data: query }),
     placeholderData: keepPreviousData,
   })
