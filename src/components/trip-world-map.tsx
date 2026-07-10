@@ -1,5 +1,6 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useMemo, useRef, useState } from "react"
 
+import { useTheme } from "next-themes"
 import { ComposableMap, Geographies, Geography } from "react-simple-maps"
 
 import { ALPHA2_TO_NUMERIC, COUNTRIES } from "@/lib/countries"
@@ -28,17 +29,11 @@ const COLORS = {
   },
 }
 
+// SSR-safe (next-themes resolves after mount) — the previous document.documentElement read
+// would throw if this ever rendered on the server.
 function useColorScheme() {
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains("dark"))
-  useEffect(() => {
-    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains("dark")))
-    obs.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-    return () => obs.disconnect()
-  }, [])
-  return isDark ? COLORS.dark : COLORS.light
+  const { resolvedTheme } = useTheme()
+  return resolvedTheme === "dark" ? COLORS.dark : COLORS.light
 }
 
 export type TripMapItem = {
@@ -225,8 +220,3 @@ function CountryTooltip({ tooltip, baseCurrency }: { tooltip: NonNullable<Toolti
 }
 
 export const TripWorldMap = memo(TripWorldMapInner)
-
-export function getCountryName(code: string | null | undefined) {
-  if (!code) return null
-  return COUNTRIES[code.toUpperCase()] ?? code
-}

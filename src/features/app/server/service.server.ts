@@ -26,7 +26,6 @@ export async function getCurrentUserData(): Promise<CurrentUserResponse | null> 
     id: user.id,
     name: user.name,
     email: user.email,
-    googleSubject: "",
     baseCurrency: user.baseCurrency,
     subscriptionType: user.subscriptionType,
   }

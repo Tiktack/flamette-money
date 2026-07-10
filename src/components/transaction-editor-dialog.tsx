@@ -24,7 +24,7 @@ import type { CategoryHierarchy } from "@/features/categories/types"
 import type { ReceiptScanResult } from "@/features/receipt-scan/types"
 import type { TransactionCreateRequest, TransactionDetail, TransactionType, TransactionUpdateRequest } from "@/features/transactions/types"
 import { CategoryIconBadge } from "@/lib/category-icons"
-import { formatDateInput, normalizeHexColor, toNumber } from "@/lib/finance"
+import { formatDateInput, toNumber } from "@/lib/finance"
 
 export type TransactionEditorDialogProps = {
   open: boolean
@@ -38,10 +38,10 @@ export type TransactionEditorDialogProps = {
 
 type TransactionItemFormState = {
   name: string
-  quantity: number
+  quantity: number | ""
   unit: string
-  unitPrice: number
-  promotionAmount: number
+  unitPrice: number | ""
+  promotionAmount: number | ""
   categoryId: string | null
   subCategoryId: string | null
 }
@@ -325,8 +325,8 @@ function TransactionFormFields({
   setForm: React.Dispatch<React.SetStateAction<TransactionFormState>>
   categories: CategoryHierarchy[]
   categoryMap: Map<string, CategoryHierarchy>
-  accountMap: Map<string, { name: string; currency: string; color: string }>
-  accountsData: { id: string; name: string; currency: string; color: string }[]
+  accountMap: Map<string, { name: string; currency: string }>
+  accountsData: { id: string; name: string; currency: string }[]
   currencyOptions: string[]
   tripsData: { id: string; name: string }[]
   recentTransactions: {
@@ -347,13 +347,17 @@ function TransactionFormFields({
     [categories, form.categoryId]
   )
 
-  const originalTransactionOptions = recentTransactions
-    .filter((transaction) => transaction.type !== "Refund")
-    .slice(0, 100)
-    .map((transaction) => ({
-      value: transaction.id,
-      label: `${transaction.date.slice(0, 10)} · ${accountMap.get(transaction.accountId)?.name ?? "Account"} · ${toNumber(transaction.amount).toFixed(2)}`,
-    }))
+  // The search already filters to expenses server-side.
+  const originalTransactionOptions = recentTransactions.slice(0, 100).map((transaction) => ({
+    value: transaction.id,
+    label: `${transaction.date.slice(0, 10)} · ${accountMap.get(transaction.accountId)?.name ?? "Account"} · ${toNumber(transaction.amount).toFixed(2)}`,
+  }))
+
+  // In edit mode the linked expense may fall outside the fetched options — keep it selectable
+  // so the select can render a value.
+  if (form.originalTransactionId && !originalTransactionOptions.some((option) => option.value === form.originalTransactionId)) {
+    originalTransactionOptions.unshift({ value: form.originalTransactionId, label: "Currently linked expense" })
+  }
 
   return (
     <div className="grid gap-5">
@@ -404,6 +408,8 @@ function TransactionFormFields({
               setForm((state) => ({
                 ...state,
                 accountId: nextAccountId,
+                // Changing the source onto the current target would create a transfer-to-self.
+                targetAccountId: state.targetAccountId === nextAccountId ? null : state.targetAccountId,
                 currency: accountMap.get(nextAccountId)?.currency ?? state.currency,
                 currency2: requiresTarget ? state.currency2 : (accountMap.get(nextAccountId)?.currency ?? state.currency2),
               }))
@@ -745,10 +751,12 @@ function TransactionFormFields({
           <div className="grid gap-3">
             {form.items.map((item, index) => {
               const itemParent = item.categoryId ? (categories.find((category) => category.id === item.categoryId) ?? null) : null
-              const itemFinal = item.unitPrice * item.quantity - item.promotionAmount
+              const itemFinal = toNumber(item.unitPrice) * toNumber(item.quantity) - toNumber(item.promotionAmount)
 
               return (
-                <div key={`${index}-${item.name}`} className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                // Index key only — deriving the key from the name remounts the card (and drops
+                // input focus) on every keystroke.
+                <div key={index} className="rounded-xl border border-border/60 bg-muted/15 p-3">
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="flex size-6 items-center justify-center rounded-md bg-muted text-xs font-medium text-muted-foreground">{index + 1}</span>
@@ -798,7 +806,7 @@ function TransactionFormFields({
                               i === index
                                 ? {
                                     ...entry,
-                                    quantity: Number(event.target.value) || 0,
+                                    quantity: event.target.value === "" ? "" : Number(event.target.value) || 0,
                                   }
                                 : entry
                             ),
@@ -820,7 +828,7 @@ function TransactionFormFields({
                               i === index
                                 ? {
                                     ...entry,
-                                    unitPrice: Number(event.target.value) || 0,
+                                    unitPrice: event.target.value === "" ? "" : Number(event.target.value) || 0,
                                   }
                                 : entry
                             ),
@@ -842,7 +850,7 @@ function TransactionFormFields({
                               i === index
                                 ? {
                                     ...entry,
-                                    promotionAmount: Number(event.target.value) || 0,
+                                    promotionAmount: event.target.value === "" ? "" : Number(event.target.value) || 0,
                                   }
                                 : entry
                             ),
@@ -973,12 +981,11 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
   const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const categoryMap = React.useMemo(() => buildCategoryMap(categories), [categories])
   const accountMap = React.useMemo(() => {
-    const map = new Map<string, { name: string; currency: string; color: string }>()
+    const map = new Map<string, { name: string; currency: string }>()
     for (const account of accountsQuery.data ?? []) {
       map.set(account.id, {
         name: account.name,
         currency: account.currency.toUpperCase(),
-        color: normalizeHexColor(account.color),
       })
     }
     return map
@@ -1001,11 +1008,30 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
     return categories.filter((category) => category.type === allowedType && category.parentId === null)
   }, [categories, form.type])
 
+  // Hydrate the form once per open. Guarding with a ref (instead of depending on query data
+  // identities alone) keeps background refetches from silently wiping unsaved edits while
+  // the dialog is open.
+  const hydratedRef = React.useRef(false)
+
   React.useEffect(() => {
     if (!open) {
+      hydratedRef.current = false
       return
     }
 
+    if (hydratedRef.current) {
+      return
+    }
+
+    if (mode === "edit" && !transactionQuery.data) {
+      return
+    }
+
+    if (mode === "new" && accountsQuery.isPending) {
+      return
+    }
+
+    hydratedRef.current = true
     setErrorMessage(null)
     setScanError(null)
     setScanResult(null)
@@ -1017,21 +1043,18 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
       return
     }
 
-    if (mode === "new") {
-      const baseState = buildDefaultState(presetType ?? defaultType)
-      const withPreset: TransactionFormState = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
-      const defaultAccount = accountsQuery.data?.[0]
-      const defaultCurrency = defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
-      const nextForm: TransactionFormState = {
-        ...withPreset,
-        accountId: defaultAccount?.id ?? "",
-        currency: defaultCurrency,
-        currency2: defaultCurrency,
-        tripId: presetTripId ?? withPreset.tripId,
-      }
-      setForm(nextForm)
-    }
-  }, [accountsQuery.data, categories, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
+    const baseState = buildDefaultState(presetType ?? defaultType)
+    const withPreset: TransactionFormState = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
+    const defaultAccount = accountsQuery.data?.[0]
+    const defaultCurrency = defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
+    setForm({
+      ...withPreset,
+      accountId: defaultAccount?.id ?? "",
+      currency: defaultCurrency,
+      currency2: defaultCurrency,
+      tripId: presetTripId ?? withPreset.tripId,
+    })
+  }, [accountsQuery.data, accountsQuery.isPending, categories, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
 
   React.useEffect(() => {
     return () => {
@@ -1094,6 +1117,11 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
       return
     }
 
+    if (requiresTarget && form.targetAccountId === form.accountId) {
+      setErrorMessage("Target account must be different from the source account.")
+      return
+    }
+
     if (requiresOriginal && !form.originalTransactionId) {
       setErrorMessage("Select the original transaction for refunds.")
       return
@@ -1118,10 +1146,10 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
       items: form.items.length
         ? form.items.map((item) => ({
             name: item.name,
-            quantity: item.quantity,
+            quantity: toNumber(item.quantity) || 1,
             unit: item.unit.trim() || null,
-            unitPrice: item.unitPrice,
-            promotionAmount: item.promotionAmount,
+            unitPrice: toNumber(item.unitPrice),
+            promotionAmount: toNumber(item.promotionAmount),
             categoryId: item.categoryId,
             subCategoryId: item.subCategoryId,
           }))
@@ -1144,7 +1172,6 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
     id: a.id,
     name: a.name,
     currency: a.currency.toUpperCase(),
-    color: normalizeHexColor(a.color),
   }))
 
   const tripsData = (tripsQuery.data ?? []).map((t) => ({

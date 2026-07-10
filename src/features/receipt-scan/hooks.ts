@@ -1,5 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 
+import { readApiErrorMessage } from "@/features/shared/errors"
+
 import type { ReceiptScanResult } from "./types"
 
 export function useScanReceipt() {
@@ -16,8 +18,7 @@ export function useScanReceipt() {
       })
 
       if (!response.ok) {
-        const message = await response.text()
-        throw new Error(message || "Failed to scan receipt.")
+        throw new Error(await readApiErrorMessage(response, "Failed to scan receipt."))
       }
 
       return (await response.json()) as ReceiptScanResult

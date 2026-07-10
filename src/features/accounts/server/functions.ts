@@ -3,13 +3,9 @@ import { z } from "zod"
 
 import { accountRequestSchema, accountUpdateSchema } from "@/features/shared/server/validators"
 
-import { createAccountData, deleteAccountData, getAccountData, listAccountsData, updateAccountData } from "./service.server"
+import { createAccountData, deleteAccountData, listAccountsData, updateAccountData } from "./service.server"
 
 export const getAccounts = createServerFn({ method: "GET" }).handler(async () => listAccountsData())
-
-export const getAccount = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
-  .handler(async ({ data }) => getAccountData(data.id))
 
 export const createAccount = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => accountRequestSchema.parse(data))

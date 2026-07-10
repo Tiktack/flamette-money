@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { fullDataRefreshInvalidations, invalidateQueries } from "@/features/shared/cache-invalidations"
+import { readApiErrorMessage } from "@/features/shared/errors"
 
 import type { SeedDemoResponse } from "./types"
 
@@ -21,8 +22,7 @@ export function useSeedDemo() {
       })
 
       if (!response.ok) {
-        const message = await response.text()
-        throw new Error(message || "Unable to seed demo data.")
+        throw new Error(await readApiErrorMessage(response, "Unable to seed demo data."))
       }
 
       return (await response.json()) as SeedDemoResponse

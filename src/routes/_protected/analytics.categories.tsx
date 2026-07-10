@@ -1,11 +1,12 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
 
 import { EmptyState } from "@/components/empty-state"
+import { IntervalSelect } from "@/components/interval-select"
+import { CardSkeleton, MetricCardsSkeleton } from "@/components/page-skeletons"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
+import { TrendBadge, formatTrendLabel } from "@/components/trend-badge"
 import { ComposedChart } from "@/components/charts/composed-chart"
 import { SeriesBar } from "@/components/charts/series-bar"
 import { Grid } from "@/components/charts/grid"
@@ -17,19 +18,20 @@ import { PieCenter } from "@/components/charts/pie-center"
 import { ChartTooltip } from "@/components/charts/tooltip"
 import { bucketKeyToDate, formatCompactNumber } from "@/lib/chart-utils"
 import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useCategories } from "@/features/categories/hooks"
 import { useCategorySeriesReport } from "@/features/reports/hooks"
-import { CategoryIconBadge } from "@/lib/category-icons"
+import { CategoryIconBadge, buildCategoryIconById } from "@/lib/category-icons"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { useSharedDateRangeQuery } from "@/lib/state/sharedDateRangeFilters"
 import { MetricCard } from "@/components/metric-card"
 
 export const Route = createFileRoute("/_protected/analytics/categories")({
+  head: () => ({ meta: [{ title: "Category analytics — Flamette Money" }] }),
   component: AnalyticsCategoriesPage,
 })
 
@@ -38,8 +40,7 @@ function AnalyticsCategoriesPage() {
   const [aggregation, setAggregation] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
   const [groupTripsAsCategory, setGroupTripsAsCategory] = React.useState(false)
   const isGroupTripsDisabled = mode !== "Expense"
-  const dateFilters = useSharedDateRangeFilters()
-  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+  const dateRangeQuery = useSharedDateRangeQuery()
 
   const query = React.useMemo(() => {
     const value: {
@@ -49,6 +50,7 @@ function AnalyticsCategoriesPage() {
       Interval: "Auto" | "Day" | "Week" | "Month"
       GroupTripsAsCategory?: boolean
     } = {
+      ...dateRangeQuery,
       Type: mode,
       Interval: aggregation,
     }
@@ -57,29 +59,12 @@ function AnalyticsCategoriesPage() {
       value.GroupTripsAsCategory = groupTripsAsCategory
     }
 
-    if (resolvedDateRange.start) {
-      value.StartDate = toApiDateString(resolvedDateRange.start)
-    }
-
-    if (resolvedDateRange.end) {
-      value.EndDate = toApiDateString(resolvedDateRange.end)
-    }
-
     return value
-  }, [aggregation, groupTripsAsCategory, mode, resolvedDateRange.end, resolvedDateRange.start])
+  }, [aggregation, dateRangeQuery, groupTripsAsCategory, mode])
 
   const reportQuery = useCategorySeriesReport(query)
   const categoriesQuery = useCategories()
-  const categoryIconById = React.useMemo(() => {
-    const map = new Map<string, string>()
-    for (const category of categoriesQuery.data ?? []) {
-      map.set(category.id, category.icon)
-      for (const subcategory of category.subcategories) {
-        map.set(subcategory.id, subcategory.icon)
-      }
-    }
-    return map
-  }, [categoriesQuery.data])
+  const categoryIconById = React.useMemo(() => buildCategoryIconById(categoriesQuery.data), [categoriesQuery.data])
   const report = React.useMemo(() => {
     const payload = reportQuery.data
     const series = (payload?.series ?? []).map((entry) => ({
@@ -111,7 +96,7 @@ function AnalyticsCategoriesPage() {
     }
   }, [reportQuery.data])
 
-  const donutData = report.series.filter((entry) => entry.total > 0)
+  const donutData = React.useMemo(() => report.series.filter((entry) => entry.total > 0), [report.series])
   const pieData = React.useMemo(() => donutData.map((entry) => ({ label: entry.label, value: entry.total, color: entry.color })), [donutData])
   const insightCards = React.useMemo(
     () => [
@@ -168,17 +153,16 @@ function AnalyticsCategoriesPage() {
         </div>
       </div>
 
-      {reportQuery.isError && report.series.length === 0 ? (
-        <EmptyState eyebrow="Report" title="Unable to load category analytics" description={getApiErrorMessage(reportQuery.error, "Try another date range.")} />
+      {reportQuery.isError && !reportQuery.data ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load category analytics</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(reportQuery.error, "Try another date range.")}</AlertDescription>
+        </Alert>
       ) : reportQuery.isPending ? (
         <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
-          <div className="h-[640px] animate-pulse rounded-[1.75rem] bg-muted xl:row-span-2" />
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
-            <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
-            <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
-          </div>
-          <div className="h-[420px] animate-pulse rounded-[1.75rem] bg-muted" />
+          <CardSkeleton className="h-[640px] xl:row-span-2" />
+          <MetricCardsSkeleton count={3} className="sm:grid-cols-1 md:grid-cols-3" />
+          <CardSkeleton className="h-[420px]" />
         </div>
       ) : report.series.length === 0 ? (
         <EmptyState
@@ -188,7 +172,7 @@ function AnalyticsCategoriesPage() {
         />
       ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
-          <Card size="sm" className="border-border bg-card/95 shadow-none xl:row-span-2">
+          <Card size="sm" className="xl:row-span-2">
             <CardHeader className="px-4 pt-4 pb-2">
               <CardTitle>Category mix</CardTitle>
               <CardDescription>{report.series.length} categories in active range</CardDescription>
@@ -222,7 +206,9 @@ function AnalyticsCategoriesPage() {
                           )}
                           <span className="truncate font-mono text-[12px] font-medium tracking-[0.04em] text-foreground">{entry.label}</span>
                         </div>
-                        <span className="font-mono text-[12px] tracking-[0.04em] text-muted-foreground">{formatCurrency(entry.total, report.baseCurrency)}</span>
+                        <span className="font-mono text-[12px] tracking-[0.04em] text-muted-foreground">
+                          {formatCurrency(entry.total, report.baseCurrency)}
+                        </span>
                       </div>
                       <Progress value={entry.percent} className="h-1" />
                     </div>
@@ -246,7 +232,7 @@ function AnalyticsCategoriesPage() {
             ))}
           </div>
 
-          <Card className="border-border bg-card/95 shadow-none">
+          <Card>
             <CardHeader className="px-4 pt-4 pb-2">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
@@ -254,25 +240,19 @@ function AnalyticsCategoriesPage() {
                   <CardDescription>Stacked over the selected aggregation interval.</CardDescription>
                 </div>
                 <div className="flex items-center gap-3 lg:justify-end">
-                  <Select value={aggregation} onValueChange={(value) => setAggregation((value as typeof aggregation) ?? "Auto")}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Auto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  <IntervalSelect value={aggregation} onValueChange={setAggregation} />
                 </div>
               </div>
             </CardHeader>
             <CardContent className="px-4 pt-0 pb-4">
-              <ComposedChart data={report.data} xDataKey="date" stacked aspectRatio="" className="h-[360px] w-full" margin={{ top: 16, right: 16, bottom: 28, left: 44 }}>
+              <ComposedChart
+                data={report.data}
+                xDataKey="date"
+                stacked
+                aspectRatio=""
+                className="h-[360px] w-full"
+                margin={{ top: 16, right: 16, bottom: 28, left: 44 }}
+              >
                 <Grid />
                 <XAxis />
                 <YAxis formatValue={(value) => formatCompactNumber(value)} />
@@ -318,27 +298,12 @@ function CategoryInsightCard({
   const hasBaseline = previousValue !== 0
   const deltaPercent = hasBaseline ? (delta / Math.abs(previousValue)) * 100 : null
   const isBetter = mode === "Expense" ? delta <= 0 : delta >= 0
-  const isNeutral = delta === 0
-  const trendClassName = isNeutral
-    ? "border-border bg-muted/40 text-muted-foreground"
-    : isBetter
-      ? "border-emerald-500/20 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300"
-      : "border-rose-500/20 bg-rose-500/6 text-rose-700 dark:text-rose-300"
-  const trendIcon = isNeutral ? null : delta > 0 ? ArrowUp01Icon : ArrowDown01Icon
-  const trendLabel = isNeutral ? "Flat" : `${deltaPercent && deltaPercent > 0 ? "+" : ""}${deltaPercent?.toFixed(1) ?? "0.0"}%`
 
   return (
     <MetricCard
       label={label}
       value={value}
-      badge={
-        <div
-          className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10px] leading-none font-medium tracking-[0.14em] uppercase ${trendClassName}`}
-        >
-          {trendIcon ? <HugeiconsIcon icon={trendIcon} strokeWidth={2} className="size-3.5" /> : null}
-          <span>{trendLabel}</span>
-        </div>
-      }
+      badge={<TrendBadge delta={delta} isBetter={isBetter} label={formatTrendLabel(deltaPercent)} />}
       footer={
         <>
           <span>Prev</span>

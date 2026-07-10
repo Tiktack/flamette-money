@@ -1,28 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { transactionQueryOptions, transactionsFacetsQueryOptions, transactionsQueryOptions, transactionsSearchQueryOptions, transactionsSummaryQueryOptions } from "./query-options"
+import { transactionQueryOptions, transactionsFacetsQueryOptions, transactionsSearchQueryOptions, transactionsSummaryQueryOptions } from "./query-options"
 import { createTransaction, deleteTransaction, updateTransaction } from "./server/functions"
 
 import { invalidateQueries, transactionMutationInvalidations } from "@/features/shared/cache-invalidations"
 
-import type { GetApiTransactionsSearchData, TransactionCreateRequest, TransactionUpdateRequest } from "./types"
+import type { TransactionCreateRequest, TransactionSearchQuery, TransactionUpdateRequest } from "./types"
 
-export function useTransactions(page = 1, pageSize = 50) {
-  return useQuery(transactionsQueryOptions(page, pageSize))
-}
-
-export function useTransactionsSearch(query?: GetApiTransactionsSearchData["query"], options?: { enabled?: boolean }) {
+export function useTransactionsSearch(query?: TransactionSearchQuery, options?: { enabled?: boolean }) {
   return useQuery({
     ...transactionsSearchQueryOptions(query),
     enabled: options?.enabled,
   })
 }
 
-export function useTransactionsSummary(query?: GetApiTransactionsSearchData["query"]) {
+export function useTransactionsSummary(query?: TransactionSearchQuery) {
   return useQuery(transactionsSummaryQueryOptions(query))
 }
 
-export function useTransactionsFacets(query?: GetApiTransactionsSearchData["query"]) {
+export function useTransactionsFacets(query?: TransactionSearchQuery) {
   return useQuery(transactionsFacetsQueryOptions(query))
 }
 

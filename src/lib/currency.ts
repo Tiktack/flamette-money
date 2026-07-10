@@ -1,6 +1,6 @@
 export const supportedCurrencies = ["PLN", "USD", "EUR", "GBP", "CAD"] as const
 
-export function isSupportedCurrency(currency: string | null | undefined): currency is (typeof supportedCurrencies)[number] {
+function isSupportedCurrency(currency: string | null | undefined): currency is (typeof supportedCurrencies)[number] {
   if (!currency) {
     return false
   }

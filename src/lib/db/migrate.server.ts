@@ -37,9 +37,12 @@ export function runMigrations(database: BetterSqlite3.Database) {
 
     const sql = readFileSync(resolve(directory, file), "utf8")
 
-    // SQLite implicitly commits on DDL, so exec() runs each statement in the file in order.
-    database.exec(sql)
-    recordApplied.run(file, Date.now())
+    // Each migration file applies atomically with its bookkeeping row, so a mid-file failure
+    // leaves nothing half-applied. Migration files must not contain their own BEGIN/COMMIT.
+    database.transaction(() => {
+      database.exec(sql)
+      recordApplied.run(file, Date.now())
+    })()
     console.info(`[db] applied migration ${file}`)
   }
 }

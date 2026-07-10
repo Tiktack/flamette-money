@@ -26,6 +26,21 @@ const pickValidationMessage = (value: unknown): string | null => {
   return null
 }
 
+/** Extracts the message from a failed fetch Response (API errors are JSON `{ message }`). */
+export const readApiErrorMessage = async (response: Response, fallback: string) => {
+  const text = await response.text()
+
+  if (!text) {
+    return fallback
+  }
+
+  try {
+    return getApiErrorMessage(JSON.parse(text), fallback)
+  } catch {
+    return text
+  }
+}
+
 export const getApiErrorMessage = (error: unknown, fallback = "Something went wrong. Please try again.") => {
   const direct = pickString(error)
   if (direct) {

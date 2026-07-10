@@ -1,10 +1,10 @@
 export type {
+  CashflowSeriesReportQuery,
   CashflowSeriesReportResponse,
+  CategorySeriesReportQuery,
   CategorySeriesReportResponse,
+  ComparisonReportQuery,
   ComparisonReportResponse,
-  GetApiReportsCashflowSeriesData,
-  GetApiReportsCategorySeriesData,
-  GetApiReportsComparisonData,
-  GetApiReportsPortfolioBalanceSeriesData,
+  PortfolioBalanceSeriesQuery,
   PortfolioBalanceSeriesResponse,
 } from "@/features/shared/types"

@@ -1,7 +1,7 @@
-import { and, asc, eq } from "drizzle-orm"
+import { and, asc, eq, or } from "drizzle-orm"
 
 import { db } from "@/lib/db/client.server"
-import { categories, transactions } from "@/lib/db/schema"
+import { categories, transactionItems, transactions } from "@/lib/db/schema"
 
 import { requireCategory, requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeCategoryColor, normalizeCategoryType, normalizeIcon, normalizeRequiredName } from "@/features/shared/server/normalizers.server"
@@ -98,6 +98,17 @@ export async function updateCategoryData(categoryId: string, request: UpdateCate
   }
 
   if (parentId) {
+    // Moving a parent that still has children would create a second nesting level, which
+    // reports and imports assume cannot exist.
+    const hasChildren = await db.query.categories.findFirst({
+      where: and(eq(categories.userId, user.id), eq(categories.parentId, category.id)),
+      columns: { id: true },
+    })
+
+    if (hasChildren) {
+      throw new Error("A category with subcategories cannot become a subcategory.")
+    }
+
     const parent = await requireCategory(user.id, parentId)
 
     if (parent.parentId) {
@@ -135,16 +146,30 @@ export async function deleteCategoryData(categoryId: string) {
   await requireCategory(user.id, categoryId)
 
   const hasTransactions = await db.query.transactions.findFirst({
-    where: and(eq(transactions.userId, user.id), eq(transactions.categoryId, categoryId)),
-    columns: { id: true },
-  })
-  const hasSubcategoryTransactions = await db.query.transactions.findFirst({
-    where: and(eq(transactions.userId, user.id), eq(transactions.subCategoryId, categoryId)),
+    where: and(eq(transactions.userId, user.id), or(eq(transactions.categoryId, categoryId), eq(transactions.subCategoryId, categoryId))),
     columns: { id: true },
   })
 
-  if (hasTransactions || hasSubcategoryTransactions) {
+  if (hasTransactions) {
     throw new Error("Category cannot be deleted because it is used by transactions.")
+  }
+
+  const hasItemUsage = await db.query.transactionItems.findFirst({
+    where: or(eq(transactionItems.categoryId, categoryId), eq(transactionItems.subCategoryId, categoryId)),
+    columns: { id: true },
+  })
+
+  if (hasItemUsage) {
+    throw new Error("Category cannot be deleted because it is used by transaction items.")
+  }
+
+  const hasChildren = await db.query.categories.findFirst({
+    where: and(eq(categories.userId, user.id), eq(categories.parentId, categoryId)),
+    columns: { id: true },
+  })
+
+  if (hasChildren) {
+    throw new Error("Category cannot be deleted while it has subcategories.")
   }
 
   await db.delete(categories).where(and(eq(categories.userId, user.id), eq(categories.id, categoryId)))

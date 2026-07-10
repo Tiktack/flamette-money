@@ -1,12 +1,13 @@
-import { and, asc, desc, eq, isNotNull } from "drizzle-orm"
+import { and, eq, isNotNull } from "drizzle-orm"
 
 import { normalizeCurrencyOrDefault } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
-import { accounts, transactions, trips } from "@/lib/db/schema"
+import { transactions, trips } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { roundMoney } from "@/lib/finance"
 import { parseDateInput } from "@/lib/server/parsing.server"
 
+import { convertAmountToBase, loadAccountCurrencyMap, resolveTransactionCurrency } from "@/features/shared/server/fx.server"
 import { requireTrip, requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeCountry, normalizeImageUrl, normalizeRequiredName } from "@/features/shared/server/normalizers.server"
 
@@ -16,9 +17,9 @@ export async function listTripsData(): Promise<TripListItemResponse[]> {
   const user = await requireUser()
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
   const fx = await getRatesToBase(baseCurrency)
+  // Ordering happens in JS below (dateless trips last); a query orderBy would be redundant.
   const tripRows = await db.query.trips.findMany({
     where: eq(trips.userId, user.id),
-    orderBy: [desc(trips.startDate), asc(trips.name)],
   })
   const tripExpenseRows = await db
     .select({
@@ -29,10 +30,7 @@ export async function listTripsData(): Promise<TripListItemResponse[]> {
     })
     .from(transactions)
     .where(and(eq(transactions.userId, user.id), eq(transactions.type, "Expense"), isNotNull(transactions.tripId)))
-  const accountRows = await db.query.accounts.findMany({
-    where: eq(accounts.userId, user.id),
-  })
-  const accountCurrencyById = new Map(accountRows.map((account) => [account.id, account.currency]))
+  const accountCurrencyById = await loadAccountCurrencyMap(user.id)
   const totalsByTrip = new Map<string, number>()
   const transactionCountByTrip = new Map<string, number>()
 
@@ -42,8 +40,8 @@ export async function listTripsData(): Promise<TripListItemResponse[]> {
       continue
     }
 
-    const currency = normalizeCurrencyOrDefault(transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? user.baseCurrency, baseCurrency)
-    const converted = transaction.amount * (fx.ratesToBase[currency] ?? 1)
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
+    const converted = convertAmountToBase(transaction.amount, currency, baseCurrency, fx.ratesToBase)
 
     totalsByTrip.set(tripId, roundMoney((totalsByTrip.get(tripId) ?? 0) + converted))
     transactionCountByTrip.set(tripId, (transactionCountByTrip.get(tripId) ?? 0) + 1)

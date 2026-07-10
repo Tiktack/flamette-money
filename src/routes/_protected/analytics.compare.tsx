@@ -6,23 +6,28 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { MetricCard, type MetricCardIcon } from "@/components/metric-card"
 import { EmptyState } from "@/components/empty-state"
+import { CardSkeleton, MetricCardsSkeleton } from "@/components/page-skeletons"
 import { ComparePeriodToolbar } from "@/components/compare-period-toolbar"
+import { TrendBadge, formatTrendLabel } from "@/components/trend-badge"
 import { ComposedChart } from "@/components/charts/composed-chart"
 import { Line } from "@/components/charts/line"
 import { Grid } from "@/components/charts/grid"
 import { XAxis } from "@/components/charts/x-axis"
 import { YAxis } from "@/components/charts/y-axis"
 import { ChartTooltip } from "@/components/charts/tooltip"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useComparisonReport } from "@/features/reports/hooks"
 import { useCategories } from "@/features/categories/hooks"
-import { CategoryIconBadge } from "@/lib/category-icons"
+import { CategoryIconBadge, buildCategoryIconById } from "@/lib/category-icons"
 import { bucketKeyToDate, formatCompactNumber } from "@/lib/chart-utils"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { toApiDateString } from "@/lib/state/sharedDateRangeFilters"
 import { type ComparePeriodsState, defaultComparePeriodsState, resolveComparePeriods } from "@/lib/compare-periods"
+
+import type { ReportInterval } from "@/features/shared/types"
 
 const A_COLOR = "#2d7ff9"
 const B_COLOR = "#9aa3b2"
@@ -35,7 +40,18 @@ const pickAB = (a: number | string | null, b: number | string | null) => ({
   b: b === null ? null : toNumber(b),
 })
 
+/** Advance a bucket date by `steps` report-interval increments ("Auto"/"None" behave like "Day"). */
+const addIntervalSteps = (date: Date, interval: ReportInterval | undefined, steps: number) => {
+  if (interval === "Month") {
+    return new Date(date.getFullYear(), date.getMonth() + steps, date.getDate())
+  }
+
+  const stride = interval === "Week" ? 7 : 1
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + steps * stride)
+}
+
 export const Route = createFileRoute("/_protected/analytics/compare")({
+  head: () => ({ meta: [{ title: "Compare — Flamette Money" }] }),
   component: AnalyticsComparePage,
 })
 
@@ -63,39 +79,50 @@ function AnalyticsComparePage() {
   const baseCurrency = report?.baseCurrency ?? "USD"
 
   const categoriesQuery = useCategories()
-  const categoryIconById = React.useMemo(() => {
-    const map = new Map<string, string>()
-    for (const category of categoriesQuery.data ?? []) {
-      map.set(category.id, category.icon)
-      for (const subcategory of category.subcategories) {
-        map.set(subcategory.id, subcategory.icon)
+  const categoryIconById = React.useMemo(() => buildCategoryIconById(categoriesQuery.data), [categoriesQuery.data])
+
+  const chartData = React.useMemo(() => {
+    const interval = report?.interval
+    let lastADate: Date | null = null
+    let lastAIndex = 0
+
+    return (report?.series ?? []).map((point, index) => {
+      const values =
+        metric === "income"
+          ? pickAB(point.aIncome, point.bIncome)
+          : metric === "spending"
+            ? pickAB(point.aSpending, point.bSpending)
+            : pickAB(point.aNet, point.bNet)
+
+      // The x-axis follows period A's timeline only. When A is shorter than B
+      // the trailing points have no aBucketKey, so extrapolate forward from the
+      // last real A date — falling back to B's bucket dates would make the time
+      // axis jump backwards to B's (older) period.
+      let date: Date
+      if (point.aBucketKey) {
+        date = bucketKeyToDate(point.aBucketKey, index)
+        lastADate = date
+        lastAIndex = index
+      } else if (lastADate) {
+        date = addIntervalSteps(lastADate, interval, index - lastAIndex)
+      } else {
+        date = bucketKeyToDate("", index)
       }
-    }
-    return map
-  }, [categoriesQuery.data])
 
-  const chartData = React.useMemo(
-    () =>
-      (report?.series ?? []).map((point, index) => {
-        const values =
-          metric === "income"
-            ? pickAB(point.aIncome, point.bIncome)
-            : metric === "spending"
-              ? pickAB(point.aSpending, point.bSpending)
-              : pickAB(point.aNet, point.bNet)
-
-        return {
-          date: bucketKeyToDate(point.aBucketKey ?? point.bBucketKey ?? "", index),
-          a: values.a ?? 0,
-          b: values.b ?? 0,
-          aHasData: values.a !== null,
-          bHasData: values.b !== null,
-          aLabel: point.aLabel,
-          bLabel: point.bLabel,
-        }
-      }),
-    [report?.series, metric]
-  )
+      return {
+        date,
+        // The chart line components draw non-numeric values at the top of the
+        // plot, so missing buckets stay 0 here; `aHasData`/`bHasData` keep the
+        // tooltip honest about which side actually has data.
+        a: values.a ?? 0,
+        b: values.b ?? 0,
+        aHasData: values.a !== null,
+        bHasData: values.b !== null,
+        aLabel: point.aLabel,
+        bLabel: point.bLabel,
+      }
+    })
+  }, [report?.series, report?.interval, metric])
 
   const movers = React.useMemo(
     () =>
@@ -126,16 +153,15 @@ function AnalyticsComparePage() {
     <div className="flex flex-col gap-6">
       <ComparePeriodToolbar value={state} onChange={setState} aColor={A_COLOR} bColor={B_COLOR} />
 
-      {reportQuery.isError ? (
-        <EmptyState eyebrow="Compare" title="Unable to load comparison" description={getApiErrorMessage(reportQuery.error, "Try another pair of periods.")} />
+      {reportQuery.isError && !report ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load comparison</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(reportQuery.error, "Try another pair of periods.")}</AlertDescription>
+        </Alert>
       ) : reportQuery.isPending ? (
         <>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[118px] animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-          <div className="h-[420px] animate-pulse rounded-xl bg-muted" />
+          <MetricCardsSkeleton count={4} className="gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4" />
+          <CardSkeleton className="h-[420px]" />
         </>
       ) : !(hasData && periodA && periodB) ? (
         <EmptyState
@@ -189,7 +215,7 @@ function AnalyticsComparePage() {
             />
           </div>
 
-          <Card className="border-border bg-card/95 shadow-none">
+          <Card>
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -252,7 +278,7 @@ function AnalyticsComparePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card/95 shadow-none">
+          <Card>
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -331,27 +357,9 @@ function ComparisonMetricCard({
   deltaMode?: "percent" | "points"
 }) {
   const delta = aValue - bValue
-  const isNeutral = delta === 0
   const isBetter = higherIsBetter ? delta >= 0 : delta <= 0
   const deltaPercent = bValue !== 0 ? (delta / Math.abs(bValue)) * 100 : null
-
-  const trendClassName = isNeutral
-    ? "border-border bg-muted/40 text-muted-foreground"
-    : isBetter
-      ? "border-emerald-500/20 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300"
-      : "border-rose-500/20 bg-rose-500/6 text-rose-700 dark:text-rose-300"
-  const trendIcon = isNeutral ? null : delta > 0 ? ArrowUp01Icon : ArrowDown01Icon
-
-  let trendLabel: string
-  if (isNeutral) {
-    trendLabel = "Flat"
-  } else if (deltaMode === "points") {
-    trendLabel = `${delta > 0 ? "+" : ""}${delta.toFixed(1)} pts`
-  } else if (deltaPercent === null) {
-    trendLabel = "New"
-  } else {
-    trendLabel = `${deltaPercent > 0 ? "+" : ""}${deltaPercent.toFixed(1)}%`
-  }
+  const trendLabel = deltaMode === "points" ? `${delta > 0 ? "+" : ""}${delta.toFixed(1)} pts` : formatTrendLabel(deltaPercent)
 
   return (
     <MetricCard
@@ -360,14 +368,7 @@ function ComparisonMetricCard({
       icon={icon}
       iconBgClassName={iconBgClassName}
       iconColorClassName={iconColorClassName}
-      badge={
-        <div
-          className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10px] leading-none font-medium tracking-[0.14em] uppercase ${trendClassName}`}
-        >
-          {trendIcon ? <HugeiconsIcon icon={trendIcon} strokeWidth={2} className="size-3.5" /> : null}
-          <span>{trendLabel}</span>
-        </div>
-      }
+      badge={<TrendBadge delta={delta} isBetter={isBetter} label={trendLabel} />}
       footer={
         <>
           <span>B</span>

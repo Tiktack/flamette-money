@@ -11,6 +11,7 @@ import {
   FilterIcon,
   FilterResetIcon,
   MoreHorizontalCircle01Icon,
+  PlusSignIcon,
   Tag01Icon,
   TransactionIcon,
   Wallet01Icon,
@@ -19,8 +20,10 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { DataTable } from "@/components/data-table"
 import { DataTableFacetedFilter, DataTableRangeFilter, type FacetedFilterOption } from "@/components/data-table-faceted-filter"
+import { EmptyState } from "@/components/empty-state"
 import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-editor-dialog"
 import { MetricCard } from "@/components/metric-card"
+import { CardSkeleton, MetricCardsSkeleton } from "@/components/page-skeletons"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -33,24 +36,21 @@ import { useCategories } from "@/features/categories/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useDeleteTransaction, useTransactionsFacets, useTransactionsSearch, useTransactionsSummary } from "@/features/transactions/hooks"
 import { useTrips } from "@/features/trips/hooks"
+import { accountTypeMeta } from "@/features/accounts/types"
 import type { AccountType } from "@/features/accounts/types"
 import type { CategoryHierarchy } from "@/features/categories/types"
 import type { TransactionListItem, TransactionType } from "@/features/transactions/types"
+import { dispatchPageAction, pageActionTypes } from "@/lib/page-actions"
 import { formatCurrency, formatDateLabel, getCategoryLabel, normalizeHexColor, toNumber, transactionTone } from "@/lib/finance"
-import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { useSharedDateRangeQuery } from "@/lib/state/sharedDateRangeFilters"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/_protected/transactions")({
+  head: () => ({ meta: [{ title: "Transactions — Flamette Money" }] }),
   component: TransactionsPage,
 })
 
 const transactionTypeOptions: TransactionType[] = ["Expense", "Income", "Transfer", "Refund"]
-const accountTypeMeta: Record<AccountType, { label: string }> = {
-  Cash: { label: "Cash" },
-  DebitCard: { label: "Debit card" },
-  CreditCard: { label: "Credit card" },
-  Savings: { label: "Savings" },
-}
 
 type AccountSummary = {
   name: string
@@ -66,8 +66,9 @@ function TransactionsPage() {
   const tripsQuery = useTrips()
   const deleteTransaction = useDeleteTransaction()
   const filters = useTransactionsFilters()
-  const dateFilters = useSharedDateRangeFilters()
+  const sharedDateRangeQuery = useSharedDateRangeQuery()
   const [searchText, setSearchText] = React.useState("")
+  const [debouncedSearchText, setDebouncedSearchText] = React.useState("")
   const [editor, setEditor] = React.useState<{
     mode: "new" | "edit"
     id?: string
@@ -100,7 +101,11 @@ function TransactionsPage() {
     return map
   }, [accountsQuery.data])
 
-  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+  // Debounce the free-text search so each keystroke doesn't fire three server queries.
+  React.useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearchText(searchText), 300)
+    return () => clearTimeout(timeout)
+  }, [searchText])
 
   const baseQuery = React.useMemo(() => {
     const value: {
@@ -113,14 +118,8 @@ function TransactionsPage() {
       SearchText?: string
       MinAmount?: number
       MaxAmount?: number
-    } = {}
+    } = { ...sharedDateRangeQuery }
 
-    if (resolvedDateRange.start) {
-      value.StartDate = toApiDateString(resolvedDateRange.start)
-    }
-    if (resolvedDateRange.end) {
-      value.EndDate = toApiDateString(resolvedDateRange.end)
-    }
     if (filters.accountIds.length) {
       value.AccountIds = filters.accountIds
     }
@@ -133,12 +132,12 @@ function TransactionsPage() {
     if (filters.transactionTypes.length) {
       value.Types = filters.transactionTypes as TransactionType[]
     }
-    if (searchText.trim()) {
-      value.SearchText = searchText.trim()
+    if (debouncedSearchText.trim()) {
+      value.SearchText = debouncedSearchText.trim()
     }
 
     return value
-  }, [filters.accountIds, filters.categoryIds, filters.tripIds, filters.transactionTypes, resolvedDateRange.end, resolvedDateRange.start, searchText])
+  }, [debouncedSearchText, filters.accountIds, filters.categoryIds, filters.tripIds, filters.transactionTypes, sharedDateRangeQuery])
 
   const query = React.useMemo(() => {
     const value: typeof baseQuery & {
@@ -254,6 +253,17 @@ function TransactionsPage() {
     [primaryCurrency]
   )
 
+  // mutation.reset is a stable reference; destructured so the callback below stays stable too.
+  const { reset: resetDeleteTransaction } = deleteTransaction
+
+  const openDelete = React.useCallback(
+    (transaction: TransactionListItem) => {
+      resetDeleteTransaction()
+      setDeleteTarget(transaction)
+    },
+    [resetDeleteTransaction]
+  )
+
   const columns = React.useMemo<ColumnDef<TransactionListItem>[]>(
     () => [
       {
@@ -312,7 +322,7 @@ function TransactionsPage() {
           const account = accountMap.get(transaction.accountId)
 
           return (
-            <div className={`text-right font-medium ${transactionTone(transaction.type, transaction.isRefund)}`}>
+            <div className={`text-right font-medium tabular-nums ${transactionTone(transaction.type, transaction.isRefund)}`}>
               {formatCurrency(transaction.amount, transaction.currency ?? account?.currency ?? "USD")}
             </div>
           )
@@ -370,7 +380,7 @@ function TransactionsPage() {
                   <span className="sr-only">More actions</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(transaction)}>
+                  <DropdownMenuItem variant="destructive" onClick={() => openDelete(transaction)}>
                     <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="text-destructive" />
                     <span>Delete transaction</span>
                   </DropdownMenuItem>
@@ -386,7 +396,7 @@ function TransactionsPage() {
         },
       },
     ],
-    [accountMap, categoryMap]
+    [accountMap, categoryMap, openDelete]
   )
 
   const resetAllFilters = () => {
@@ -415,61 +425,66 @@ function TransactionsPage() {
     }
   }
 
+  const isFirstTimeEmpty = transactions.length === 0 && !hasActiveFilters
+
   return (
     <div className="flex flex-col gap-6">
       <SharedDateRangeToolbar />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {transactionsQuery.isPending || transactionsSummaryQuery.isPending ? (
-          <>
-            <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
-            <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
-            <div className="h-[120px] animate-pulse rounded-[1.5rem] bg-muted" />
-          </>
-        ) : (
-          <>
-            <MetricCard
-              label="Transactions"
-              icon={TransactionIcon}
-              iconBgClassName="bg-primary/10"
-              iconColorClassName="text-primary"
-               value={String(summaryMetrics?.transactionCount ?? transactions.length)}
-             />
-             <MetricCard
-               label="Income"
-              icon={AddMoneyCircleIcon}
-              iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
-              iconColorClassName="text-blue-600 dark:text-blue-400"
-               badge={<MetricCardBadge>{formatTransactionCount(summaryMetrics?.incomeCount ?? 0)}</MetricCardBadge>}
-               value={formatCurrency(summaryMetrics?.incomeTotal, summaryMetrics?.baseCurrency)}
-             />
-             <MetricCard
-               label="Expenses"
-              icon={CreditCardIcon}
-              iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
-              iconColorClassName="text-amber-600 dark:text-amber-400"
-               badge={<MetricCardBadge>{formatTransactionCount(summaryMetrics?.expenseCount ?? 0)}</MetricCardBadge>}
-               value={formatCurrency(summaryMetrics?.expenseTotal, summaryMetrics?.baseCurrency)}
-             />
-          </>
-        )}
-      </div>
+      {transactionsQuery.isPending || transactionsSummaryQuery.isPending ? (
+        <MetricCardsSkeleton className="md:grid-cols-3" />
+      ) : transactionsSummaryQuery.isError ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load summary</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(transactionsSummaryQuery.error, "Try again in a moment.")}</AlertDescription>
+        </Alert>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard
+            label="Transactions"
+            icon={TransactionIcon}
+            iconBgClassName="bg-primary/10"
+            iconColorClassName="text-primary"
+            value={String(summaryMetrics?.transactionCount ?? transactions.length)}
+          />
+          <MetricCard
+            label="Income"
+            icon={AddMoneyCircleIcon}
+            iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
+            iconColorClassName="text-blue-600 dark:text-blue-400"
+            badge={<MetricCardBadge>{formatTransactionCount(summaryMetrics?.incomeCount ?? 0)}</MetricCardBadge>}
+            value={formatCurrency(summaryMetrics?.incomeTotal, summaryMetrics?.baseCurrency)}
+          />
+          <MetricCard
+            label="Expenses"
+            icon={CreditCardIcon}
+            iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
+            iconColorClassName="text-amber-600 dark:text-amber-400"
+            badge={<MetricCardBadge>{formatTransactionCount(summaryMetrics?.expenseCount ?? 0)}</MetricCardBadge>}
+            value={formatCurrency(summaryMetrics?.expenseTotal, summaryMetrics?.baseCurrency)}
+          />
+        </div>
+      )}
 
       {transactionsQuery.isPending ? (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="h-9 w-[240px] animate-pulse rounded-lg bg-muted" />
-            <div className="h-8 w-[124px] animate-pulse rounded-lg bg-muted" />
-            <div className="h-8 w-[124px] animate-pulse rounded-lg bg-muted" />
-            <div className="h-8 w-[124px] animate-pulse rounded-lg bg-muted" />
-          </div>
-          <div className="h-[560px] animate-pulse rounded-[1.75rem] bg-muted" />
-        </div>
+        <CardSkeleton className="h-[560px]" />
       ) : transactionsQuery.isError ? (
         <Alert variant="destructive">
           <AlertTitle>Unable to load transactions</AlertTitle>
           <AlertDescription>{getApiErrorMessage(transactionsQuery.error, "Try another filter combination.")}</AlertDescription>
         </Alert>
+      ) : isFirstTimeEmpty ? (
+        <EmptyState
+          eyebrow="Transactions"
+          title="No transactions yet"
+          description="Record your first transaction to start tracking income, expenses, and transfers."
+          action={
+            <Button onClick={() => dispatchPageAction(pageActionTypes.createTransaction)}>
+              <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+              Add transaction
+            </Button>
+          }
+        />
       ) : (
         <DataTable
           columns={columns}
@@ -478,7 +493,6 @@ function TransactionsPage() {
           onSearchChange={setSearchText}
           searchPlaceholder="Search merchant, note, or location"
           emptyMessage="No transactions to show."
-          pageSizeOptions={[12, 24, 48]}
           filters={() => (
             <>
               <DataTableFacetedFilter

@@ -1,13 +1,15 @@
 import { eq } from "drizzle-orm"
 
-import { auth } from "@/lib/auth"
-import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { normalizeCurrencyOrDefault } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
 import { categories } from "@/lib/db/schema"
 import { getOpenRouterApiKey, getOpenRouterModel } from "@/lib/env.server"
+import { fail, requireUserIdForRequest } from "@/lib/server/http.server"
 
 import type { ReceiptItemResponse, ScanReceiptResponse } from "@/features/shared/types"
+
+const maxReceiptImageBytes = 10 * 1024 * 1024
+
 type CategoryRow = typeof categories.$inferSelect
 
 type AiReceiptItem = {
@@ -27,31 +29,6 @@ type AiReceiptResult = {
   amount?: number | string | null
   currency?: string | null
   items?: AiReceiptItem[] | null
-}
-
-class HttpError extends Error {
-  status: number
-
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = "HttpError"
-    this.status = status
-  }
-}
-
-function fail(message: string, status = 400): never {
-  throw new HttpError(status, message)
-}
-
-async function requireUserIdForRequest(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session) {
-    fail("Unauthorized", 401)
-  }
-
-  await ensureUserBootstrap(session.user.id)
-  return session.user.id
 }
 
 function buildCategoryPromptList(values: CategoryRow[]) {
@@ -195,6 +172,10 @@ async function completeReceiptPrompt(file: File, prompt: string) {
     fail("Receipt scanning is not configured. Set OPENROUTER_API_KEY to enable it.", 400)
   }
 
+  if (file.size > maxReceiptImageBytes) {
+    fail("Receipt image exceeds the 10 MB limit.", 413)
+  }
+
   const bytes = Buffer.from(await file.arrayBuffer())
   const dataUrl = `data:${file.type};base64,${bytes.toString("base64")}`
 
@@ -298,12 +279,4 @@ export async function handleReceiptScanRequest(request: Request) {
   }
 
   return Response.json(response)
-}
-
-export function toReceiptScanErrorResponse(error: unknown) {
-  if (error instanceof HttpError) {
-    return new Response(error.message, { status: error.status })
-  }
-
-  return new Response("Failed to scan receipt.", { status: 500 })
 }

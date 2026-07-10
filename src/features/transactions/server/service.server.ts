@@ -1,13 +1,14 @@
 import { and, desc, eq, gte, inArray, lte, or, sql, type SQL } from "drizzle-orm"
 
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
-import { db, runWithDb } from "@/lib/db/client.server"
-import { forEachChunk, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
-import { accounts, transactionItems, transactions, transactionTypes } from "@/lib/db/schema"
+import { db, runDbTransaction, type AppTransaction } from "@/lib/db/client.server"
+import { forEachChunkSync, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { accounts, categories, transactionItems, transactions, transactionTypes } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { roundMoney } from "@/lib/finance"
 import { endOfDay, parseAmount, parseDateInput, parsePositiveAmount, startOfDay } from "@/lib/server/parsing.server"
 
+import { convertAmountToBase, loadAccountCurrencyMap, resolveTransactionCurrency } from "@/features/shared/server/fx.server"
 import { requireAccount, requireCategory, requireTransaction, requireTrip, requireUser } from "@/features/shared/server/lookups.server"
 import {
   normalizeLocation,
@@ -22,16 +23,16 @@ import {
 import type {
   CreateTransactionRequest,
   CreateTransactionResponse,
-  GetApiTransactionsSearchData,
   GetTransactionResponse,
   TransactionItemResponse,
   TransactionListItemResponse,
+  TransactionSearchQuery,
   UpdateTransactionRequest,
   UpdateTransactionResponse,
 } from "@/features/shared/types"
+import type { TransactionSearchFacets, TransactionSearchSummary } from "@/features/transactions/types"
 
 type TransactionType = (typeof transactionTypes)[number]
-type TransactionSearchQuery = GetApiTransactionsSearchData["query"]
 
 type UserRecord = Awaited<ReturnType<typeof requireUser>>
 type AccountRecord = typeof accounts.$inferSelect
@@ -40,23 +41,6 @@ type TransactionItemRecord = typeof transactionItems.$inferSelect
 
 type LoadedTransaction = TransactionRecord & {
   items: TransactionItemRecord[]
-}
-
-type TransactionSearchSummary = {
-  baseCurrency: string
-  transactionCount: number
-  incomeCount: number
-  incomeTotal: number
-  expenseCount: number
-  expenseTotal: number
-}
-
-type TransactionSearchFacets = {
-  accountCounts: Record<string, number>
-  categoryCounts: Record<string, number>
-  tripCounts: Record<string, number>
-  transactionTypeCounts: Record<string, number>
-  maxAvailableAmount: number
 }
 
 type TransactionListRow = Pick<
@@ -100,15 +84,6 @@ type NormalizedTransactionSearch = {
   pageSize: number | null
 }
 
-function convertAmountToBase(amount: number, sourceCurrency: string | null | undefined, baseCurrency: string, ratesToBase: Record<string, number>) {
-  if (amount === 0) {
-    return 0
-  }
-
-  const normalizedSource = normalizeCurrencyOrDefault(sourceCurrency, baseCurrency)
-  return amount * (ratesToBase[normalizedSource] ?? 1)
-}
-
 function typeMatches(categoryType: "Income" | "Expense", transactionType: TransactionType) {
   if (categoryType === "Income") {
     return transactionType === "Income"
@@ -129,6 +104,35 @@ function getBalanceDeltas(type: TransactionType, amount: number, amount2: number
     default:
       return { sourceDelta: 0, targetDelta: null as number | null }
   }
+}
+
+// SQL-side arithmetic keeps concurrent mutations from losing deltas and removes the need to
+// re-read balances mid-operation.
+function applyBalanceDelta(tx: AppTransaction, accountId: string, delta: number, now: Date) {
+  if (delta === 0) {
+    return
+  }
+
+  tx.update(accounts)
+    .set({
+      currentBalance: sql`round(${accounts.currentBalance} + ${delta}, 2)`,
+      updatedAt: now,
+    })
+    .where(eq(accounts.id, accountId))
+    .run()
+}
+
+function insertTransactionItems(tx: AppTransaction, rows: (typeof transactionItems.$inferInsert)[]) {
+  forEachChunkSync(rows, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+    tx.insert(transactionItems).values(chunk).run()
+  })
+}
+
+async function findDependentRefund(userId: string, transactionId: string) {
+  return db.query.transactions.findFirst({
+    where: and(eq(transactions.userId, userId), eq(transactions.originalTransactionId, transactionId)),
+    columns: { id: true },
+  })
 }
 
 function normalizeAmount2(type: TransactionType, amount: number, amount2: number | null | undefined) {
@@ -201,7 +205,7 @@ function mapTransactionDetail(transaction: LoadedTransaction): GetTransactionRes
 
 function normalizeTransactionSearchQuery(query?: TransactionSearchQuery): NormalizedTransactionSearch {
   const page = query?.Page && query.Page > 0 ? query.Page : null
-  const pageSize = query?.PageSize && query.PageSize > 0 && query.PageSize <= 200 ? query.PageSize : null
+  const pageSize = query?.PageSize && query.PageSize > 0 ? Math.min(query.PageSize, 200) : null
 
   return {
     start: query?.StartDate ? startOfDay(query.StartDate) : null,
@@ -254,9 +258,11 @@ function buildTransactionWhere(userId: string, query: NormalizedTransactionSearc
   }
 
   if (query.searchText) {
-    const pattern = `%${query.searchText}%`
+    // Escape LIKE wildcards so searching "100%" matches literally instead of "100 anything".
+    const escaped = query.searchText.replace(/[\\%_]/g, (match) => `\\${match}`)
+    const pattern = `%${escaped}%`
     conditions.push(
-      sql`lower(coalesce(${transactions.note}, '') || ' ' || coalesce(${transactions.merchantName}, '') || ' ' || coalesce(${transactions.location}, '')) like ${pattern}`
+      sql`lower(coalesce(${transactions.note}, '') || ' ' || coalesce(${transactions.merchantName}, '') || ' ' || coalesce(${transactions.location}, '')) like ${pattern} escape '\\'`
     )
   }
 
@@ -303,11 +309,7 @@ async function listTransactionRows(userId: string, query?: TransactionSearchQuer
       .offset(offset)
   }
 
-  return db
-    .select(select)
-    .from(transactions)
-    .where(whereClause)
-    .orderBy(desc(transactions.date), desc(transactions.createdAt))
+  return db.select(select).from(transactions).where(whereClause).orderBy(desc(transactions.date), desc(transactions.createdAt))
 }
 
 async function listTransactionSummaryRows(userId: string, query?: TransactionSearchQuery): Promise<TransactionSummaryRow[]> {
@@ -336,8 +338,32 @@ async function listTransactionFacetRows(userId: string, query?: TransactionSearc
     .where(buildTransactionWhere(userId, normalizeTransactionSearchQuery(query)))
 }
 
-async function buildTransactionItems(itemsInput: CreateTransactionRequest["items"] | UpdateTransactionRequest["items"], transactionId: string) {
+async function buildTransactionItems(userId: string, itemsInput: CreateTransactionRequest["items"] | UpdateTransactionRequest["items"], transactionId: string) {
   const rows: (typeof transactionItems.$inferInsert)[] = []
+
+  // Item categories must belong to the requesting user — the FK alone only checks existence.
+  const itemCategoryIds = new Set<string>()
+
+  for (const item of itemsInput ?? []) {
+    if (item.categoryId) {
+      itemCategoryIds.add(item.categoryId)
+    }
+
+    if (item.subCategoryId) {
+      itemCategoryIds.add(item.subCategoryId)
+    }
+  }
+
+  if (itemCategoryIds.size > 0) {
+    const owned = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(and(eq(categories.userId, userId), inArray(categories.id, [...itemCategoryIds])))
+
+    if (owned.length !== itemCategoryIds.size) {
+      throw new Error("Item category was not found.")
+    }
+  }
 
   for (const item of itemsInput ?? []) {
     const name = normalizeRequiredName(item.name, "Item name")
@@ -365,7 +391,7 @@ async function buildTransactionItems(itemsInput: CreateTransactionRequest["items
   return rows
 }
 
-async function validateTransactionRequest(user: UserRecord, request: CreateTransactionRequest | UpdateTransactionRequest) {
+async function validateTransactionRequest(user: UserRecord, request: CreateTransactionRequest | UpdateTransactionRequest, currentTransactionId?: string) {
   const type = normalizeTransactionType(request.type)
   const amount = parsePositiveAmount(request.amount, "Amount")
   const amount2 = request.amount2 === null || request.amount2 === undefined ? null : parsePositiveAmount(request.amount2, "Amount2")
@@ -380,6 +406,7 @@ async function validateTransactionRequest(user: UserRecord, request: CreateTrans
   let subCategoryId: string | null = request.subCategoryId
   let tripId: string | null = request.tripId
   let originalTransactionId: string | null = null
+  let refundSourceCurrency: string | null = null
 
   if (type === "Transfer") {
     if (!request.targetAccountId) {
@@ -429,6 +456,10 @@ async function validateTransactionRequest(user: UserRecord, request: CreateTrans
       throw new Error("Trip is inherited from the original expense for refunds.")
     }
 
+    if (currentTransactionId && request.originalTransactionId === currentTransactionId) {
+      throw new Error("A transaction cannot refund itself.")
+    }
+
     const originalTransaction = await requireTransaction(user.id, request.originalTransactionId)
 
     if (originalTransaction.type !== "Expense") {
@@ -451,6 +482,7 @@ async function validateTransactionRequest(user: UserRecord, request: CreateTrans
     subCategoryId = originalTransaction.subCategoryId
     tripId = originalTransaction.tripId
     originalTransactionId = originalTransaction.id
+    refundSourceCurrency = normalizeCurrencyOrNull(originalTransaction.currency)
 
     if (!categoryId) {
       throw new Error("Refunds require a category.")
@@ -518,10 +550,12 @@ async function validateTransactionRequest(user: UserRecord, request: CreateTrans
     note,
     merchantName,
     location,
+    // Refunds inherit the original expense's currency by default so reports subtract them at
+    // the same rate they were added.
     currency:
       type === "Transfer"
         ? normalizeCurrencyOrDefault(account.currency, "USD")
-        : (normalizeOptionalSupportedCurrency(request.currency) ?? normalizeCurrencyOrDefault(account.currency, "USD")),
+        : (normalizeOptionalSupportedCurrency(request.currency) ?? refundSourceCurrency ?? normalizeCurrencyOrDefault(account.currency, "USD")),
     currency2: type === "Transfer" ? normalizeCurrencyOrDefault(targetAccount?.currency, "USD") : normalizeCurrencyOrNull(request.currency2),
   }
 }
@@ -532,21 +566,18 @@ export async function getTransactionData(transactionId: string): Promise<GetTran
   return mapTransactionDetail(transaction)
 }
 
-export async function searchTransactionsData(query?: GetApiTransactionsSearchData["query"]): Promise<TransactionListItemResponse[]> {
+export async function searchTransactionsData(query?: TransactionSearchQuery): Promise<TransactionListItemResponse[]> {
   const user = await requireUser()
   const rows = await listTransactionRows(user.id, query)
   return rows.map(mapTransactionListItem)
 }
 
-export async function searchTransactionsSummaryData(query?: GetApiTransactionsSearchData["query"]): Promise<TransactionSearchSummary> {
+export async function searchTransactionsSummaryData(query?: TransactionSearchQuery): Promise<TransactionSearchSummary> {
   const user = await requireUser()
   const rows = await listTransactionSummaryRows(user.id, query)
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
   const fx = await getRatesToBase(baseCurrency)
-  const accountRows = await db.query.accounts.findMany({
-    where: eq(accounts.userId, user.id),
-  })
-  const accountCurrencyById = new Map(accountRows.map((account) => [account.id, account.currency]))
+  const accountCurrencyById = await loadAccountCurrencyMap(user.id)
 
   let incomeCount = 0
   let incomeTotal = 0
@@ -554,7 +585,7 @@ export async function searchTransactionsSummaryData(query?: GetApiTransactionsSe
   let expenseTotal = 0
 
   for (const transaction of rows) {
-    const currency = normalizeCurrencyOrDefault(transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? user.baseCurrency, baseCurrency)
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
     const converted = convertAmountToBase(transaction.amount, currency, baseCurrency, fx.ratesToBase)
 
     if (transaction.type === "Income") {
@@ -565,6 +596,11 @@ export async function searchTransactionsSummaryData(query?: GetApiTransactionsSe
     if (transaction.type === "Expense") {
       expenseCount += 1
       expenseTotal += converted
+    }
+
+    // Refunds reduce spending, matching how every report treats them.
+    if (transaction.type === "Refund") {
+      expenseTotal -= converted
     }
   }
 
@@ -620,51 +656,18 @@ export async function createTransactionData(request: CreateTransactionRequest): 
   const validated = await validateTransactionRequest(user, request)
   const id = crypto.randomUUID()
   const now = new Date()
-  const itemsToInsert = await buildTransactionItems(request.items, id)
+  const itemsToInsert = await buildTransactionItems(user.id, request.items, id)
 
-  await runWithDb(async (database) => {
-    const sourceAccount = await database.query.accounts
-      .findFirst({
-        where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.account.id)),
-      })
-
-    if (!sourceAccount) {
-      throw new Error("Account was not found.")
-    }
-
-    let targetAccount: AccountRecord | null = null
-
-    if (validated.targetAccount) {
-      targetAccount =
-        (await database.query.accounts
-          .findFirst({
-            where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.targetAccount.id)),
-          })) ?? null
-
-      if (!targetAccount) {
-        throw new Error("Target account was not found.")
-      }
-    }
-
+  runDbTransaction((tx) => {
     const deltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
 
-    await database.update(accounts)
-      .set({
-        currentBalance: roundMoney(sourceAccount.currentBalance + deltas.sourceDelta),
-        updatedAt: now,
-      })
-      .where(eq(accounts.id, sourceAccount.id))
+    applyBalanceDelta(tx, validated.account.id, deltas.sourceDelta, now)
 
-    if (targetAccount && deltas.targetDelta !== null) {
-      await database.update(accounts)
-        .set({
-          currentBalance: roundMoney(targetAccount.currentBalance + deltas.targetDelta),
-          updatedAt: now,
-        })
-        .where(eq(accounts.id, targetAccount.id))
+    if (validated.targetAccount && deltas.targetDelta !== null) {
+      applyBalanceDelta(tx, validated.targetAccount.id, deltas.targetDelta, now)
     }
 
-    await database.insert(transactions)
+    tx.insert(transactions)
       .values({
         id,
         userId: user.id,
@@ -687,12 +690,9 @@ export async function createTransactionData(request: CreateTransactionRequest): 
         createdAt: now,
         updatedAt: now,
       })
+      .run()
 
-    if (itemsToInsert.length > 0) {
-      await forEachChunk(itemsToInsert, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(transactionItems).values(chunk)
-      })
-    }
+    insertTransactionItems(tx, itemsToInsert)
   })
 
   const created = await requireTransaction(user.id, id)
@@ -702,108 +702,42 @@ export async function createTransactionData(request: CreateTransactionRequest): 
 export async function updateTransactionData(transactionId: string, request: UpdateTransactionRequest): Promise<UpdateTransactionResponse> {
   const user = await requireUser()
   const existing = await requireTransaction(user.id, transactionId)
-  const validated = await validateTransactionRequest(user, request)
+  const validated = await validateTransactionRequest(user, request, transactionId)
   const now = new Date()
-  const nextItems = await buildTransactionItems(request.items, transactionId)
+  const nextItems = await buildTransactionItems(user.id, request.items, transactionId)
 
-  await runWithDb(async (database) => {
-    const sourceAccount = await database.query.accounts
-      .findFirst({
-        where: and(eq(accounts.userId, user.id), eq(accounts.id, existing.accountId)),
-      })
+  // Refunds inherit account/category from their original expense — don't let an edit pull
+  // that expense out from under them.
+  const dependentRefund = await findDependentRefund(user.id, existing.id)
 
-    if (!sourceAccount) {
-      throw new Error("Account was not found.")
-    }
+  if (
+    dependentRefund &&
+    (validated.type !== "Expense" ||
+      validated.account.id !== existing.accountId ||
+      validated.categoryId !== existing.categoryId ||
+      validated.subCategoryId !== existing.subCategoryId)
+  ) {
+    throw new Error("This transaction has refunds linked to it. Update or delete the refunds first.")
+  }
 
-    let oldTargetAccount: AccountRecord | null = null
-    if (existing.targetAccountId) {
-      oldTargetAccount =
-        (await database.query.accounts
-          .findFirst({
-            where: and(eq(accounts.userId, user.id), eq(accounts.id, existing.targetAccountId)),
-          })) ?? null
-    }
-
-    const nextSourceAccount =
-      existing.accountId === validated.account.id
-        ? sourceAccount
-        : await database.query.accounts
-            .findFirst({
-              where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.account.id)),
-            })
-
-    if (!nextSourceAccount) {
-      throw new Error("Account was not found.")
-    }
-
-    let nextTargetAccount: AccountRecord | null = null
-    if (validated.targetAccount) {
-      nextTargetAccount =
-        existing.targetAccountId === validated.targetAccount.id
-          ? oldTargetAccount
-          : ((await database.query.accounts
-              .findFirst({
-                where: and(eq(accounts.userId, user.id), eq(accounts.id, validated.targetAccount.id)),
-              })
-              ) ?? null)
-    }
-
+  runDbTransaction((tx) => {
     const oldDeltas = getBalanceDeltas(existing.type, existing.amount, existing.amount2)
 
-    await database.update(accounts)
-      .set({
-        currentBalance: roundMoney(sourceAccount.currentBalance - oldDeltas.sourceDelta),
-        updatedAt: now,
-      })
-      .where(eq(accounts.id, sourceAccount.id))
+    applyBalanceDelta(tx, existing.accountId, -oldDeltas.sourceDelta, now)
 
-    if (oldTargetAccount && oldDeltas.targetDelta !== null) {
-      await database.update(accounts)
-        .set({
-          currentBalance: roundMoney(oldTargetAccount.currentBalance - oldDeltas.targetDelta),
-          updatedAt: now,
-        })
-        .where(eq(accounts.id, oldTargetAccount.id))
-    }
-
-    const refreshedSourceAccount = await database.query.accounts
-      .findFirst({
-        where: eq(accounts.id, nextSourceAccount.id),
-      })
-
-    if (!refreshedSourceAccount) {
-      throw new Error("Account was not found.")
+    if (existing.targetAccountId && oldDeltas.targetDelta !== null) {
+      applyBalanceDelta(tx, existing.targetAccountId, -oldDeltas.targetDelta, now)
     }
 
     const newDeltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
 
-    await database.update(accounts)
-      .set({
-        currentBalance: roundMoney(refreshedSourceAccount.currentBalance + newDeltas.sourceDelta),
-        updatedAt: now,
-      })
-      .where(eq(accounts.id, refreshedSourceAccount.id))
+    applyBalanceDelta(tx, validated.account.id, newDeltas.sourceDelta, now)
 
-    if (nextTargetAccount && newDeltas.targetDelta !== null) {
-      const refreshedTargetAccount = await database.query.accounts
-        .findFirst({
-          where: eq(accounts.id, nextTargetAccount.id),
-        })
-
-      if (!refreshedTargetAccount) {
-        throw new Error("Target account was not found.")
-      }
-
-      await database.update(accounts)
-        .set({
-          currentBalance: roundMoney(refreshedTargetAccount.currentBalance + newDeltas.targetDelta),
-          updatedAt: now,
-        })
-        .where(eq(accounts.id, refreshedTargetAccount.id))
+    if (validated.targetAccount && newDeltas.targetDelta !== null) {
+      applyBalanceDelta(tx, validated.targetAccount.id, newDeltas.targetDelta, now)
     }
 
-    await database.update(transactions)
+    tx.update(transactions)
       .set({
         date: validated.date,
         type: validated.type,
@@ -823,15 +757,11 @@ export async function updateTransactionData(transactionId: string, request: Upda
         location: validated.location,
         updatedAt: now,
       })
-      .where(eq(transactions.id, existing.id))
+      .where(and(eq(transactions.id, existing.id), eq(transactions.userId, user.id)))
+      .run()
 
-    await database.delete(transactionItems).where(eq(transactionItems.transactionId, existing.id))
-
-    if (nextItems.length > 0) {
-      await forEachChunk(nextItems, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(transactionItems).values(chunk)
-      })
-    }
+    tx.delete(transactionItems).where(eq(transactionItems.transactionId, existing.id)).run()
+    insertTransactionItems(tx, nextItems)
   })
 
   const updated = await requireTransaction(user.id, existing.id)
@@ -843,42 +773,24 @@ export async function deleteTransactionData(transactionId: string) {
   const transaction = await requireTransaction(user.id, transactionId)
   const now = new Date()
 
-  await runWithDb(async (database) => {
-    const sourceAccount = await database.query.accounts
-      .findFirst({
-        where: and(eq(accounts.userId, user.id), eq(accounts.id, transaction.accountId)),
-      })
+  const dependentRefund = await findDependentRefund(user.id, transaction.id)
 
-    if (!sourceAccount) {
-      throw new Error("Account was not found.")
-    }
+  if (dependentRefund) {
+    throw new Error("This transaction has refunds linked to it. Delete the refunds first.")
+  }
 
+  runDbTransaction((tx) => {
     const deltas = getBalanceDeltas(transaction.type, transaction.amount, transaction.amount2)
 
-    await database.update(accounts)
-      .set({
-        currentBalance: roundMoney(sourceAccount.currentBalance - deltas.sourceDelta),
-        updatedAt: now,
-      })
-      .where(eq(accounts.id, sourceAccount.id))
+    applyBalanceDelta(tx, transaction.accountId, -deltas.sourceDelta, now)
 
     if (transaction.targetAccountId && deltas.targetDelta !== null) {
-      const targetAccount = await database.query.accounts
-        .findFirst({
-          where: and(eq(accounts.userId, user.id), eq(accounts.id, transaction.targetAccountId)),
-        })
-
-      if (targetAccount) {
-        await database.update(accounts)
-          .set({
-            currentBalance: roundMoney(targetAccount.currentBalance - deltas.targetDelta),
-            updatedAt: now,
-          })
-          .where(eq(accounts.id, targetAccount.id))
-        }
+      applyBalanceDelta(tx, transaction.targetAccountId, -deltas.targetDelta, now)
     }
 
-    await database.delete(transactionItems).where(eq(transactionItems.transactionId, transaction.id))
-    await database.delete(transactions).where(eq(transactions.id, transaction.id))
+    tx.delete(transactionItems).where(eq(transactionItems.transactionId, transaction.id)).run()
+    tx.delete(transactions)
+      .where(and(eq(transactions.id, transaction.id), eq(transactions.userId, user.id)))
+      .run()
   })
 }

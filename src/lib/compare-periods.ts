@@ -1,4 +1,6 @@
-import { format } from "date-fns"
+import { format, parseISO } from "date-fns"
+
+import { formatDateInput } from "@/lib/finance"
 
 /**
  * State + pure resolver for the analytics Compare page. Mirrors the shape of
@@ -34,20 +36,30 @@ export type ResolvedComparison = {
   b: ResolvedPeriod
 }
 
-const pad = (value: number) => String(value).padStart(2, "0")
-
-const toDateInput = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+const toDateInput = formatDateInput
 
 const parseAnchor = (value: string) => (value ? new Date(`${value}T00:00:00`) : new Date())
 
 const endOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
 
-function formatRangeLabel(start: Date, end: Date) {
-  if (start.getFullYear() === end.getFullYear()) {
-    return `${format(start, "LLL d")} – ${format(end, "LLL d, yyyy")}`
+/** Parse a YYYY-MM-DD input value, treating the empty string as "unset". */
+export const toDateOrUndefined = (value: string) => (value ? parseISO(value) : undefined)
+
+/** Human-readable label for a (possibly open-ended) date range. Shared by the analytics toolbars. */
+export function formatRangeLabel(start: Date | null, end: Date | null) {
+  if (!start && !end) {
+    return "All time"
   }
 
-  return `${format(start, "LLL d, yyyy")} – ${format(end, "LLL d, yyyy")}`
+  if (start && end) {
+    return `${format(start, "LLL dd, y")} - ${format(end, "LLL dd, y")}`
+  }
+
+  if (start) {
+    return format(start, "LLL dd, y")
+  }
+
+  return end ? format(end, "LLL dd, y") : "Pick a date"
 }
 
 export function defaultComparePeriodsState(now: Date = new Date()): ComparePeriodsState {

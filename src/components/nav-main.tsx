@@ -1,5 +1,3 @@
-"use client"
-
 import { Link } from "@tanstack/react-router"
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -43,7 +41,6 @@ export function NavMain({
   }[]
   quickAction?: {
     title: string
-    to?: AppRoute
     onClick?: () => void
   }
 }) {
@@ -53,25 +50,14 @@ export function NavMain({
         {quickAction ? (
           <SidebarMenu>
             <SidebarMenuItem>
-              {quickAction.to ? (
-                <SidebarMenuButton
-                  tooltip={quickAction.title}
-                  className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/95 hover:text-primary-foreground active:bg-primary/95 active:text-primary-foreground"
-                  render={<Link to={quickAction.to} />}
-                >
-                  <HugeiconsIcon icon={PlusSignCircleIcon} strokeWidth={2} />
-                  <span>{quickAction.title}</span>
-                </SidebarMenuButton>
-              ) : (
-                <SidebarMenuButton
-                  tooltip={quickAction.title}
-                  className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/95 hover:text-primary-foreground active:bg-primary/95 active:text-primary-foreground"
-                  onClick={quickAction.onClick}
-                >
-                  <HugeiconsIcon icon={PlusSignCircleIcon} strokeWidth={2} />
-                  <span>{quickAction.title}</span>
-                </SidebarMenuButton>
-              )}
+              <SidebarMenuButton
+                tooltip={quickAction.title}
+                className="min-w-8 bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/95 hover:text-primary-foreground active:bg-primary/95 active:text-primary-foreground"
+                onClick={quickAction.onClick}
+              >
+                <HugeiconsIcon icon={PlusSignCircleIcon} strokeWidth={2} />
+                <span>{quickAction.title}</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         ) : null}

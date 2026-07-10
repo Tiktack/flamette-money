@@ -1,112 +1,57 @@
 # Currency Handling Summary
 
-Last updated: 2026-02-15
+Last updated: 2026-07-04
 
-## Scope implemented
+## Scope
 
-This summary covers the currency and FX implementation for account transfers, analytics/report conversions, and receipt scan behavior.
+Currency and FX behavior for accounts, transfers, refunds, analytics/report conversion, and receipt scanning in the TanStack Start server code.
 
-## Product rules implemented
+## Product rules
 
-1. Transfer currency locking
+1. Supported currencies
 
-- For transfer transactions, source currency is locked to source account currency.
-- Target currency is locked to target account currency.
-- User can still edit source and target amounts.
-- Backend validates and rejects transfer requests if provided currencies do not match account currencies.
+- `PLN`, `USD`, `EUR`, `GBP`, `CAD` — single source in `src/lib/currency.ts` (`supportedCurrencies`).
+- Request payload currencies are validated against this list via `normalizeCurrencyOrDefault()` / `normalizeCurrencyOrNull()` and the shared normalizers.
+- The client reads the list from `GET /api/app-info` (see `src/features/app/`), cached indefinitely on the client.
 
-2. Base currency conversion for analytics/reporting
+2. Transfers
 
-- Analytics/report endpoints now return values converted to user base currency.
-- Accounts and transaction page semantics remain account/transaction currency oriented (no conversion there).
+- Source currency is locked to the source account currency; target currency to the target account currency.
+- The server rejects transfer requests whose currencies do not match the account currencies (`validateTransactionRequest` in `src/features/transactions/server/service.server.ts`).
+- Amounts (`amount`, `amount2`) remain user-editable.
 
-3. Exchange rates integration
+3. Refunds
 
-- Uses ExchangeRate API standard latest endpoint response shape with `base_code` and `conversion_rates`.
-- FX data is cached in memory for 5 hours.
-- Retries are implemented via Polly with short backoff.
-- If live API cannot be used, predefined fallback rates are used.
+- A refund inherits the original expense's currency by default (falling back to the account currency), so reports subtract it at the same rate it was added.
+- Refunds are treated as expense-reducing in all reports **and** in the transactions-page summary (`searchTransactionsSummaryData`), so page totals match analytics.
 
-4. Receipt scan behavior
+4. Base-currency conversion for analytics/reporting
 
-- Receipt scan now returns draft data only.
-- No transaction is auto-created and no account balance is mutated by scan endpoint.
+- Report endpoints convert values into the user's base currency on the server.
+- Accounts and the transactions list stay in account/transaction currency (no conversion there).
+- Shared conversion helpers live in `src/features/shared/server/fx.server.ts`: `convertAmountToBase()`, `loadAccountCurrencyMap()`, `resolveTransactionCurrency()`. Reports, trips, and the transactions summary all use them.
 
-## Backend architecture changes
+## Exchange rates
 
-### New shared currency source
+- `src/lib/exchange-rate.server.ts` fetches `https://v6.exchangerate-api.com/v6/<key>/latest/<base>` and normalizes to rates-to-base.
+- Snapshots are cached in memory for `EXCHANGE_RATE_CACHE_HOURS` (default 5 h).
+- Without an API key, or when a fetch fails, hardcoded approximate fallback rates are used. Failure-path fallbacks are cached for at most 5 minutes so a transient outage does not pin stale rates for the full TTL.
 
-- Added supported currency catalog in Infrastructure.
-- Current supported list: PLN, USD, EUR, GBP, CAD.
-- Used as the single source for validating API request currency fields.
+## Receipt scan
 
-### New app metadata endpoint
-
-- Added `GET /api/app-info`.
-- Returns supported currencies for frontend configuration and future shared app metadata.
-
-### FX service
-
-- Added exchange rate options section (`ExchangeRateApi`) for API key/base URL/cache hours.
-- Added centralized exchange rate service in Infrastructure:
-  - Uses `IHttpClientFactory`.
-  - Uses Polly retry policy.
-  - Uses memory cache.
-  - Exposes normalized rates-to-base for reporting services.
-
-### Reports and trips
-
-- Category series and portfolio balance series use backend FX conversion.
-- Trips totals are computed in base currency on backend.
-
-### Validation strategy
-
-- API request payloads that include currency are validated against supported currencies.
-- Read path and DB currency usage assume persisted data is valid and trusted.
-
-## Frontend integration changes
-
-1. Supported currency source
-
-- Settings and transaction editor currency options consume `GET /api/app-info`.
-- Removed local hardcoded currency assumptions as the primary source.
-- Settings base-currency changes now save immediately on selection without a separate save button.
-
-2. Transfer UX behavior
-
-- Transfer currency selectors are effectively locked to account currencies.
-- Amount and amount2 remain user-editable.
-
-3. Formatting in converted views
-
-- Categories, analytics portfolio, and trips display currency-formatted values based on backend base-currency response context.
-
-4. Receipt scan UX
-
-- Updated from “transaction created” flow to draft/pre-fill flow.
-- No immediate transaction persistence side effects from scan.
+- Scanning returns draft data only — no transaction is created and no balance is mutated.
+- The scanned currency pre-fills the editor form; the user reviews before saving.
 
 ## Configuration
 
-`backend/FlametteMoney.Web/appsettings.Development.json` should include:
+`.env` (see `.env.example`):
 
-```json
-"ExchangeRateApi": {
-  "ApiKey": "<your-api-key>",
-  "BaseUrl": "https://v6.exchangerate-api.com",
-  "CacheHours": 5
-}
+```
+EXCHANGE_RATE_API_KEY=<your-api-key>
+EXCHANGE_RATE_CACHE_HOURS=5
 ```
 
 ## Operational notes
 
-- If ExchangeRate API is unavailable, fallback rates are used to keep reports operational.
-- OpenAPI is regenerated during frontend build pipeline and reflects report contract changes.
-
-## Follow-up recommendations
-
-- Add focused API tests for:
-  - transfer currency mismatch validation,
-  - FX conversion consistency in reports,
-  - receipt scan draft-only behavior.
-- Consider moving sensitive keys to user secrets/environment variables for local and production safety.
+- If the ExchangeRate API is unavailable, fallback rates keep reports operational (marked internally via `usedFallback`).
+- Balance updates run inside SQLite transactions with SQL-side arithmetic (`runDbTransaction` in `src/lib/db/client.server.ts`), so FX-related multi-write flows are atomic.

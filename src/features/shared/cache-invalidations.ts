@@ -5,55 +5,51 @@ import { queryKeys } from "./query-keys"
 type QueryInvalidation = NonNullable<Parameters<QueryClient["invalidateQueries"]>[0]>
 
 const reportInvalidations = [
-  { queryKey: ["reports-cashflow-series"] },
-  { queryKey: ["reports-category-series"] },
-  { queryKey: ["reports-portfolio-balance-series"] },
+  { queryKey: queryKeys.reportsCashflowSeriesAll() },
+  { queryKey: queryKeys.reportsCategorySeriesAll() },
+  { queryKey: queryKeys.reportsPortfolioBalanceSeriesAll() },
+  { queryKey: queryKeys.reportsComparisonAll() },
+] as const satisfies readonly QueryInvalidation[]
+
+const transactionDerivedInvalidations = [
+  { queryKey: queryKeys.transactionsAll() },
+  { queryKey: queryKeys.transactionsSearchAll() },
+  { queryKey: queryKeys.transactionsSummaryAll() },
+  { queryKey: queryKeys.transactionsFacetsAll() },
+  ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
 export const settingsMutationInvalidations = [
   { queryKey: queryKeys.settings() },
   { queryKey: queryKeys.authMe() },
   { queryKey: queryKeys.trips() },
-  { queryKey: ["transactions-summary"] },
+  { queryKey: queryKeys.transactionsSummaryAll() },
   ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
 export const accountMutationInvalidations = [
   { queryKey: queryKeys.accounts() },
-  { queryKey: ["transactions-summary"] },
-  { queryKey: ["reports-cashflow-series"] },
-  { queryKey: ["reports-portfolio-balance-series"] },
+  { queryKey: queryKeys.transactionsSummaryAll() },
+  ...reportInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
-export const tripMutationInvalidations = [
-  { queryKey: queryKeys.trips() },
-  { queryKey: ["transactions"] },
-  { queryKey: ["transactions-search"] },
-  { queryKey: ["transactions-facets"] },
-  { queryKey: ["reports-cashflow-series"] },
-  { queryKey: ["reports-category-series"] },
-] as const satisfies readonly QueryInvalidation[]
+export const categoryMutationInvalidations = [{ queryKey: queryKeys.categories() }, ...reportInvalidations] as const satisfies readonly QueryInvalidation[]
+
+export const tripMutationInvalidations = [{ queryKey: queryKeys.trips() }, ...transactionDerivedInvalidations] as const satisfies readonly QueryInvalidation[]
 
 export const transactionMutationInvalidations = [
-  { queryKey: ["transactions-search"] },
-  { queryKey: ["transactions-summary"] },
-  { queryKey: ["transactions-facets"] },
-  { queryKey: ["transactions"] },
+  { queryKey: queryKeys.accounts() },
   { queryKey: queryKeys.trips() },
-  ...reportInvalidations,
-  { queryKey: ["accounts"] },
+  ...transactionDerivedInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
 export const fullDataRefreshInvalidations = [
+  { queryKey: queryKeys.authMe() },
   { queryKey: queryKeys.accounts() },
   { queryKey: queryKeys.categories() },
   { queryKey: queryKeys.settings() },
   { queryKey: queryKeys.trips() },
-  { queryKey: ["transactions"] },
-  { queryKey: ["transactions-search"] },
-  { queryKey: ["transactions-summary"] },
-  { queryKey: ["transactions-facets"] },
-  ...reportInvalidations,
+  ...transactionDerivedInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
 export async function invalidateQueries(queryClient: QueryClient, invalidations: readonly QueryInvalidation[]) {

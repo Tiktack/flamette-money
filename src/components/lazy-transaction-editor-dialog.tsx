@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 import type { TransactionEditorDialogProps } from "@/components/transaction-editor-dialog"
 
@@ -20,6 +20,7 @@ export function LazyTransactionEditorDialog(props: TransactionEditorDialogProps)
       fallback={
         <Dialog open={props.open} onOpenChange={props.onOpenChange}>
           <DialogContent className="sm:max-w-4xl">
+            <DialogTitle className="sr-only">Loading transaction editor</DialogTitle>
             <div className="h-32 animate-pulse rounded-2xl bg-muted" />
           </DialogContent>
         </Dialog>

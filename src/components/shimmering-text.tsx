@@ -1,5 +1,3 @@
-"use client";
-
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { type ComponentProps, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -20,23 +18,17 @@ export type ShimmeringTextProps = Omit<
    * @defaultValue false
    */
   paused?: boolean;
-  /**
-   * Legacy alias for `paused`.
-   * @defaultValue false
-   */
-  isStopped?: boolean;
 };
 
 export function ShimmeringText({
   text,
   duration = 1,
-  isStopped = false,
   paused = false,
   className,
   ...props
 }: ShimmeringTextProps) {
   const reducedMotion = useReducedMotion();
-  const stopped = isStopped || paused || reducedMotion === true;
+  const stopped = paused || reducedMotion === true;
 
   const createCharVariants = useCallback(
     (charIndex: number): Variants => ({
@@ -77,7 +69,6 @@ export function ShimmeringText({
           aria-hidden
           className="inline-block whitespace-pre leading-none"
           initial="stopped"
-          // biome-ignore lint/suspicious/noArrayIndexKey: static label text, order never changes
           key={index}
           variants={createCharVariants(index)}
         >

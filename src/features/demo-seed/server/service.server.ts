@@ -1,11 +1,10 @@
 import { and, eq } from "drizzle-orm"
 
-import { auth } from "@/lib/auth"
-import { ensureUserBootstrap } from "@/lib/bootstrap.server"
-import { db, runWithDb } from "@/lib/db/client.server"
-import { forEachChunk, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { db, runDbTransaction } from "@/lib/db/client.server"
+import { forEachChunkSync, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import { roundMoney } from "@/lib/finance"
 import { accounts, accountTypes, categories, trips, transactions, transactionTypes } from "@/lib/db/schema"
+import { requireUserIdForRequest } from "@/lib/server/http.server"
 
 import type { SeedDemoResponse } from "@/features/shared/types"
 
@@ -39,31 +38,6 @@ type TripWindow = {
   id: string
   startDate: Date
   endDate: Date
-}
-
-class HttpError extends Error {
-  status: number
-
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = "HttpError"
-    this.status = status
-  }
-}
-
-function fail(message: string, status = 400): never {
-  throw new HttpError(status, message)
-}
-
-async function requireUserIdForRequest(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session) {
-    fail("Unauthorized", 401)
-  }
-
-  await ensureUserBootstrap(session.user.id)
-  return session.user.id
 }
 
 function clampYears(value: number | null) {
@@ -116,17 +90,19 @@ function shouldAssign(random: RandomSource, probability: number) {
   return random.next() < probability
 }
 
-function pickDifferentAccount(random: RandomSource, values: AccountRow[], source: AccountRow) {
-  if (values.length <= 1) {
-    return source
+/** Transfers must match source and target account currencies, so only same-currency pairs qualify. */
+function buildSameCurrencyTransferPairs(values: AccountRow[]) {
+  const pairs: Array<[AccountRow, AccountRow]> = []
+
+  for (const source of values) {
+    for (const target of values) {
+      if (source.id !== target.id && source.currency === target.currency) {
+        pairs.push([source, target])
+      }
+    }
   }
 
-  let target = source
-  while (target.id === source.id) {
-    target = values[random.nextInt(0, values.length)]
-  }
-
-  return target
+  return pairs
 }
 
 function applyBalances(account: AccountRow, targetAccount: AccountRow | null, type: TransactionType, amount: number) {
@@ -444,6 +420,7 @@ export async function handleSeedDemoRequest(request: Request) {
   const locations = getLocations()
   const incomeNotes = getIncomeNotes()
   const expenseNotes = getExpenseNotes()
+  const transferPairs = buildSameCurrencyTransferPairs(allAccounts)
   const transactionBuffer: TransactionInsert[] = []
   const expenseTransactions: TransactionInsert[] = []
   let transfersAdded = 0
@@ -457,8 +434,13 @@ export async function handleSeedDemoRequest(request: Request) {
       const timestamp = new Date(date.getTime() + random.nextInt(0, 24 * 60) * 60 * 1000)
 
       if (type === "Transfer") {
-        const source = allAccounts[random.nextInt(0, allAccounts.length)]
-        const target = pickDifferentAccount(random, allAccounts, source)
+        const pair = pickValue(random, transferPairs)
+        if (!pair) {
+          // No same-currency account pair exists, so a valid transfer cannot be generated.
+          continue
+        }
+
+        const [source, target] = pair
         const amount = nextMoney(random, 20, 600)
         transactionBuffer.push({
           id: crypto.randomUUID(),
@@ -524,7 +506,7 @@ export async function handleSeedDemoRequest(request: Request) {
 
       if (type === "Income") {
         const account = allAccounts[random.nextInt(0, allAccounts.length)]
-        const category = pickValue(random, incomeCategories) ?? pickValue(random, expenseParents)
+        const category = pickValue(random, incomeCategories)
         const amount = nextMoney(random, 500, 3500)
         transactionBuffer.push({
           id: crypto.randomUUID(),
@@ -586,29 +568,24 @@ export async function handleSeedDemoRequest(request: Request) {
     }
   }
 
-  await runWithDb(async (database) => {
-    if (newAccounts.length > 0) {
-      await forEachChunk(newAccounts, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(accounts).values(chunk)
-      })
-    }
+  runDbTransaction((tx) => {
+    forEachChunkSync(newAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(accounts).values(chunk).run()
+    })
 
-    if (newTrips.length > 0) {
-      await forEachChunk(newTrips, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(trips).values(chunk)
-      })
-    }
+    forEachChunkSync(newTrips, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(trips).values(chunk).run()
+    })
 
-    if (transactionBuffer.length > 0) {
-      await forEachChunk(transactionBuffer, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(transactions).values(chunk)
-      })
-    }
+    forEachChunkSync(transactionBuffer, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(transactions).values(chunk).run()
+    })
 
     for (const account of allAccounts) {
-      await database.update(accounts)
+      tx.update(accounts)
         .set({ currentBalance: account.currentBalance, updatedAt: new Date() })
         .where(and(eq(accounts.id, account.id), eq(accounts.userId, userId)))
+        .run()
     }
   })
 
@@ -622,13 +599,4 @@ export async function handleSeedDemoRequest(request: Request) {
   }
 
   return Response.json(response)
-}
-
-export function toSeedErrorResponse(error: unknown) {
-  if (error instanceof HttpError) {
-    return new Response(error.message, { status: error.status })
-  }
-
-  console.error("demo seed failed", error)
-  return new Response("Unable to seed demo data.", { status: 500 })
 }

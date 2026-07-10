@@ -38,8 +38,12 @@ export function formatCurrency(value: number | string | null | undefined, curren
   }).format(toNumber(value))
 }
 
+// Local time, not toISOString(): near midnight in UTC+ timezones the UTC date is yesterday.
 export function formatDateInput(value: Date) {
-  return value.toISOString().slice(0, 10)
+  const year = value.getFullYear()
+  const month = `${value.getMonth() + 1}`.padStart(2, "0")
+  const day = `${value.getDate()}`.padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 export function formatDateLabel(value?: string | null) {
@@ -49,22 +53,6 @@ export function formatDateLabel(value?: string | null) {
 
   return new Date(value).toLocaleDateString(undefined, {
     year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
-
-export function formatMonthLabel(value: string) {
-  const date = new Date(`${value}T00:00:00`)
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-  })
-}
-
-export function formatShortMonth(value: string) {
-  const date = new Date(`${value}T00:00:00`)
-  return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
   })

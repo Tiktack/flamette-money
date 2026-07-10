@@ -5,6 +5,7 @@ import { ArrowDown01Icon, Delete02Icon, Edit01Icon, PlusSignIcon } from "@hugeic
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { EmptyState } from "@/components/empty-state"
+import { CardSkeleton } from "@/components/page-skeletons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,15 +14,17 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from "@/features/categories/hooks"
-import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
+import { pageActionTypes, usePageAction } from "@/lib/page-actions"
 import type { CategoryHierarchy, CategoryType } from "@/features/categories/types"
 import { categoryIconGroups, categoryIconOptions, getCategoryIconDefinition } from "@/lib/category-icons"
 import { normalizeHexColor } from "@/lib/finance"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_protected/categories")({
+  head: () => ({ meta: [{ title: "Categories — Flamette Money" }] }),
   component: CategoriesPage,
 })
 
@@ -77,18 +80,12 @@ function CategoriesPage() {
   }
   const parentForDialog = editParent ?? lastEditParentRef.current
 
-  React.useEffect(() => {
-    const handlePageAction = (event: Event) => {
-      const customEvent = event as CustomEvent<PageActionType>
+  usePageAction(pageActionTypes.createCategory, () => setCreateOpen(true))
 
-      if (customEvent.detail === pageActionTypes.createCategory) {
-        setCreateOpen(true)
-      }
-    }
-
-    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
-    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
-  }, [])
+  const openDelete = (category: CategoryHierarchy) => {
+    deleteCategory.reset()
+    setDeleteTarget(category)
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) {
@@ -106,12 +103,20 @@ function CategoriesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Tabs value={typeFilter} onValueChange={(value) => setTypeFilter(value as CategoryType)}>
-          <TabsList>
-            <TabsTrigger value="Expense">Expenses</TabsTrigger>
-            <TabsTrigger value="Income">Income</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <ToggleGroup
+          value={[typeFilter]}
+          onValueChange={(values) => {
+            const next = values[0] as CategoryType | undefined
+            if (next) {
+              setTypeFilter(next)
+            }
+          }}
+          variant="outline"
+          size="sm"
+        >
+          <ToggleGroupItem value="Expense">Expenses</ToggleGroupItem>
+          <ToggleGroupItem value="Income">Income</ToggleGroupItem>
+        </ToggleGroup>
         {!categoriesQuery.isPending && !categoriesQuery.isError ? (
           <span className="hidden text-sm text-muted-foreground sm:inline">
             {visibleParents.length} {visibleParents.length === 1 ? "category" : "categories"} · {subcategoryCount}{" "}
@@ -122,10 +127,9 @@ function CategoriesPage() {
 
       {categoriesQuery.isPending ? (
         <div className="grid gap-3 lg:grid-cols-2">
-          <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-          <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-          <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-          <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+          {Array.from({ length: 4 }, (_, index) => (
+            <CardSkeleton key={index} className="h-24" />
+          ))}
         </div>
       ) : categoriesQuery.isError ? (
         <Alert variant="destructive">
@@ -140,14 +144,14 @@ function CategoriesPage() {
           action={
             <Button onClick={() => setCreateOpen(true)}>
               <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
-              New category
+              Add category
             </Button>
           }
         />
       ) : (
         <div className="grid items-start gap-3 lg:grid-cols-2">
           {visibleParents.map((category) => (
-            <ParentCategoryCard key={category.id} category={category} onEdit={() => setEditParentId(category.id)} onDelete={() => setDeleteTarget(category)} />
+            <ParentCategoryCard key={category.id} category={category} onEdit={() => setEditParentId(category.id)} onDelete={() => openDelete(category)} />
           ))}
         </div>
       )}
@@ -206,7 +210,7 @@ function ParentCategoryCard({ category, onEdit, onDelete }: { category: Category
   const subcategoryCount = category.subcategories.length
 
   return (
-    <Card className="border-border/60 bg-card/80 shadow-sm">
+    <Card>
       <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
           <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">
@@ -318,7 +322,7 @@ function CreateCategoryDialog({ open, onOpenChange, defaultType }: { open: boole
             <CategoryIconPicker value={fields.icon} color={fields.color} onChange={(icon) => setFields((state) => ({ ...state, icon }))} />
           </Field>
           <Field>
-            <FieldLabel>Colour</FieldLabel>
+            <FieldLabel>Color</FieldLabel>
             <ColorField value={fields.color} onChange={(color) => setFields((state) => ({ ...state, color }))} />
           </Field>
         </FieldGroup>
@@ -424,7 +428,7 @@ function ParentCategoryDialog({ parent, open, onOpenChange }: { parent: Category
               <CategoryIconPicker value={fields.icon} color={fields.color} onChange={(icon) => setFields((state) => ({ ...state, icon }))} />
             </Field>
             <Field>
-              <FieldLabel>Colour</FieldLabel>
+              <FieldLabel>Color</FieldLabel>
               <ColorField value={fields.color} onChange={(color) => setFields((state) => ({ ...state, color }))} />
             </Field>
           </div>
@@ -598,7 +602,7 @@ function SubcategoryDialog({
               <CategoryIconPicker value={fields.icon} color={fields.color} onChange={(icon) => setFields((state) => ({ ...state, icon }))} />
             </Field>
             <Field>
-              <FieldLabel>Colour</FieldLabel>
+              <FieldLabel>Color</FieldLabel>
               <ColorField value={fields.color} onChange={(color) => setFields((state) => ({ ...state, color }))} />
             </Field>
           </div>
@@ -611,7 +615,12 @@ function SubcategoryDialog({
         ) : null}
         <DialogFooter className="sm:justify-between">
           {mode === "edit" ? (
-            <Button variant={confirmDelete ? "destructive" : "outline"} onClick={() => void remove()} disabled={deleteCategory.isPending} className="sm:mr-auto">
+            <Button
+              variant={confirmDelete ? "destructive" : "outline"}
+              onClick={() => void remove()}
+              disabled={deleteCategory.isPending}
+              className="sm:mr-auto"
+            >
               {deleteCategory.isPending ? "Deleting" : confirmDelete ? "Confirm delete" : "Delete"}
             </Button>
           ) : null}
@@ -734,7 +743,7 @@ function ColorField({ value, onChange }: { value: string; onChange: (color: stri
           </button>
         )
       })}
-      <label className="relative size-7 cursor-pointer overflow-hidden rounded-full border border-dashed border-border" title="Custom colour">
+      <label className="relative size-7 cursor-pointer overflow-hidden rounded-full border border-dashed border-border" title="Custom color">
         <span
           className="block size-full"
           style={{

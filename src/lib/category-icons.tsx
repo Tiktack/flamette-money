@@ -1,4 +1,3 @@
-import type { ComponentProps } from "react"
 import {
   AppStoreIcon,
   AppleIcon,
@@ -79,10 +78,9 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { normalizeHexColor } from "@/lib/finance"
+import { DEFAULT_CATEGORY_COLOR, normalizeHexColor } from "@/lib/finance"
+import type { HugeIcon } from "@/lib/icons"
 import { cn } from "@/lib/utils"
-
-type HugeIcon = ComponentProps<typeof HugeiconsIcon>["icon"]
 
 export type CategoryIconDefinition = {
   /** Token persisted on the category record. */
@@ -235,6 +233,22 @@ export function getCategoryIconDefinition(iconName?: string | null): CategoryIco
 
 export const categoryIconGroups = Array.from(new Set(categoryIconOptions.map((item) => item.group)))
 
+/** Flatten a category hierarchy (parents plus their subcategories) into an id → icon-token map. */
+export function buildCategoryIconById(
+  categories: ReadonlyArray<{ id: string; icon: string; subcategories: ReadonlyArray<{ id: string; icon: string }> }> | undefined
+): Map<string, string> {
+  const map = new Map<string, string>()
+
+  for (const category of categories ?? []) {
+    map.set(category.id, category.icon)
+    for (const subcategory of category.subcategories) {
+      map.set(subcategory.id, subcategory.icon)
+    }
+  }
+
+  return map
+}
+
 /** Colored icon chip for a category/subcategory. Reused across categories, transactions, and reports. */
 export function CategoryIconBadge({
   icon,
@@ -252,7 +266,7 @@ export function CategoryIconBadge({
   return (
     <span
       className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg text-white", className)}
-      style={{ backgroundColor: normalizeHexColor(color, "#78909C") }}
+      style={{ backgroundColor: normalizeHexColor(color, DEFAULT_CATEGORY_COLOR) }}
     >
       <HugeiconsIcon icon={definition.icon} strokeWidth={2} className={cn("size-4", iconClassName)} />
     </span>

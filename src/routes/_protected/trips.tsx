@@ -7,7 +7,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { EmptyState } from "@/components/empty-state"
 import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-editor-dialog"
 import { MetricCard } from "@/components/metric-card"
-import { TripWorldMap, getCountryName } from "@/components/trip-world-map"
+import { CardSkeleton, MetricCardsSkeleton } from "@/components/page-skeletons"
+import { TripWorldMap } from "@/components/trip-world-map"
 import type { TripMapItem } from "@/components/trip-world-map"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -21,13 +22,14 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useSettings } from "@/features/settings/hooks"
 import { useCreateTrip, useTrips, useUpdateTrip } from "@/features/trips/hooks"
-import { COUNTRY_OPTIONS, countryFlag } from "@/lib/countries"
-import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
+import { COUNTRY_OPTIONS, countryFlag, getCountryName } from "@/lib/countries"
+import { pageActionTypes, usePageAction } from "@/lib/page-actions"
 import type { TripListItem } from "@/features/trips/types"
 import { formatCurrency, formatDateLabel, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/_protected/trips")({
+  head: () => ({ meta: [{ title: "Trips — Flamette Money" }] }),
   component: TripsPage,
 })
 
@@ -63,18 +65,16 @@ function TripsPage() {
   const [editForm, setEditForm] = React.useState<TripFormState>(defaultTripForm)
   const [newTxTripId, setNewTxTripId] = React.useState<string | null>(null)
 
-  React.useEffect(() => {
-    const handlePageAction = (event: Event) => {
-      const customEvent = event as CustomEvent<PageActionType>
+  // mutation.reset is a stable reference; destructured so the callback below stays stable too.
+  const { reset: resetCreateTrip } = createTrip
 
-      if (customEvent.detail === pageActionTypes.createTrip) {
-        setCreateOpen(true)
-      }
-    }
+  const openCreate = React.useCallback(() => {
+    setCreateForm(defaultTripForm)
+    resetCreateTrip()
+    setCreateOpen(true)
+  }, [resetCreateTrip])
 
-    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
-    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
-  }, [])
+  usePageAction(pageActionTypes.createTrip, openCreate)
 
   const baseCurrency = settingsQuery.data?.baseCurrency ?? "USD"
   const trips = React.useMemo(
@@ -114,6 +114,7 @@ function TripsPage() {
   }
 
   const openEdit = (trip: TripListItem) => {
+    updateTrip.reset()
     setEditTrip(trip)
     setEditForm({
       name: trip.name,
@@ -164,34 +165,38 @@ function TripsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Trips"
-          value={String(trips.length)}
-          icon={Airplane01Icon}
-          iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
-          iconColorClassName="text-blue-600 dark:text-blue-400"
-        />
-        <MetricCard
-          label="Total spent"
-          value={formatCurrency(totalSpent, baseCurrency)}
-          icon={Wallet01Icon}
-          iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
-          iconColorClassName="text-amber-600 dark:text-amber-400"
-        />
-        <MetricCard
-          label="Countries visited"
-          value={String(countriesVisited)}
-          icon={EarthIcon}
-          iconBgClassName="bg-emerald-500/10 dark:bg-emerald-500/15"
-          iconColorClassName="text-emerald-600 dark:text-emerald-400"
-        />
-      </div>
+      {tripsQuery.isPending ? (
+        <MetricCardsSkeleton className="md:grid-cols-3" />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-3">
+          <MetricCard
+            label="Trips"
+            value={String(trips.length)}
+            icon={Airplane01Icon}
+            iconBgClassName="bg-blue-500/10 dark:bg-blue-400/15"
+            iconColorClassName="text-blue-600 dark:text-blue-400"
+          />
+          <MetricCard
+            label="Total spent"
+            value={formatCurrency(totalSpent, baseCurrency)}
+            icon={Wallet01Icon}
+            iconBgClassName="bg-amber-500/10 dark:bg-amber-500/15"
+            iconColorClassName="text-amber-600 dark:text-amber-400"
+          />
+          <MetricCard
+            label="Countries visited"
+            value={String(countriesVisited)}
+            icon={EarthIcon}
+            iconBgClassName="bg-emerald-500/10 dark:bg-emerald-500/15"
+            iconColorClassName="text-emerald-600 dark:text-emerald-400"
+          />
+        </div>
+      )}
 
       {tripsQuery.isPending ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="h-72 animate-pulse rounded-2xl bg-muted" />
+          {Array.from({ length: 3 }, (_, index) => (
+            <CardSkeleton key={index} className="h-72" />
           ))}
         </div>
       ) : tripsQuery.isError ? (
@@ -204,7 +209,12 @@ function TripsPage() {
           eyebrow="Trips"
           title="No trips yet"
           description="Create your first trip to separate travel-related transactions from the rest of your ledger."
-          action={<Button onClick={() => setCreateOpen(true)}>Add trip</Button>}
+          action={
+            <Button onClick={openCreate}>
+              <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+              Add trip
+            </Button>
+          }
         />
       ) : (
         <>
@@ -296,7 +306,7 @@ function TripCard({
   const txnCount = toNumber(trip.transactionCount)
 
   return (
-    <Card className="group gap-0 overflow-hidden border-border/60 p-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+    <Card className="group gap-0 overflow-hidden p-0 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
       <div className="relative h-48 overflow-hidden">
         {trip.imageUrl ? (
           <img alt={trip.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" src={trip.imageUrl} />
@@ -328,14 +338,17 @@ function TripCard({
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-8" onClick={onAddTransaction} title="Add transaction">
-            <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-4" />
+          <Button variant="ghost" size="icon-sm" onClick={onAddTransaction}>
+            <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+            <span className="sr-only">Add transaction to {trip.name}</span>
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={onViewTransactions} title="View transactions">
-            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-4" />
+          <Button variant="ghost" size="icon-sm" onClick={onViewTransactions}>
+            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+            <span className="sr-only">View transactions for {trip.name}</span>
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={onEdit} title="Edit trip">
-            <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} className="size-4" />
+          <Button variant="ghost" size="icon-sm" onClick={onEdit}>
+            <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
+            <span className="sr-only">Edit {trip.name}</span>
           </Button>
         </div>
       </CardFooter>

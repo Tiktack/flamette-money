@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { formatRangeLabel, toDateOrUndefined } from "@/lib/compare-periods"
 import { type DateRangePreset, resolveSharedDateRange, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
 
 const presets: Array<{ label: string; value: DateRangePreset }> = [
@@ -17,26 +18,6 @@ const presets: Array<{ label: string; value: DateRangePreset }> = [
   { label: "All", value: "all" },
   { label: "Custom", value: "custom" },
 ]
-
-const formatRangeLabel = (start: Date | null, end: Date | null) => {
-  if (!start && !end) {
-    return "All time"
-  }
-
-  if (start && end) {
-    return `${format(start, "LLL dd, y")} - ${format(end, "LLL dd, y")}`
-  }
-
-  if (start) {
-    return format(start, "LLL dd, y")
-  }
-
-  return end ? format(end, "LLL dd, y") : "Pick a date"
-}
-
-const toDateOrUndefined = (value: string) => {
-  return value ? parseISO(value) : undefined
-}
 
 export function SharedDateRangeToolbar() {
   const state = useSharedDateRangeFilters()

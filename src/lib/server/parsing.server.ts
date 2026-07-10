@@ -28,14 +28,17 @@ export function parseDateInput(value: string, fieldName: string) {
   return parsed
 }
 
+// Date-only strings ("YYYY-MM-DD") parse as UTC midnight, and transaction dates are stored
+// that way — day boundaries must use UTC too, or filters and report buckets shift by the
+// server's timezone offset.
 export function startOfDay(value: string) {
   const date = parseDateInput(value, "StartDate")
-  date.setHours(0, 0, 0, 0)
+  date.setUTCHours(0, 0, 0, 0)
   return date
 }
 
 export function endOfDay(value: string) {
   const date = parseDateInput(value, "EndDate")
-  date.setHours(23, 59, 59, 999)
+  date.setUTCHours(23, 59, 59, 999)
   return date
 }

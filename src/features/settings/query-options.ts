@@ -7,7 +7,7 @@ import { queryKeys } from "@/features/shared/query-keys"
 import type { UserSettings } from "./types"
 
 export const settingsQueryOptions = () =>
-  queryOptions<UserSettings | null>({
+  queryOptions<UserSettings>({
     queryKey: queryKeys.settings(),
     queryFn: () => getSettings(),
     staleTime: 60_000,

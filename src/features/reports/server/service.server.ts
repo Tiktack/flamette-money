@@ -1,20 +1,22 @@
 import { asc, eq } from "drizzle-orm"
 
-import { getSessionData } from "@/lib/auth/session.server"
+import { convertAmountToBase, loadAccountCurrencyMap, resolveTransactionCurrency } from "@/features/shared/server/fx.server"
+import { requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
 import { roundMoney } from "@/lib/finance"
-import { accounts, categories, transactions, trips, users } from "@/lib/db/schema"
+import { accounts, categories, transactions, trips } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
+import { endOfDay, parseDateInput, startOfDay } from "@/lib/server/parsing.server"
 
 import type {
+  CashflowSeriesReportQuery,
   CashflowSeriesReportResponse,
+  CategorySeriesReportQuery,
   CategorySeriesReportResponse,
+  ComparisonReportQuery,
   ComparisonReportResponse,
-  GetApiReportsCashflowSeriesData,
-  GetApiReportsCategorySeriesData,
-  GetApiReportsComparisonData,
-  GetApiReportsPortfolioBalanceSeriesData,
+  PortfolioBalanceSeriesQuery,
   PortfolioBalanceSeriesResponse,
   ReportBucketResponse,
   ReportInterval,
@@ -33,49 +35,27 @@ type Bucket = {
   end: Date
 }
 
-function parseDate(value: string, label: string) {
-  const parsed = new Date(value)
-
-  if (Number.isNaN(parsed.getTime())) {
-    throw new Error(`${label} must be a valid date.`)
-  }
-
-  return parsed
-}
-
+// Transaction dates are stored as UTC midnights, so every piece of bucket/date math below
+// must use UTC — mixing in local-time Date methods shifts amounts into the wrong bucket on
+// any non-UTC server.
 function asDateOnly(value: Date) {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate())
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
 }
 
 function endOfDate(value: Date) {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 23, 59, 59, 999)
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate(), 23, 59, 59, 999))
 }
 
-async function requireUser() {
-  const session = await getSessionData()
-
-  if (!session) {
-    throw new Error("Unauthorized")
-  }
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-  })
-
-  if (!user) {
-    throw new Error("User was not found.")
-  }
-
-  return user
+function addUtcDays(value: Date, days: number) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate() + days))
 }
 
-function convertAmount(amount: number, sourceCurrency: string | null | undefined, baseCurrency: string, ratesToBase: Record<string, number>) {
-  if (amount === 0) {
-    return 0
-  }
+function utcMonthStart(value: Date) {
+  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), 1))
+}
 
-  const normalizedSource = normalizeCurrencyOrDefault(sourceCurrency, baseCurrency)
-  return amount * (ratesToBase[normalizedSource] ?? 1)
+function monthKey(value: Date) {
+  return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}`
 }
 
 function resolveReportInterval(startDate: Date, endDate: Date, requested: ReportInterval | undefined) {
@@ -83,12 +63,12 @@ function resolveReportInterval(startDate: Date, endDate: Date, requested: Report
     return requested
   }
 
-  const isSameMonth = startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth()
+  const isSameMonth = startDate.getUTCFullYear() === endDate.getUTCFullYear() && startDate.getUTCMonth() === endDate.getUTCMonth()
   if (isSameMonth) {
     return "Day" as const
   }
 
-  const monthSpan = (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth()
+  const monthSpan = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + endDate.getUTCMonth() - startDate.getUTCMonth()
   if (monthSpan > 3) {
     return "Month" as const
   }
@@ -106,12 +86,12 @@ function resolvePortfolioInterval(startDate: Date, endDate: Date, requested: Rep
     return requested
   }
 
-  const isSameMonth = startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth()
+  const isSameMonth = startDate.getUTCFullYear() === endDate.getUTCFullYear() && startDate.getUTCMonth() === endDate.getUTCMonth()
   if (isSameMonth) {
     return "Day" as const
   }
 
-  const monthSpan = (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth()
+  const monthSpan = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + endDate.getUTCMonth() - startDate.getUTCMonth()
   if (monthSpan > 6) {
     return "Month" as const
   }
@@ -132,11 +112,11 @@ function buildBuckets(startDate: Date, endDate: Date, interval: ReportInterval):
   const buckets: ReportBucketResponse[] = []
 
   if (interval === "Day") {
-    const singleMonth = startDate.getFullYear() === endDate.getFullYear() && startDate.getMonth() === endDate.getMonth()
+    const singleMonth = startDate.getUTCFullYear() === endDate.getUTCFullYear() && startDate.getUTCMonth() === endDate.getUTCMonth()
 
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)) {
+    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 1)) {
       const key = cursor.toISOString().slice(0, 10)
-      const label = singleMonth ? String(cursor.getDate()) : cursor.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      const label = singleMonth ? String(cursor.getUTCDate()) : cursor.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 
       buckets.push({ key, label })
     }
@@ -145,12 +125,13 @@ function buildBuckets(startDate: Date, endDate: Date, interval: ReportInterval):
   }
 
   if (interval === "Week") {
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 7)) {
+    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 7)) {
       buckets.push({
         key: cursor.toISOString().slice(0, 10),
         label: cursor.toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
+          timeZone: "UTC",
         }),
       })
     }
@@ -158,20 +139,21 @@ function buildBuckets(startDate: Date, endDate: Date, interval: ReportInterval):
     return buckets
   }
 
-  let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
-  const lastMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
-  const showYear = cursor.getFullYear() !== lastMonth.getFullYear()
+  let cursor = utcMonthStart(startDate)
+  const lastMonth = utcMonthStart(endDate)
+  const showYear = cursor.getUTCFullYear() !== lastMonth.getUTCFullYear()
 
   while (cursor <= lastMonth) {
     buckets.push({
-      key: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`,
+      key: monthKey(cursor),
       label: cursor.toLocaleDateString("en-US", {
         month: "short",
         year: showYear ? "2-digit" : undefined,
+        timeZone: "UTC",
       }),
     })
 
-    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1))
   }
 
   return buckets
@@ -192,13 +174,14 @@ function buildPortfolioBuckets(startDate: Date, endDate: Date, interval: ReportI
   const buckets: Bucket[] = []
 
   if (interval === "Day") {
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1)) {
+    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 1)) {
       buckets.push({
         key: cursor.toISOString().slice(0, 10),
         label: cursor.toLocaleDateString("en-US", {
           day: "numeric",
           month: "short",
           year: "numeric",
+          timeZone: "UTC",
         }),
         start: cursor,
         end: endOfDate(cursor),
@@ -209,16 +192,15 @@ function buildPortfolioBuckets(startDate: Date, endDate: Date, interval: ReportI
   }
 
   if (interval === "Week") {
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 7)) {
-      const bucketEnd = new Date(
-        Math.min(endOfDate(new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 6)).getTime(), endOfDate(endDate).getTime())
-      )
+    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 7)) {
+      const bucketEnd = new Date(Math.min(endOfDate(addUtcDays(cursor, 6)).getTime(), endOfDate(endDate).getTime()))
       buckets.push({
         key: bucketEnd.toISOString().slice(0, 10),
         label: bucketEnd.toLocaleDateString("en-US", {
           day: "numeric",
           month: "short",
           year: "numeric",
+          timeZone: "UTC",
         }),
         start: cursor,
         end: bucketEnd,
@@ -228,24 +210,25 @@ function buildPortfolioBuckets(startDate: Date, endDate: Date, interval: ReportI
     return buckets
   }
 
-  let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
-  const lastMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
+  let cursor = utcMonthStart(startDate)
+  const lastMonth = utcMonthStart(endDate)
 
   while (cursor <= lastMonth) {
-    const rawMonthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0)
+    const rawMonthEnd = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0))
     const monthEnd = rawMonthEnd > asDateOnly(endDate) ? asDateOnly(endDate) : rawMonthEnd
 
     buckets.push({
-      key: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`,
+      key: monthKey(cursor),
       label: cursor.toLocaleDateString("en-US", {
         month: "short",
         year: "numeric",
+        timeZone: "UTC",
       }),
       start: cursor,
       end: endOfDate(monthEnd),
     })
 
-    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1))
   }
 
   return buckets
@@ -263,10 +246,10 @@ function resolveBucketKey(startDate: Date, transactionDate: Date, interval: Repo
   if (interval === "Week") {
     const dayOffset = Math.floor((asDateOnly(transactionDate).getTime() - asDateOnly(startDate).getTime()) / 86_400_000)
     const weekOffset = Math.floor(dayOffset / 7) * 7
-    return new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + weekOffset).toISOString().slice(0, 10)
+    return addUtcDays(startDate, weekOffset).toISOString().slice(0, 10)
   }
 
-  return `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, "0")}`
+  return monthKey(transactionDate)
 }
 
 function getIncomeAmount(type: TransactionType, amount: number) {
@@ -331,18 +314,15 @@ async function loadReportContext() {
   const user = await requireUser()
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
   const fx = await getRatesToBase(baseCurrency)
-  const accountRows = await db.query.accounts.findMany({
-    where: eq(accounts.userId, user.id),
-  })
-  const accountCurrencyById = new Map(accountRows.map((account) => [account.id, account.currency]))
+  const accountCurrencyById = await loadAccountCurrencyMap(user.id)
 
-  return { user, baseCurrency, fx, accountRows, accountCurrencyById }
+  return { user, baseCurrency, fx, accountCurrencyById }
 }
 
-export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowSeriesData["query"]): Promise<CashflowSeriesReportResponse> {
+export async function getCashflowSeriesReportData(query?: CashflowSeriesReportQuery): Promise<CashflowSeriesReportResponse> {
   const { user, baseCurrency, fx, accountCurrencyById } = await loadReportContext()
-  const startDateFilter = query?.StartDate ? asDateOnly(parseDate(query.StartDate, "StartDate")) : null
-  const endDateFilter = query?.EndDate ? asDateOnly(parseDate(query.EndDate, "EndDate")) : null
+  const startDateFilter = query?.StartDate ? startOfDay(query.StartDate) : null
+  const endDateFilter = query?.EndDate ? endOfDay(query.EndDate) : null
 
   if (startDateFilter && endDateFilter && startDateFilter > endDateFilter) {
     throw new Error("StartDate cannot be after EndDate.")
@@ -360,7 +340,7 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
       return false
     }
 
-    if (endDateFilter && date > endOfDate(endDateFilter)) {
+    if (endDateFilter && date > endDateFilter) {
       return false
     }
 
@@ -368,7 +348,7 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
   })
 
   let startDate = startDateFilter
-  let endDate = endDateFilter
+  let endDate = endDateFilter ? asDateOnly(endDateFilter) : null
 
   if (!startDate && currentTransactions.length > 0) {
     startDate = asDateOnly(currentTransactions[0]!.date)
@@ -388,7 +368,7 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
   let totalSpending = 0
 
   for (const transaction of currentTransactions) {
-    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
     const incomeAmount = getIncomeAmount(transaction.type as TransactionType, transaction.amount)
     const spendingAmount = getSpendingAmount(transaction.type as TransactionType, transaction.amount, transaction.isRefund)
 
@@ -396,8 +376,8 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
       continue
     }
 
-    const convertedIncome = convertAmount(incomeAmount, currency, baseCurrency, fx.ratesToBase)
-    const convertedSpending = convertAmount(spendingAmount, currency, baseCurrency, fx.ratesToBase)
+    const convertedIncome = convertAmountToBase(incomeAmount, currency, baseCurrency, fx.ratesToBase)
+    const convertedSpending = convertAmountToBase(spendingAmount, currency, baseCurrency, fx.ratesToBase)
     const bucketKey = resolveBucketKey(startDate, transaction.date, interval)
     const bucket = bucketTotals.get(bucketKey) ?? { income: 0, spending: 0 }
 
@@ -423,12 +403,12 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
   })
 
   const dayCount = Math.max(1, Math.floor((asDateOnly(endDate).getTime() - asDateOnly(startDate).getTime()) / 86_400_000) + 1)
-  const previousRangeEnd = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() - 1)
+  const previousRangeEnd = addUtcDays(startDate, -1)
   const today = asDateOnly(new Date())
   const elapsedEnd = endDate < today ? endDate : today
   const elapsedDayCount = Math.max(1, Math.min(dayCount, Math.floor((elapsedEnd.getTime() - startDate.getTime()) / 86_400_000) + 1))
-  const previousTotalStart = new Date(previousRangeEnd.getFullYear(), previousRangeEnd.getMonth(), previousRangeEnd.getDate() - (elapsedDayCount - 1))
-  const previousFullStart = new Date(previousRangeEnd.getFullYear(), previousRangeEnd.getMonth(), previousRangeEnd.getDate() - (dayCount - 1))
+  const previousTotalStart = addUtcDays(previousRangeEnd, -(elapsedDayCount - 1))
+  const previousFullStart = addUtcDays(previousRangeEnd, -(dayCount - 1))
   const previousEndOfDay = endOfDate(previousRangeEnd)
 
   let previousFullIncome = 0
@@ -445,11 +425,11 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
       continue
     }
 
-    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
     const incomeAmount = getIncomeAmount(transaction.type as TransactionType, transaction.amount)
     const spendingAmount = getSpendingAmount(transaction.type as TransactionType, transaction.amount, transaction.isRefund)
-    const convertedIncome = convertAmount(incomeAmount, currency, baseCurrency, fx.ratesToBase)
-    const convertedSpending = convertAmount(spendingAmount, currency, baseCurrency, fx.ratesToBase)
+    const convertedIncome = convertAmountToBase(incomeAmount, currency, baseCurrency, fx.ratesToBase)
+    const convertedSpending = convertAmountToBase(spendingAmount, currency, baseCurrency, fx.ratesToBase)
 
     previousFullIncome += convertedIncome
     previousFullSpending += convertedSpending
@@ -519,11 +499,11 @@ export async function getCashflowSeriesReportData(query?: GetApiReportsCashflowS
   }
 }
 
-export async function getCategorySeriesReportData(query?: GetApiReportsCategorySeriesData["query"]): Promise<CategorySeriesReportResponse> {
+export async function getCategorySeriesReportData(query?: CategorySeriesReportQuery): Promise<CategorySeriesReportResponse> {
   const { user, baseCurrency, fx, accountCurrencyById } = await loadReportContext()
   const type = query?.Type ?? "Expense"
-  const startDateFilter = query?.StartDate ? asDateOnly(parseDate(query.StartDate, "StartDate")) : null
-  const endDateFilter = query?.EndDate ? asDateOnly(parseDate(query.EndDate, "EndDate")) : null
+  const startDateFilter = query?.StartDate ? startOfDay(query.StartDate) : null
+  const endDateFilter = query?.EndDate ? endOfDay(query.EndDate) : null
   const tripId = query?.TripId ?? null
   const groupTripsAsCategory = type === "Expense" && Boolean(query?.GroupTripsAsCategory)
 
@@ -549,7 +529,7 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
       return false
     }
 
-    if (endDateFilter && transaction.date > endOfDate(endDateFilter)) {
+    if (endDateFilter && transaction.date > endDateFilter) {
       return false
     }
 
@@ -565,7 +545,7 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
   })
 
   let startDate = startDateFilter
-  let endDate = endDateFilter
+  let endDate = endDateFilter ? asDateOnly(endDateFilter) : null
 
   if (!startDate && filteredTransactions.length > 0) {
     startDate = asDateOnly(filteredTransactions[0]!.date)
@@ -592,8 +572,8 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
       continue
     }
 
-    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
-    const amount = convertAmount(signedAmount, currency, baseCurrency, fx.ratesToBase)
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
+    const amount = convertAmountToBase(signedAmount, currency, baseCurrency, fx.ratesToBase)
     const categoryId =
       groupTripsAsCategory && transaction.tripId
         ? `trip:${transaction.tripId}`
@@ -668,12 +648,12 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
   const dayCount = Math.max(1, Math.floor((asDateOnly(endDate).getTime() - asDateOnly(startDate).getTime()) / 86_400_000) + 1)
   const weekCount = Math.max(1, dayCount / 7)
 
-  const previousRangeEnd = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() - 1)
+  const previousRangeEnd = addUtcDays(startDate, -1)
   const today = asDateOnly(new Date())
   const elapsedEnd = endDate < today ? endDate : today
   const elapsedDayCount = Math.max(1, Math.min(dayCount, Math.floor((elapsedEnd.getTime() - startDate.getTime()) / 86_400_000) + 1))
-  const previousTotalStart = new Date(previousRangeEnd.getFullYear(), previousRangeEnd.getMonth(), previousRangeEnd.getDate() - (elapsedDayCount - 1))
-  const previousFullStart = new Date(previousRangeEnd.getFullYear(), previousRangeEnd.getMonth(), previousRangeEnd.getDate() - (dayCount - 1))
+  const previousTotalStart = addUtcDays(previousRangeEnd, -(elapsedDayCount - 1))
+  const previousFullStart = addUtcDays(previousRangeEnd, -(dayCount - 1))
   const previousEndOfDay = endOfDate(previousRangeEnd)
 
   const previousTransactions = allTransactions.filter((transaction) => {
@@ -690,9 +670,9 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
 
   const previousFullTotal = roundMoney(
     previousTransactions.reduce((sum, transaction) => {
-      const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
+      const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
       const signedAmount = getSignedAmount(type, transaction.type as TransactionType, transaction.amount, transaction.isRefund)
-      return sum + convertAmount(signedAmount, currency, baseCurrency, fx.ratesToBase)
+      return sum + convertAmountToBase(signedAmount, currency, baseCurrency, fx.ratesToBase)
     }, 0)
   )
 
@@ -702,9 +682,9 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
         return sum
       }
 
-      const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
+      const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
       const signedAmount = getSignedAmount(type, transaction.type as TransactionType, transaction.amount, transaction.isRefund)
-      return sum + convertAmount(signedAmount, currency, baseCurrency, fx.ratesToBase)
+      return sum + convertAmountToBase(signedAmount, currency, baseCurrency, fx.ratesToBase)
     }, 0)
   )
 
@@ -730,27 +710,38 @@ export async function getCategorySeriesReportData(query?: GetApiReportsCategoryS
   }
 }
 
+// Only adjusts accounts already present in the map (the selected accounts). Transfers can
+// reference an unselected endpoint — creating an entry for it here would leak a phantom
+// balance into totalBalance and the response payload.
+function applyRollbackDelta(accountBalances: Map<string, number>, accountId: string, delta: number) {
+  const current = accountBalances.get(accountId)
+
+  if (current !== undefined) {
+    accountBalances.set(accountId, current + delta)
+  }
+}
+
 function rollbackBalanceDelta(accountBalances: Map<string, number>, transaction: ReportTransaction) {
   if (transaction.type === "Expense") {
-    accountBalances.set(transaction.accountId, (accountBalances.get(transaction.accountId) ?? 0) + transaction.amount)
+    applyRollbackDelta(accountBalances, transaction.accountId, transaction.amount)
     return
   }
 
   if (transaction.type === "Income" || transaction.type === "Refund") {
-    accountBalances.set(transaction.accountId, (accountBalances.get(transaction.accountId) ?? 0) - transaction.amount)
+    applyRollbackDelta(accountBalances, transaction.accountId, -transaction.amount)
     return
   }
 
   if (transaction.type === "Transfer") {
-    accountBalances.set(transaction.accountId, (accountBalances.get(transaction.accountId) ?? 0) + transaction.amount)
+    applyRollbackDelta(accountBalances, transaction.accountId, transaction.amount)
 
     if (transaction.targetAccountId) {
-      accountBalances.set(transaction.targetAccountId, (accountBalances.get(transaction.targetAccountId) ?? 0) - (transaction.amount2 ?? transaction.amount))
+      applyRollbackDelta(accountBalances, transaction.targetAccountId, -(transaction.amount2 ?? transaction.amount))
     }
   }
 }
 
-export async function getPortfolioBalanceSeriesReportData(query?: GetApiReportsPortfolioBalanceSeriesData["query"]): Promise<PortfolioBalanceSeriesResponse> {
+export async function getPortfolioBalanceSeriesReportData(query?: PortfolioBalanceSeriesQuery): Promise<PortfolioBalanceSeriesResponse> {
   const user = await requireUser()
   const baseCurrency = normalizeCurrencyOrDefault(query?.BaseCurrency, normalizeCurrencyOrDefault(user.baseCurrency, "USD"))
 
@@ -796,12 +787,9 @@ export async function getPortfolioBalanceSeriesReportData(query?: GetApiReportsP
     (transaction) => accountIdSet.has(transaction.accountId) || (transaction.targetAccountId ? accountIdSet.has(transaction.targetAccountId) : false)
   )
 
-  const endDateFilter = query?.EndDate ? asDateOnly(parseDate(query.EndDate, "EndDate")) : asDateOnly(new Date())
-  const startDateFilter = query?.StartDate
-    ? asDateOnly(parseDate(query.StartDate, "StartDate"))
-    : relevantTransactions[0]
-      ? asDateOnly(relevantTransactions[0].date)
-      : endDateFilter
+  const endBoundary = query?.EndDate ? endOfDay(query.EndDate) : endOfDate(new Date())
+  const endDateFilter = asDateOnly(endBoundary)
+  const startDateFilter = query?.StartDate ? startOfDay(query.StartDate) : relevantTransactions[0] ? asDateOnly(relevantTransactions[0].date) : endDateFilter
 
   if (startDateFilter > endDateFilter) {
     throw new Error("StartDate cannot be after EndDate.")
@@ -810,10 +798,10 @@ export async function getPortfolioBalanceSeriesReportData(query?: GetApiReportsP
   const interval = resolvePortfolioInterval(startDateFilter, endDateFilter, query?.Interval)
   const buckets = buildPortfolioBuckets(startDateFilter, endDateFilter, interval)
   const transactionsAfterEnd = relevantTransactions
-    .filter((transaction) => transaction.date > endOfDate(endDateFilter))
+    .filter((transaction) => transaction.date > endBoundary)
     .sort((left, right) => right.date.getTime() - left.date.getTime())
   const transactionsInRange = relevantTransactions
-    .filter((transaction) => transaction.date >= startDateFilter && transaction.date <= endOfDate(endDateFilter))
+    .filter((transaction) => transaction.date >= startDateFilter && transaction.date <= endBoundary)
     .sort((left, right) => left.date.getTime() - right.date.getTime())
 
   const accountBalances = new Map(selectedAccounts.map((account) => [account.id, account.currentBalance]))
@@ -937,7 +925,7 @@ function aggregateComparisonCashflow(
   interval: ReportInterval,
   baseCurrency: string,
   ratesToBase: Record<string, number>,
-  accountCurrencyById: Map<string, string>
+  accountCurrencyById: Map<string, string | null>
 ): ComparisonAggregate {
   const buckets = buildBuckets(startDate, endDate, interval)
   const bucketTotals = new Map<string, { income: number; spending: number }>()
@@ -945,9 +933,9 @@ function aggregateComparisonCashflow(
   let spending = 0
 
   for (const transaction of rows) {
-    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
-    const incomeAmount = convertAmount(getIncomeAmount(transaction.type as TransactionType, transaction.amount), currency, baseCurrency, ratesToBase)
-    const spendingAmount = convertAmount(
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
+    const incomeAmount = convertAmountToBase(getIncomeAmount(transaction.type as TransactionType, transaction.amount), currency, baseCurrency, ratesToBase)
+    const spendingAmount = convertAmountToBase(
       getSpendingAmount(transaction.type as TransactionType, transaction.amount, transaction.isRefund),
       currency,
       baseCurrency,
@@ -994,7 +982,7 @@ function aggregateComparisonCategoryTotals(
   type: CategoryType,
   baseCurrency: string,
   ratesToBase: Record<string, number>,
-  accountCurrencyById: Map<string, string>,
+  accountCurrencyById: Map<string, string | null>,
   categoryById: Map<string, ReportCategory>
 ): Map<string, number> {
   const totals = new Map<string, number>()
@@ -1006,8 +994,8 @@ function aggregateComparisonCategoryTotals(
       continue
     }
 
-    const currency = transaction.currency ?? accountCurrencyById.get(transaction.accountId) ?? baseCurrency
-    const amount = convertAmount(signedAmount, currency, baseCurrency, ratesToBase)
+    const currency = resolveTransactionCurrency(transaction, accountCurrencyById, baseCurrency)
+    const amount = convertAmountToBase(signedAmount, currency, baseCurrency, ratesToBase)
     const categoryId = resolveTopLevelCategoryId(transaction.categoryId, transaction.subCategoryId, categoryById)
     totals.set(categoryId, (totals.get(categoryId) ?? 0) + amount)
   }
@@ -1015,20 +1003,20 @@ function aggregateComparisonCategoryTotals(
   return totals
 }
 
-export async function getComparisonReportData(query?: GetApiReportsComparisonData["query"]): Promise<ComparisonReportResponse> {
+export async function getComparisonReportData(query?: ComparisonReportQuery): Promise<ComparisonReportResponse> {
   const { user, baseCurrency, fx, accountCurrencyById } = await loadReportContext()
   const type = query?.Type ?? "Expense"
 
   const today = asDateOnly(new Date())
-  const defaultAStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  const defaultAEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-  const defaultBStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-  const defaultBEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+  const defaultAStart = utcMonthStart(today)
+  const defaultAEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0))
+  const defaultBStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1))
+  const defaultBEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0))
 
-  const aStart = query?.PeriodAStart ? asDateOnly(parseDate(query.PeriodAStart, "PeriodAStart")) : defaultAStart
-  const aEnd = query?.PeriodAEnd ? asDateOnly(parseDate(query.PeriodAEnd, "PeriodAEnd")) : defaultAEnd
-  const bStart = query?.PeriodBStart ? asDateOnly(parseDate(query.PeriodBStart, "PeriodBStart")) : defaultBStart
-  const bEnd = query?.PeriodBEnd ? asDateOnly(parseDate(query.PeriodBEnd, "PeriodBEnd")) : defaultBEnd
+  const aStart = query?.PeriodAStart ? asDateOnly(parseDateInput(query.PeriodAStart, "PeriodAStart")) : defaultAStart
+  const aEnd = query?.PeriodAEnd ? asDateOnly(parseDateInput(query.PeriodAEnd, "PeriodAEnd")) : defaultAEnd
+  const bStart = query?.PeriodBStart ? asDateOnly(parseDateInput(query.PeriodBStart, "PeriodBStart")) : defaultBStart
+  const bEnd = query?.PeriodBEnd ? asDateOnly(parseDateInput(query.PeriodBEnd, "PeriodBEnd")) : defaultBEnd
 
   if (aStart > aEnd) {
     throw new Error("PeriodAStart cannot be after PeriodAEnd.")

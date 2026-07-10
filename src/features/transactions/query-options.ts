@@ -1,16 +1,10 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query"
 
-import { getTransaction, getTransactions, searchTransactions, searchTransactionsFacets, searchTransactionsSummary } from "./server/functions"
+import { getTransaction, searchTransactions, searchTransactionsFacets, searchTransactionsSummary } from "./server/functions"
 
 import { queryKeys } from "@/features/shared/query-keys"
 
-import type { GetApiTransactionsSearchData, TransactionSearchFacets, TransactionSearchSummary } from "./types"
-
-export const transactionsQueryOptions = (page = 1, pageSize = 50) =>
-  queryOptions({
-    queryKey: queryKeys.transactions(page, pageSize),
-    queryFn: () => getTransactions({ data: { page, pageSize } }),
-  })
+import type { TransactionSearchFacets, TransactionSearchQuery, TransactionSearchSummary } from "./types"
 
 export const transactionQueryOptions = (id: string) =>
   queryOptions({
@@ -18,21 +12,21 @@ export const transactionQueryOptions = (id: string) =>
     queryFn: () => getTransaction({ data: { id } }),
   })
 
-export const transactionsSearchQueryOptions = (query?: GetApiTransactionsSearchData["query"]) =>
+export const transactionsSearchQueryOptions = (query?: TransactionSearchQuery) =>
   queryOptions({
     queryKey: queryKeys.transactionsSearch(query),
     queryFn: () => searchTransactions({ data: query }),
     placeholderData: keepPreviousData,
   })
 
-export const transactionsSummaryQueryOptions = (query?: GetApiTransactionsSearchData["query"]) =>
+export const transactionsSummaryQueryOptions = (query?: TransactionSearchQuery) =>
   queryOptions<TransactionSearchSummary>({
     queryKey: queryKeys.transactionsSummary(query),
     queryFn: () => searchTransactionsSummary({ data: query }),
     placeholderData: keepPreviousData,
   })
 
-export const transactionsFacetsQueryOptions = (query?: GetApiTransactionsSearchData["query"]) =>
+export const transactionsFacetsQueryOptions = (query?: TransactionSearchQuery) =>
   queryOptions<TransactionSearchFacets>({
     queryKey: queryKeys.transactionsFacets(query),
     queryFn: () => searchTransactionsFacets({ data: query }),

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { categoriesQueryOptions } from "./query-options"
 import { createCategory, deleteCategory, updateCategory } from "./server/functions"
 
-import { queryKeys } from "@/features/shared/query-keys"
+import { categoryMutationInvalidations, invalidateQueries } from "@/features/shared/cache-invalidations"
 
 import type { CategoryCreateRequest, CategoryUpdateRequest } from "./types"
 
@@ -16,7 +16,7 @@ export function useCreateCategory() {
 
   return useMutation({
     mutationFn: (request: CategoryCreateRequest) => createCategory({ data: request }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories() }),
+    onSuccess: () => invalidateQueries(queryClient, categoryMutationInvalidations),
   })
 }
 
@@ -25,7 +25,7 @@ export function useUpdateCategory() {
 
   return useMutation({
     mutationFn: ({ id, request }: { id: string; request: CategoryUpdateRequest }) => updateCategory({ data: { id, request } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories() }),
+    onSuccess: () => invalidateQueries(queryClient, categoryMutationInvalidations),
   })
 }
 
@@ -34,6 +34,6 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: (id: string) => deleteCategory({ data: { id } }).then(() => undefined),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.categories() }),
+    onSuccess: () => invalidateQueries(queryClient, categoryMutationInvalidations),
   })
 }

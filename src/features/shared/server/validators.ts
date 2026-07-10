@@ -2,7 +2,8 @@ import { z } from "zod"
 
 import { accountTypes, categoryTypes, transactionTypes } from "@/lib/db/schema"
 
-const numberLike = z.union([z.number(), z.string()]).nullable().optional()
+// Coerce so string inputs (query params, form payloads) parse into the numeric request types.
+const numberLike = z.coerce.number().nullable().optional()
 
 export const accountRequestSchema = z.object({
   name: z.string(),
@@ -11,7 +12,7 @@ export const accountRequestSchema = z.object({
   color: z.string(),
   icon: z.string(),
   type: z.enum(accountTypes),
-  currentBalance: z.union([z.number(), z.string()]),
+  currentBalance: z.coerce.number(),
 })
 
 export const accountUpdateSchema = z.object({
@@ -22,7 +23,7 @@ export const accountUpdateSchema = z.object({
     color: z.string(),
     icon: z.string(),
     type: z.enum(accountTypes),
-    currentBalance: z.union([z.number(), z.string()]),
+    currentBalance: z.coerce.number(),
   }),
 })
 
@@ -59,10 +60,10 @@ export const tripUpdateSchema = z.object({
 
 export const transactionItemSchema = z.object({
   name: z.string(),
-  quantity: z.union([z.number(), z.string()]),
+  quantity: z.coerce.number(),
   unit: z.string().nullable(),
-  unitPrice: z.union([z.number(), z.string()]),
-  promotionAmount: z.union([z.number(), z.string()]),
+  unitPrice: z.coerce.number(),
+  promotionAmount: z.coerce.number(),
   categoryId: z.string().nullable(),
   subCategoryId: z.string().nullable(),
 })
@@ -70,7 +71,7 @@ export const transactionItemSchema = z.object({
 export const transactionRequestSchema = z.object({
   date: z.string(),
   type: z.enum(transactionTypes),
-  amount: z.union([z.number(), z.string()]),
+  amount: z.coerce.number(),
   accountId: z.string(),
   tripId: z.string().nullable(),
   categoryId: z.string().nullable(),
@@ -100,8 +101,8 @@ export const searchTransactionsSchema = z
     CategoryIds: z.array(z.string()).optional(),
     Types: z.array(z.enum(transactionTypes)).optional(),
     SearchText: z.string().optional(),
-    MinAmount: z.union([z.number(), z.string()]).optional(),
-    MaxAmount: z.union([z.number(), z.string()]).optional(),
+    MinAmount: z.coerce.number().optional(),
+    MaxAmount: z.coerce.number().optional(),
     Page: z.number().optional(),
     PageSize: z.number().optional(),
   })

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, or } from "drizzle-orm"
 
 import { normalizeCurrencyOrDefault } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
@@ -16,14 +16,7 @@ import {
   normalizeSupportedCurrency,
 } from "@/features/shared/server/normalizers.server"
 
-import type {
-  AccountListItemResponse,
-  CreateAccountRequest,
-  CreateAccountResponse,
-  GetAccountResponse,
-  UpdateAccountRequest,
-  UpdateAccountResponse,
-} from "@/features/shared/types"
+import type { AccountListItemResponse, CreateAccountRequest, CreateAccountResponse, UpdateAccountRequest, UpdateAccountResponse } from "@/features/shared/types"
 
 export async function listAccountsData(): Promise<AccountListItemResponse[]> {
   const user = await requireUser()
@@ -53,22 +46,6 @@ export async function listAccountsData(): Promise<AccountListItemResponse[]> {
       return left.name.localeCompare(right.name)
     })
     .map(({ sortBalance: _ignoredSortBalance, ...account }) => account)
-}
-
-export async function getAccountData(accountId: string): Promise<GetAccountResponse> {
-  const user = await requireUser()
-  const account = await requireAccount(user.id, accountId)
-
-  return {
-    id: account.id,
-    name: account.name,
-    description: account.description,
-    currency: account.currency,
-    color: account.color,
-    icon: account.icon,
-    type: account.type,
-    currentBalance: account.currentBalance,
-  }
 }
 
 export async function createAccountData(request: CreateAccountRequest): Promise<CreateAccountResponse> {
@@ -149,8 +126,9 @@ export async function deleteAccountData(accountId: string) {
   const user = await requireUser()
   await requireAccount(user.id, accountId)
 
+  // Covers transfer targets too — otherwise the FK RESTRICT surfaces as a raw SQLite error.
   const hasTransactions = await db.query.transactions.findFirst({
-    where: and(eq(transactions.userId, user.id), eq(transactions.accountId, accountId)),
+    where: and(eq(transactions.userId, user.id), or(eq(transactions.accountId, accountId), eq(transactions.targetAccountId, accountId))),
     columns: { id: true },
   })
 

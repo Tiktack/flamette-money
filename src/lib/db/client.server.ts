@@ -61,8 +61,15 @@ export function getDb() {
   return database
 }
 
-export async function runWithDb<T>(callback: (database: AppDatabase) => Promise<T>): Promise<T> {
-  return callback(getDb())
+export type AppTransaction = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0]
+
+/**
+ * Runs the callback inside a single SQLite transaction so multi-write operations are atomic.
+ * better-sqlite3 transactions are synchronous — use the sync query methods (.run()/.all()/.get())
+ * inside the callback; async work (validation, lookups) belongs before or after it.
+ */
+export function runDbTransaction<T>(callback: (tx: AppTransaction) => T): T {
+  return getDb().transaction(callback)
 }
 
 /** Lightweight liveness check used by the /healthz endpoint. Throws if the DB is unreachable. */

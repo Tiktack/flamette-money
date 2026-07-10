@@ -1,4 +1,7 @@
+import * as React from "react"
 import { create } from "zustand"
+
+import { formatDateInput } from "@/lib/finance"
 
 export type DateRangePreset = "month" | "year" | "all" | "custom"
 
@@ -16,13 +19,6 @@ export type SharedDateRangeState = {
   setCustomStartDate: (value: string) => void
   setCustomEndDate: (value: string) => void
   shiftCustomRange: (delta: number) => void
-}
-
-const formatDateInput = (value: Date) => {
-  const year = value.getFullYear()
-  const month = String(value.getMonth() + 1).padStart(2, "0")
-  const day = String(value.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
 }
 
 const formatMonthAnchor = (value: Date) => {
@@ -192,4 +188,24 @@ export function resolveSharedDateRange(state: SharedDateRangeState): {
   }
 
   return { start: null, end: null }
+}
+
+/** The shared date-range toolbar state resolved into API query params. */
+export function useSharedDateRangeQuery(): { StartDate?: string; EndDate?: string } {
+  const dateFilters = useSharedDateRangeFilters()
+
+  return React.useMemo(() => {
+    const resolved = resolveSharedDateRange(dateFilters)
+    const query: { StartDate?: string; EndDate?: string } = {}
+
+    if (resolved.start) {
+      query.StartDate = toApiDateString(resolved.start)
+    }
+
+    if (resolved.end) {
+      query.EndDate = toApiDateString(resolved.end)
+    }
+
+    return query
+  }, [dateFilters])
 }

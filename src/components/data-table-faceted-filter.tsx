@@ -1,5 +1,4 @@
 import * as React from "react"
-import type { ComponentProps } from "react"
 
 import { Tick02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -11,9 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
+import type { HugeIcon } from "@/lib/icons"
 import { cn } from "@/lib/utils"
-
-type HugeIcon = ComponentProps<typeof HugeiconsIcon>["icon"]
 
 export type FacetedFilterOption = {
   label: string
@@ -196,6 +194,27 @@ export function DataTableRangeFilter({
   const isFiltered = currentValue[0] > min || currentValue[1] < clampedMax
   const rangeLabel = `${formatValue(currentValue[0])} - ${formatValue(currentValue[1])}`
 
+  // The number inputs hold a free-form draft while typing and only clamp on commit —
+  // clamping in onChange makes values like "50" untypeable when min is 10.
+  const [draft, setDraft] = React.useState<{ min: string; max: string } | null>(null)
+
+  const commitDraft = () => {
+    if (!draft) {
+      return
+    }
+
+    const nextMin = Number(draft.min)
+    const nextMax = Number(draft.max)
+    updateRange(Number.isNaN(nextMin) ? currentValue[0] : nextMin, Number.isNaN(nextMax) ? currentValue[1] : nextMax)
+    setDraft(null)
+  }
+
+  const commitOnEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      commitDraft()
+    }
+  }
+
   return (
     <Popover>
       <PopoverTrigger render={<Button variant="outline" size="sm" className="h-8 border-dashed bg-background" disabled={clampedMax <= min} />}>
@@ -236,14 +255,10 @@ export function DataTableRangeFilter({
                 min={min}
                 max={currentValue[1]}
                 step="0.01"
-                value={String(currentValue[0])}
-                onChange={(event) => {
-                  const nextValue = Number(event.target.value)
-
-                  if (!Number.isNaN(nextValue)) {
-                    updateRange(nextValue, currentValue[1])
-                  }
-                }}
+                value={draft?.min ?? String(currentValue[0])}
+                onChange={(event) => setDraft({ min: event.target.value, max: draft?.max ?? String(currentValue[1]) })}
+                onBlur={commitDraft}
+                onKeyDown={commitOnEnter}
                 className="h-8"
               />
             </div>
@@ -255,14 +270,10 @@ export function DataTableRangeFilter({
                 min={currentValue[0]}
                 max={clampedMax}
                 step="0.01"
-                value={String(currentValue[1])}
-                onChange={(event) => {
-                  const nextValue = Number(event.target.value)
-
-                  if (!Number.isNaN(nextValue)) {
-                    updateRange(currentValue[0], nextValue)
-                  }
-                }}
+                value={draft?.max ?? String(currentValue[1])}
+                onChange={(event) => setDraft({ min: draft?.min ?? String(currentValue[0]), max: event.target.value })}
+                onBlur={commitDraft}
+                onKeyDown={commitOnEnter}
                 className="h-8"
               />
             </div>

@@ -1,10 +1,12 @@
 import * as React from "react"
 
 import { createFileRoute, redirect, useRouter } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Clock01Icon, CommandIcon } from "@hugeicons/core-free-icons"
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,6 +16,7 @@ import { getAuthRedirect } from "@/lib/auth/auth-redirect"
 import { authClient } from "@/lib/auth/client"
 import { getAvailableSocialAuthProviders, getCurrentUserProfile, getSignupAllowed } from "@/lib/auth/functions"
 import { socialAuthProviderMeta, supportedSocialAuthProviders, type SocialAuthProvider } from "@/lib/auth/providers"
+import { queryKeys } from "@/features/shared/query-keys"
 
 type LastLoginMethod = "email" | SocialAuthProvider
 
@@ -32,7 +35,7 @@ function LastUsedIndicator({ label }: { label: string }) {
         render={
           <span
             aria-label={`Last signed in with ${label}`}
-            className="absolute top-0 right-0 z-10 flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary shadow-sm ring-2 ring-background transition-colors hover:bg-primary/15 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="absolute top-0 right-0 z-10 flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary shadow-sm ring-2 ring-background transition-colors hover:bg-primary/15 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
             tabIndex={0}
           >
             <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5" />
@@ -47,19 +50,22 @@ function LastUsedIndicator({ label }: { label: string }) {
 }
 
 export const Route = createFileRoute("/sign-in")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  head: () => ({ meta: [{ title: "Sign in — Flamette Money" }] }),
+  validateSearch: (search: Record<string, unknown>): { redirect?: string; error?: string } => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    // Better Auth sends OAuth failures back here as ?error=...; keep it so the page can surface it.
+    error: typeof search.error === "string" ? search.error : undefined,
   }),
   beforeLoad: async ({ search }) => {
     const user = await getCurrentUserProfile()
     if (user) {
-      throw redirect({ to: getAuthRedirect(search.redirect) as never })
+      throw redirect({ href: getAuthRedirect(search.redirect) })
     }
   },
-  loader: async () => ({
-    socialProviders: await getAvailableSocialAuthProviders(),
-    signupAllowed: await getSignupAllowed(),
-  }),
+  loader: async () => {
+    const [socialProviders, signupAllowed] = await Promise.all([getAvailableSocialAuthProviders(), getSignupAllowed()])
+    return { socialProviders, signupAllowed }
+  },
   component: SignInPage,
 })
 
@@ -130,6 +136,7 @@ function SignInPage() {
   const { socialProviders, signupAllowed } = Route.useLoaderData()
   const redirectTo = getAuthRedirect(search.redirect)
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [mode, setMode] = React.useState<"sign-in" | "sign-up">("sign-in")
   const [name, setName] = React.useState("")
   const [email, setEmail] = React.useState("")
@@ -164,6 +171,9 @@ function SignInPage() {
       return
     }
 
+    // The protected layout serves auth from this cache entry; drop the stale
+    // signed-out value so the next navigation refetches the fresh session.
+    queryClient.removeQueries({ queryKey: queryKeys.authMe() })
     setBusyAction(null)
     router.history.push(redirectTo)
   }
@@ -210,6 +220,13 @@ function SignInPage() {
         </CardHeader>
 
         <CardContent className="flex flex-col gap-4 pb-6">
+          {search.error ? (
+            <Alert variant="destructive">
+              <AlertTitle>Sign-in failed</AlertTitle>
+              <AlertDescription>We couldn&apos;t complete the sign-in with your provider. Please try again or use a different method.</AlertDescription>
+            </Alert>
+          ) : null}
+
           {socialProviders.length > 0 && (
             <>
               <div className="grid gap-2 sm:grid-cols-2">

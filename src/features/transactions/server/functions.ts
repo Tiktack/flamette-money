@@ -13,18 +13,6 @@ import {
   updateTransactionData,
 } from "./service.server"
 
-export const getTransactions = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) =>
-    z
-      .object({
-        page: z.number().optional(),
-        pageSize: z.number().optional(),
-      })
-      .optional()
-      .parse(data)
-  )
-  .handler(async ({ data }) => searchTransactionsData({ Page: data?.page, PageSize: data?.pageSize }))
-
 export const getTransaction = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
   .handler(async ({ data }) => getTransactionData(data.id))

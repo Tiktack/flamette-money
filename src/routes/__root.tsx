@@ -6,7 +6,6 @@ import { QueryClientProvider } from "@tanstack/react-query"
 
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Toaster } from "@/components/ui/sonner"
 import { themeStorageKey } from "@/lib/theme"
 import appCss from "@/styles.css?url"
 
@@ -14,7 +13,6 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
   head: () => ({
-    title: "Flamette Money",
     meta: [
       {
         charSet: "utf-8",
@@ -22,6 +20,9 @@ export const Route = createRootRouteWithContext<{
       {
         name: "viewport",
         content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "Flamette Money",
       },
     ],
     links: [
@@ -40,7 +41,6 @@ function RootApp() {
     <RootDocument>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster richColors position="top-right" />
           <Outlet />
         </TooltipProvider>
       </QueryClientProvider>

@@ -1,6 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeft01Icon, ArrowRight01Icon, Calendar03Icon } from "@hugeicons/core-free-icons"
-import { format, parseISO } from "date-fns"
+import { format } from "date-fns"
 import type { DateRange } from "react-day-picker"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { type CompareGranularity, type ComparePeriodsState, type MonthCompareMode, resolveComparePeriods, shiftMonthAnchor } from "@/lib/compare-periods"
+import {
+  type CompareGranularity,
+  type ComparePeriodsState,
+  type MonthCompareMode,
+  resolveComparePeriods,
+  shiftMonthAnchor,
+  toDateOrUndefined,
+} from "@/lib/compare-periods"
 
 const granularities: Array<{ label: string; value: CompareGranularity }> = [
   { label: "Month", value: "month" },
@@ -21,8 +28,6 @@ const monthCompareModes: Array<{ label: string; value: MonthCompareMode }> = [
   { label: "vs Previous month", value: "previousMonth" },
   { label: "vs Same month last year", value: "sameMonthLastYear" },
 ]
-
-const toDateOrUndefined = (value: string) => (value ? parseISO(value) : undefined)
 
 export function ComparePeriodToolbar({
   value,
@@ -107,6 +112,7 @@ export function ComparePeriodToolbar({
               </Button>
               <Select
                 value={value.monthCompareMode}
+                items={monthCompareModes}
                 onValueChange={(next) => onChange({ ...value, monthCompareMode: (next as MonthCompareMode) ?? "previousMonth" })}
               >
                 <SelectTrigger className="w-[230px]">

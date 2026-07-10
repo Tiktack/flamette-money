@@ -2,11 +2,12 @@ import * as React from "react"
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { type ColumnDef, type Table as TanstackTable } from "@tanstack/react-table"
-import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, TransactionIcon } from "@hugeicons/core-free-icons"
+import { Delete02Icon, Edit01Icon, MoreHorizontalCircle01Icon, PlusSignIcon, TransactionIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { DataTable } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
+import { CardSkeleton } from "@/components/page-skeletons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,22 +21,17 @@ import { accountIconOptions, getAccountIconDefinition, resolveAccountIconName } 
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useAppInfo } from "@/features/app/hooks"
 import { useAccounts, useCreateAccount, useDeleteAccount, useUpdateAccount } from "@/features/accounts/hooks"
-import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
+import { pageActionTypes, usePageAction } from "@/lib/page-actions"
+import { accountTypeMeta, accountTypeOptions } from "@/features/accounts/types"
 import type { AccountListItem, AccountType } from "@/features/accounts/types"
 import { formatCurrency, normalizeHexColor, toNumber } from "@/lib/finance"
 import { useTransactionsFilters } from "@/lib/state/transactionsFilters"
 
 export const Route = createFileRoute("/_protected/accounts")({
+  head: () => ({ meta: [{ title: "Accounts — Flamette Money" }] }),
   component: AccountsPage,
 })
 
-const accountTypeOptions: AccountType[] = ["Cash", "DebitCard", "CreditCard", "Savings"]
-const accountTypeMeta: Record<AccountType, { label: string }> = {
-  Cash: { label: "Cash" },
-  DebitCard: { label: "Debit card" },
-  CreditCard: { label: "Credit card" },
-  Savings: { label: "Savings" },
-}
 const fallbackCurrencies = ["USD", "EUR", "GBP", "PLN", "CAD"]
 
 type AccountFormState = {
@@ -71,24 +67,18 @@ function AccountsPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<AccountListItem | null>(null)
   const [createForm, setCreateForm] = React.useState<AccountFormState>(defaultAccountForm)
   const [editForm, setEditForm] = React.useState<AccountFormState>(defaultAccountForm)
+  // mutation.reset is a stable reference; destructured so the callbacks below stay stable too.
+  const { reset: resetCreateAccount } = createAccount
+  const { reset: resetUpdateAccount } = updateAccount
+  const { reset: resetDeleteAccount } = deleteAccount
 
   const openCreate = React.useCallback(() => {
     setCreateForm(defaultAccountForm)
+    resetCreateAccount()
     setCreateOpen(true)
-  }, [])
+  }, [resetCreateAccount])
 
-  React.useEffect(() => {
-    const handlePageAction = (event: Event) => {
-      const customEvent = event as CustomEvent<PageActionType>
-
-      if (customEvent.detail === pageActionTypes.createAccount) {
-        openCreate()
-      }
-    }
-
-    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
-    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
-  }, [openCreate])
+  usePageAction(pageActionTypes.createAccount, openCreate)
 
   const currencyOptions = React.useMemo(() => {
     const values = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? fallbackCurrencies
@@ -133,18 +123,30 @@ function AccountsPage() {
     }
   }
 
-  const openEdit = React.useCallback((account: AccountListItem) => {
-    setEditAccount(account)
-    setEditForm({
-      name: account.name,
-      description: account.description ?? "",
-      currency: account.currency,
-      color: normalizeHexColor(account.color),
-      icon: resolveAccountIconName(account.icon),
-      type: account.type,
-      currentBalance: toNumber(account.currentBalance),
-    })
-  }, [])
+  const openEdit = React.useCallback(
+    (account: AccountListItem) => {
+      resetUpdateAccount()
+      setEditAccount(account)
+      setEditForm({
+        name: account.name,
+        description: account.description ?? "",
+        currency: account.currency,
+        color: normalizeHexColor(account.color),
+        icon: resolveAccountIconName(account.icon),
+        type: account.type,
+        currentBalance: toNumber(account.currentBalance),
+      })
+    },
+    [resetUpdateAccount]
+  )
+
+  const openDelete = React.useCallback(
+    (account: AccountListItem) => {
+      resetDeleteAccount()
+      setDeleteTarget(account)
+    },
+    [resetDeleteAccount]
+  )
 
   const openTransactions = React.useCallback(
     async (accountId: string) => {
@@ -201,7 +203,7 @@ function AccountsPage() {
           const amount = toNumber(row.original.currentBalance)
 
           return (
-            <div className={amount < 0 ? "text-right font-medium text-destructive" : "text-right font-medium text-foreground"}>
+            <div className={amount < 0 ? "text-right font-medium text-destructive tabular-nums" : "text-right font-medium text-foreground tabular-nums"}>
               {formatCurrency(row.original.currentBalance, row.original.currency)}
             </div>
           )
@@ -232,7 +234,7 @@ function AccountsPage() {
                     <span>Show transactions</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(account)}>
+                  <DropdownMenuItem variant="destructive" onClick={() => openDelete(account)}>
                     <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="text-destructive" />
                     <span>Remove account</span>
                   </DropdownMenuItem>
@@ -243,20 +245,13 @@ function AccountsPage() {
         },
       },
     ],
-    [openEdit, openTransactions]
+    [openDelete, openEdit, openTransactions]
   )
 
   return (
     <div className="flex flex-col gap-6">
       {accountsQuery.isPending ? (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="h-9 w-[220px] animate-pulse rounded-lg bg-muted" />
-            <div className="h-9 w-[148px] animate-pulse rounded-lg bg-muted" />
-            <div className="h-9 w-[148px] animate-pulse rounded-lg bg-muted" />
-          </div>
-          <div className="h-[540px] animate-pulse rounded-[1.75rem] bg-muted" />
-        </div>
+        <CardSkeleton className="h-[540px]" />
       ) : accountsQuery.isError ? (
         <Alert variant="destructive">
           <AlertTitle>Unable to load accounts</AlertTitle>
@@ -267,7 +262,12 @@ function AccountsPage() {
           eyebrow="Accounts"
           title="No accounts yet"
           description="Create your first account to start recording balances, transfers, and transaction history."
-          action={<Button onClick={openCreate}>Create account</Button>}
+          action={
+            <Button onClick={openCreate}>
+              <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} />
+              Add account
+            </Button>
+          }
         />
       ) : (
         <DataTable
@@ -285,7 +285,10 @@ function AccountsPage() {
               <>
                 <Select
                   value={typeValue}
-                  items={[{ value: "all-types", label: "All types" }, ...accountTypeOptions.map((type) => ({ value: type, label: accountTypeMeta[type].label }))]}
+                  items={[
+                    { value: "all-types", label: "All types" },
+                    ...accountTypeOptions.map((type) => ({ value: type, label: accountTypeMeta[type].label })),
+                  ]}
                   onValueChange={(value) => table.getColumn("type")?.setFilterValue(value === "all-types" ? undefined : value)}
                 >
                   <SelectTrigger size="sm" className="w-[148px]">
@@ -472,7 +475,11 @@ function AccountDialog({
           </Field>
           <Field>
             <FieldLabel>Account type</FieldLabel>
-            <Select value={value.type} onValueChange={(next) => onChange((state) => ({ ...state, type: next as AccountType }))}>
+            <Select
+              value={value.type}
+              items={accountTypeOptions.map((type) => ({ value: type, label: accountTypeMeta[type].label }))}
+              onValueChange={(next) => onChange((state) => ({ ...state, type: next as AccountType }))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
@@ -480,7 +487,7 @@ function AccountDialog({
                 <SelectGroup>
                   {accountTypeOptions.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {accountTypeMeta[type].label}
                     </SelectItem>
                   ))}
                 </SelectGroup>

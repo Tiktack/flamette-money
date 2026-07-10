@@ -7,13 +7,18 @@ import { LazyTransactionEditorDialog } from "@/components/lazy-transaction-edito
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { getAuthRedirect } from "@/lib/auth/auth-redirect"
-import { PAGE_ACTION_EVENT, pageActionTypes, type PageActionType } from "@/lib/page-actions"
-import { getCurrentUserProfile } from "@/lib/auth/functions"
-import { authClient } from "@/lib/auth/client"
+import { pageActionTypes, usePageAction } from "@/lib/page-actions"
+import { currentUserQueryOptions } from "@/features/app/query-options"
+import { useLogout } from "@/features/app/hooks"
 
 export const Route = createFileRoute("/_protected")({
-  beforeLoad: async ({ location }) => {
-    const user = await getCurrentUserProfile()
+  beforeLoad: async ({ location, context }) => {
+    // Served from the query cache (60s staleTime) so link hovers and client-side navigations
+    // don't fire an auth round-trip each time. Sign-in/out reset this cache entry.
+    const user = await context.queryClient.ensureQueryData({
+      ...currentUserQueryOptions(),
+      revalidateIfStale: true,
+    })
 
     if (!user) {
       throw redirect({
@@ -30,29 +35,15 @@ export const Route = createFileRoute("/_protected")({
 function ProtectedLayout() {
   const { user } = Route.useRouteContext()
   const router = useRouter()
+  const logoutMutation = useLogout()
   const [newTransactionOpen, setNewTransactionOpen] = React.useState(false)
-  const [isLoggingOut, setIsLoggingOut] = React.useState(false)
 
-  React.useEffect(() => {
-    const handlePageAction = (event: Event) => {
-      const customEvent = event as CustomEvent<PageActionType>
-
-      if (customEvent.detail === pageActionTypes.createTransaction) {
-        setNewTransactionOpen(true)
-      }
-    }
-
-    window.addEventListener(PAGE_ACTION_EVENT, handlePageAction)
-    return () => window.removeEventListener(PAGE_ACTION_EVENT, handlePageAction)
-  }, [])
+  usePageAction(pageActionTypes.createTransaction, () => setNewTransactionOpen(true))
 
   const handleLogout = () => {
-    setIsLoggingOut(true)
-    authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => router.history.push("/sign-in"),
-        onError: () => setIsLoggingOut(false),
-      },
+    // useLogout clears the query cache so the next sign-in never sees this user's data.
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => router.navigate({ to: "/sign-in", search: { redirect: undefined } }),
     })
   }
 
@@ -64,7 +55,7 @@ function ProtectedLayout() {
           email: user.email,
           avatar: undefined,
         }}
-        isLoggingOut={isLoggingOut}
+        isLoggingOut={logoutMutation.isPending}
         onNewTransaction={() => setNewTransactionOpen(true)}
         onLogout={handleLogout}
       />

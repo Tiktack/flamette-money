@@ -1,11 +1,9 @@
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import * as XLSX from "xlsx"
 
-import { auth } from "@/lib/auth"
-import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
-import { db, runWithDb, type AppDatabase } from "@/lib/db/client.server"
-import { forEachChunk, SQLITE_IN_CLAUSE_BATCH_SIZE, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { db, runDbTransaction } from "@/lib/db/client.server"
+import { forEachChunk, forEachChunkSync, SQLITE_IN_CLAUSE_BATCH_SIZE, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
 import {
   accounts,
   accountTypes,
@@ -18,6 +16,15 @@ import {
   trips,
   users,
 } from "@/lib/db/schema"
+import { fail, requireUserForRequest } from "@/lib/server/http.server"
+
+import {
+  normalizeAccountType as toAccountType,
+  normalizeCategoryType as toCategoryType,
+  normalizeTransactionType as toTransactionType,
+  normalizeTrimmed,
+} from "@/features/shared/server/normalizers.server"
+import { clearUserScopedData } from "@/features/shared/server/user-data.server"
 
 import type { ImportBackupResponse } from "@/features/shared/types"
 
@@ -153,29 +160,6 @@ type OneMoneyParseResult = {
   skippedRows: number
 }
 
-class HttpError extends Error {
-  status: number
-
-  constructor(status: number, message: string) {
-    super(message)
-    this.name = "HttpError"
-    this.status = status
-  }
-}
-
-function fail(message: string, status = 400): never {
-  throw new HttpError(status, message)
-}
-
-function normalizeText(value: string | null | undefined) {
-  if (typeof value !== "string") {
-    return null
-  }
-
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
-
 function formatIso(value: Date | null | undefined) {
   return value ? value.toISOString() : ""
 }
@@ -259,7 +243,7 @@ function parseNumber(value: string, fieldName: string) {
 }
 
 function parseOptionalNumber(value: string) {
-  const normalized = normalizeText(value)
+  const normalized = normalizeTrimmed(value)
   if (!normalized) {
     return null
   }
@@ -289,7 +273,7 @@ function parseDate(value: string, fieldName: string) {
 }
 
 function parseOptionalDate(value: string) {
-  const normalized = normalizeText(value)
+  const normalized = normalizeTrimmed(value)
   if (!normalized) {
     return null
   }
@@ -297,28 +281,25 @@ function parseOptionalDate(value: string) {
   return parseDate(normalized, "Date")
 }
 
-function normalizeAccountType(value: string): AccountType {
-  if ((accountTypes as readonly string[]).includes(value)) {
-    return value as AccountType
+/** Converts the shared normalizers' plain Errors into 400 HttpErrors so imports reject cleanly. */
+function asBadRequest<T>(normalize: () => T): T {
+  try {
+    return normalize()
+  } catch (error) {
+    fail(error instanceof Error ? error.message : "Backup file contains an invalid value.")
   }
+}
 
-  fail(`Account type '${value}' is invalid.`)
+function normalizeAccountType(value: string): AccountType {
+  return asBadRequest(() => toAccountType(value))
 }
 
 function normalizeCategoryType(value: string): CategoryType {
-  if ((categoryTypes as readonly string[]).includes(value)) {
-    return value as CategoryType
-  }
-
-  fail(`Category type '${value}' is invalid.`)
+  return asBadRequest(() => toCategoryType(value))
 }
 
 function normalizeTransactionType(value: string): TransactionType {
-  if ((transactionTypes as readonly string[]).includes(value)) {
-    return value as TransactionType
-  }
-
-  fail(`Transaction type '${value}' is invalid.`)
+  return asBadRequest(() => toTransactionType(value))
 }
 
 function normalizeSubscriptionType(value: string | null | undefined) {
@@ -342,7 +323,7 @@ function parseFlametteSettings(workbook: XLSX.WorkBook): FlametteSettingsRow {
       continue
     }
 
-    const key = normalizeText(String(row[0] ?? ""))
+    const key = normalizeTrimmed(String(row[0] ?? ""))
     if (!key) {
       continue
     }
@@ -360,14 +341,14 @@ function parseFlametteSettings(workbook: XLSX.WorkBook): FlametteSettingsRow {
     fail(`Unsupported backup version '${values.get("Version") ?? ""}'.`)
   }
 
-  const baseCurrency = normalizeText(values.get("BaseCurrency"))
+  const baseCurrency = normalizeTrimmed(values.get("BaseCurrency"))
   if (!baseCurrency) {
     fail("Settings.BaseCurrency is required.")
   }
 
   return {
     baseCurrency,
-    subscriptionType: normalizeSubscriptionType(normalizeText(values.get("SubscriptionType"))),
+    subscriptionType: normalizeSubscriptionType(normalizeTrimmed(values.get("SubscriptionType"))),
   }
 }
 
@@ -382,10 +363,10 @@ function parseFlametteAccounts(workbook: XLSX.WorkBook) {
     .map<FlametteAccountRow>((row) => ({
       id: requireRowValue(row, headers, "Id"),
       name: requireRowValue(row, headers, "Name"),
-      description: normalizeText(getRowValue(row, headers, "Description")),
+      description: normalizeTrimmed(getRowValue(row, headers, "Description")),
       currency: requireRowValue(row, headers, "Currency"),
-      color: normalizeText(getRowValue(row, headers, "Color")) ?? defaultAccountColor,
-      icon: normalizeText(getRowValue(row, headers, "Icon")) ?? defaultAccountIcon,
+      color: normalizeTrimmed(getRowValue(row, headers, "Color")) ?? defaultAccountColor,
+      icon: normalizeTrimmed(getRowValue(row, headers, "Icon")) ?? defaultAccountIcon,
       type: normalizeAccountType(requireRowValue(row, headers, "Type")),
       currentBalance: parseNumber(requireRowValue(row, headers, "CurrentBalance"), "CurrentBalance"),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
@@ -404,9 +385,9 @@ function parseFlametteCategories(workbook: XLSX.WorkBook) {
     .map<FlametteCategoryRow>((row) => ({
       id: requireRowValue(row, headers, "Id"),
       name: requireRowValue(row, headers, "Name"),
-      color: normalizeText(getRowValue(row, headers, "Color")) ?? defaultCategoryColor,
-      icon: normalizeText(getRowValue(row, headers, "Icon")) ?? defaultChildCategoryIcon,
-      parentId: normalizeText(getRowValue(row, headers, "ParentId")),
+      color: normalizeTrimmed(getRowValue(row, headers, "Color")) ?? defaultCategoryColor,
+      icon: normalizeTrimmed(getRowValue(row, headers, "Icon")) ?? defaultChildCategoryIcon,
+      parentId: normalizeTrimmed(getRowValue(row, headers, "ParentId")),
       type: normalizeCategoryType(requireRowValue(row, headers, "Type")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
       updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
@@ -428,10 +409,10 @@ function parseFlametteTrips(workbook: XLSX.WorkBook) {
     .map<FlametteTripRow>((row) => ({
       id: requireRowValue(row, headers, "Id"),
       name: requireRowValue(row, headers, "Name"),
-      country: normalizeText(getRowValue(row, headers, "Country")),
+      country: normalizeTrimmed(getRowValue(row, headers, "Country")),
       startDate: parseOptionalDate(getRowValue(row, headers, "StartDate")),
       endDate: parseOptionalDate(getRowValue(row, headers, "EndDate")),
-      imageUrl: normalizeText(getRowValue(row, headers, "ImageUrl")),
+      imageUrl: normalizeTrimmed(getRowValue(row, headers, "ImageUrl")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
       updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
     }))
@@ -451,19 +432,19 @@ function parseFlametteTransactions(workbook: XLSX.WorkBook) {
       type: normalizeTransactionType(requireRowValue(row, headers, "Type")),
       amount: parseNumber(requireRowValue(row, headers, "Amount"), "Amount"),
       amount2: parseOptionalNumber(getRowValue(row, headers, "Amount2")),
-      currency: normalizeText(getRowValue(row, headers, "Currency")),
-      currency2: normalizeText(getRowValue(row, headers, "Currency2")),
+      currency: normalizeTrimmed(getRowValue(row, headers, "Currency")),
+      currency2: normalizeTrimmed(getRowValue(row, headers, "Currency2")),
       accountId: requireRowValue(row, headers, "AccountId"),
-      categoryId: normalizeText(getRowValue(row, headers, "CategoryId")),
-      subCategoryId: normalizeText(getRowValue(row, headers, "SubCategoryId")),
-      targetAccountId: normalizeText(getRowValue(row, headers, "TargetAccountId")),
-      relatedTransactionId: normalizeText(getRowValue(row, headers, "RelatedTransactionId")),
-      originalTransactionId: normalizeText(getRowValue(row, headers, "OriginalTransactionId")),
+      categoryId: normalizeTrimmed(getRowValue(row, headers, "CategoryId")),
+      subCategoryId: normalizeTrimmed(getRowValue(row, headers, "SubCategoryId")),
+      targetAccountId: normalizeTrimmed(getRowValue(row, headers, "TargetAccountId")),
+      relatedTransactionId: normalizeTrimmed(getRowValue(row, headers, "RelatedTransactionId")),
+      originalTransactionId: normalizeTrimmed(getRowValue(row, headers, "OriginalTransactionId")),
       isRefund: parseBoolean(requireRowValue(row, headers, "IsRefund"), "IsRefund"),
-      note: normalizeText(getRowValue(row, headers, "Note")),
-      merchantName: normalizeText(getRowValue(row, headers, "MerchantName")),
-      location: normalizeText(getRowValue(row, headers, "Location")),
-      tripId: normalizeText(getRowValue(row, headers, "TripId")),
+      note: normalizeTrimmed(getRowValue(row, headers, "Note")),
+      merchantName: normalizeTrimmed(getRowValue(row, headers, "MerchantName")),
+      location: normalizeTrimmed(getRowValue(row, headers, "Location")),
+      tripId: normalizeTrimmed(getRowValue(row, headers, "TripId")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
       updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
     }))
@@ -482,66 +463,15 @@ function parseFlametteTransactionItems(workbook: XLSX.WorkBook) {
       transactionId: requireRowValue(row, headers, "TransactionId"),
       name: requireRowValue(row, headers, "Name"),
       quantity: parseNumber(requireRowValue(row, headers, "Quantity"), "Quantity"),
-      unit: normalizeText(getRowValue(row, headers, "Unit")),
+      unit: normalizeTrimmed(getRowValue(row, headers, "Unit")),
       unitPrice: parseNumber(requireRowValue(row, headers, "UnitPrice"), "UnitPrice"),
       promotionAmount: parseNumber(requireRowValue(row, headers, "PromotionAmount"), "PromotionAmount"),
       finalAmount: parseNumber(requireRowValue(row, headers, "FinalAmount"), "FinalAmount"),
-      categoryId: normalizeText(getRowValue(row, headers, "CategoryId")),
-      subCategoryId: normalizeText(getRowValue(row, headers, "SubCategoryId")),
+      categoryId: normalizeTrimmed(getRowValue(row, headers, "CategoryId")),
+      subCategoryId: normalizeTrimmed(getRowValue(row, headers, "SubCategoryId")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
       updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
     }))
-}
-
-async function requireUserForRequest(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers })
-
-  if (!session) {
-    fail("Unauthorized", 401)
-  }
-
-  await ensureUserBootstrap(session.user.id)
-
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-  })
-
-  if (!user) {
-    fail("User profile was not found.")
-  }
-
-  return user
-}
-
-async function clearUserScopedData(database: AppDatabase, userId: string) {
-  const existingTransactions = await database.query.transactions
-    .findMany({
-      where: eq(transactions.userId, userId),
-      columns: { id: true },
-    })
-
-  const transactionIds = existingTransactions.map((transaction) => transaction.id)
-
-  await database.update(transactions)
-    .set({
-      originalTransactionId: null,
-      relatedTransactionId: null,
-    })
-    .where(eq(transactions.userId, userId))
-
-  if (transactionIds.length > 0) {
-    await forEachChunk(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, async (chunk) => {
-      await database.delete(transactionItems).where(inArray(transactionItems.transactionId, chunk))
-    })
-  }
-
-  await database.delete(transactions).where(eq(transactions.userId, userId))
-  await database.delete(trips).where(eq(trips.userId, userId))
-  await database.delete(categories)
-    .where(and(eq(categories.userId, userId), isNotNull(categories.parentId)))
-  await database.delete(categories)
-    .where(and(eq(categories.userId, userId), isNull(categories.parentId)))
-  await database.delete(accounts).where(eq(accounts.userId, userId))
 }
 
 function pickAccountColor(accountName: string) {
@@ -730,7 +660,7 @@ function parseOneMoneyCsv(content: string): OneMoneyParseResult {
 }
 
 function buildOneMoneyNote(tags: string, notes: string) {
-  const parts = [normalizeText(tags) ? `Tags: ${tags.trim()}` : null, normalizeText(notes)].filter((value): value is string => Boolean(value))
+  const parts = [normalizeTrimmed(tags) ? `Tags: ${tags.trim()}` : null, normalizeTrimmed(notes)].filter((value): value is string => Boolean(value))
 
   return parts.length > 0 ? parts.join(" | ") : null
 }
@@ -957,14 +887,21 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
   const transactionItemRows = parseFlametteTransactionItems(workbook)
 
   const now = new Date()
+  let skippedRows = 0
 
-  return runWithDb(async (database) => {
-    await clearUserScopedData(database, user.id)
+  // Every imported row gets a fresh id so client-supplied ids can never collide with
+  // existing rows (ids are global TEXT primary keys). These maps remap the file's own
+  // ids to the freshly generated ones; references that do not resolve within the file
+  // are treated exactly like before (rows skipped or references nulled).
+  const accountIdMap = new Map<string, string>()
+  const importedAccounts = accountRows
+    .filter((row) => row.id && row.name.trim())
+    .map((row) => {
+      const id = crypto.randomUUID()
+      accountIdMap.set(row.id, id)
 
-    const importedAccounts = accountRows
-      .filter((row) => row.id && row.name.trim())
-      .map((row) => ({
-        id: row.id,
+      return {
+        id,
         userId: user.id,
         name: row.name.trim(),
         description: row.description,
@@ -975,53 +912,64 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
         currentBalance: row.currentBalance,
         createdAt: row.createdAt ?? now,
         updatedAt: row.updatedAt ?? now,
-      }))
-
-    const accountIds = new Set(importedAccounts.map((row) => row.id))
-    const categoryRowsById = new Map(categoryRows.filter((row) => row.id && row.name.trim()).map((row) => [row.id, row]))
-    const insertedCategoryIds = new Set<string>()
-    const importedCategories: Array<typeof categories.$inferInsert> = []
-    let skippedRows = 0
-
-    while (insertedCategoryIds.size < categoryRowsById.size) {
-      let madeProgress = false
-
-      for (const row of categoryRowsById.values()) {
-        if (insertedCategoryIds.has(row.id)) {
-          continue
-        }
-
-        if (row.parentId && !insertedCategoryIds.has(row.parentId)) {
-          continue
-        }
-
-        importedCategories.push({
-          id: row.id,
-          userId: user.id,
-          name: row.name.trim(),
-          color: row.color || defaultCategoryColor,
-          icon: row.icon || (row.parentId ? defaultChildCategoryIcon : defaultParentCategoryIcon),
-          parentId: row.parentId,
-          type: row.type,
-          createdAt: row.createdAt ?? now,
-          updatedAt: row.updatedAt ?? now,
-        })
-
-        insertedCategoryIds.add(row.id)
-        madeProgress = true
       }
+    })
 
-      if (!madeProgress) {
-        skippedRows += categoryRowsById.size - insertedCategoryIds.size
-        break
-      }
+  const validCategoryRows = categoryRows.filter((row) => row.id && row.name.trim())
+  const categoryIdMap = new Map<string, string>()
+  const parentCategoryIdMap = new Map<string, string>()
+  const importedCategories: Array<typeof categories.$inferInsert> = []
+
+  const addCategory = (row: FlametteCategoryRow, parentId: string | null) => {
+    const id = crypto.randomUUID()
+    categoryIdMap.set(row.id, id)
+
+    importedCategories.push({
+      id,
+      userId: user.id,
+      name: row.name.trim(),
+      color: row.color || defaultCategoryColor,
+      icon: row.icon || (parentId ? defaultChildCategoryIcon : defaultParentCategoryIcon),
+      parentId,
+      type: row.type,
+      createdAt: row.createdAt ?? now,
+      updatedAt: row.updatedAt ?? now,
+    })
+
+    return id
+  }
+
+  // Parents first, then children — only one nesting level is valid, so children whose
+  // parent is missing from the file (or is itself a child) are skipped.
+  for (const row of validCategoryRows) {
+    if (!row.parentId) {
+      parentCategoryIdMap.set(row.id, addCategory(row, null))
+    }
+  }
+
+  for (const row of validCategoryRows) {
+    if (!row.parentId) {
+      continue
     }
 
-    const categoryIds = new Set(importedCategories.map((row) => row.id))
-    const importedTrips = tripRows
-      .filter((row) => row.id && row.name.trim())
-      .map((row) => ({
-        id: row.id,
+    const parentId = parentCategoryIdMap.get(row.parentId)
+    if (!parentId) {
+      skippedRows += 1
+      continue
+    }
+
+    addCategory(row, parentId)
+  }
+
+  const tripIdMap = new Map<string, string>()
+  const importedTrips = tripRows
+    .filter((row) => row.id && row.name.trim())
+    .map((row) => {
+      const id = crypto.randomUUID()
+      tripIdMap.set(row.id, id)
+
+      return {
+        id,
         userId: user.id,
         name: row.name.trim(),
         country: row.country,
@@ -1030,181 +978,191 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
         imageUrl: row.imageUrl,
         createdAt: row.createdAt ?? now,
         updatedAt: row.updatedAt ?? now,
-      }))
-
-    const tripIds = new Set(importedTrips.map((row) => row.id))
-    const importedTransactions: Array<typeof transactions.$inferInsert> = []
-    const relatedReferences: Array<{
-      id: string
-      relatedTransactionId: string | null
-      originalTransactionId: string | null
-    }> = []
-
-    for (const row of transactionRows) {
-      if (!accountIds.has(row.accountId)) {
-        skippedRows += 1
-        continue
       }
+    })
 
-      if (row.targetAccountId && !accountIds.has(row.targetAccountId)) {
-        skippedRows += 1
-        continue
-      }
+  const transactionIdMap = new Map<string, string>()
+  const importedTransactions: Array<typeof transactions.$inferInsert> = []
+  const relatedReferences: Array<{
+    id: string
+    relatedTransactionId: string | null
+    originalTransactionId: string | null
+  }> = []
 
-      if (row.categoryId && !categoryIds.has(row.categoryId)) {
-        skippedRows += 1
-        continue
-      }
-
-      if (row.subCategoryId && !categoryIds.has(row.subCategoryId)) {
-        skippedRows += 1
-        continue
-      }
-
-      if (row.tripId && !tripIds.has(row.tripId)) {
-        skippedRows += 1
-        continue
-      }
-
-      importedTransactions.push({
-        id: row.id,
-        userId: user.id,
-        date: row.date,
-        type: row.type,
-        amount: row.amount,
-        amount2: row.amount2,
-        currency: normalizeCurrencyOrNull(row.currency),
-        currency2: normalizeCurrencyOrNull(row.currency2),
-        accountId: row.accountId,
-        categoryId: row.categoryId,
-        subCategoryId: row.subCategoryId,
-        targetAccountId: row.targetAccountId,
-        relatedTransactionId: null,
-        originalTransactionId: null,
-        tripId: row.tripId,
-        isRefund: row.isRefund,
-        note: row.note,
-        merchantName: row.merchantName,
-        location: row.location,
-        createdAt: row.createdAt ?? now,
-        updatedAt: row.updatedAt ?? now,
-      })
-
-      relatedReferences.push({
-        id: row.id,
-        relatedTransactionId: row.relatedTransactionId,
-        originalTransactionId: row.originalTransactionId,
-      })
+  for (const row of transactionRows) {
+    const accountId = accountIdMap.get(row.accountId)
+    if (!accountId) {
+      skippedRows += 1
+      continue
     }
 
-    const importedTransactionIds = new Set(importedTransactions.map((row) => row.id))
-    const importedTransactionItems: Array<typeof transactionItems.$inferInsert> = []
-
-    for (const row of transactionItemRows) {
-      if (!importedTransactionIds.has(row.transactionId)) {
-        skippedRows += 1
-        continue
-      }
-
-      if (row.categoryId && !categoryIds.has(row.categoryId)) {
-        skippedRows += 1
-        continue
-      }
-
-      if (row.subCategoryId && !categoryIds.has(row.subCategoryId)) {
-        skippedRows += 1
-        continue
-      }
-
-      importedTransactionItems.push({
-        id: row.id,
-        transactionId: row.transactionId,
-        name: row.name,
-        quantity: row.quantity,
-        unit: row.unit,
-        unitPrice: row.unitPrice,
-        promotionAmount: row.promotionAmount,
-        finalAmount: row.finalAmount,
-        categoryId: row.categoryId,
-        subCategoryId: row.subCategoryId,
-        createdAt: row.createdAt ?? now,
-        updatedAt: row.updatedAt ?? now,
-      })
+    const targetAccountId = row.targetAccountId ? (accountIdMap.get(row.targetAccountId) ?? null) : null
+    if (row.targetAccountId && !targetAccountId) {
+      skippedRows += 1
+      continue
     }
 
-    if (importedAccounts.length > 0) {
-      await forEachChunk(importedAccounts, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(accounts).values(chunk)
-      })
+    const categoryId = row.categoryId ? (categoryIdMap.get(row.categoryId) ?? null) : null
+    if (row.categoryId && !categoryId) {
+      skippedRows += 1
+      continue
     }
 
-    if (importedCategories.length > 0) {
-      await forEachChunk(importedCategories, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(categories).values(chunk)
-      })
+    const subCategoryId = row.subCategoryId ? (categoryIdMap.get(row.subCategoryId) ?? null) : null
+    if (row.subCategoryId && !subCategoryId) {
+      skippedRows += 1
+      continue
     }
 
-    if (importedTrips.length > 0) {
-      await forEachChunk(importedTrips, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(trips).values(chunk)
-      })
+    const tripId = row.tripId ? (tripIdMap.get(row.tripId) ?? null) : null
+    if (row.tripId && !tripId) {
+      skippedRows += 1
+      continue
     }
 
-    if (importedTransactions.length > 0) {
-      await forEachChunk(importedTransactions, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(transactions).values(chunk)
-      })
+    const id = crypto.randomUUID()
+    transactionIdMap.set(row.id, id)
+
+    importedTransactions.push({
+      id,
+      userId: user.id,
+      date: row.date,
+      type: row.type,
+      amount: row.amount,
+      amount2: row.amount2,
+      currency: normalizeCurrencyOrNull(row.currency),
+      currency2: normalizeCurrencyOrNull(row.currency2),
+      accountId,
+      categoryId,
+      subCategoryId,
+      targetAccountId,
+      relatedTransactionId: null,
+      originalTransactionId: null,
+      tripId,
+      isRefund: row.isRefund,
+      note: row.note,
+      merchantName: row.merchantName,
+      location: row.location,
+      createdAt: row.createdAt ?? now,
+      updatedAt: row.updatedAt ?? now,
+    })
+
+    relatedReferences.push({
+      id,
+      relatedTransactionId: row.relatedTransactionId,
+      originalTransactionId: row.originalTransactionId,
+    })
+  }
+
+  // Self-referencing FKs are applied in a second pass once every transaction row exists;
+  // references pointing outside the imported set stay null.
+  const relatedUpdates = relatedReferences
+    .map((reference) => ({
+      id: reference.id,
+      relatedTransactionId: reference.relatedTransactionId ? (transactionIdMap.get(reference.relatedTransactionId) ?? null) : null,
+      originalTransactionId: reference.originalTransactionId ? (transactionIdMap.get(reference.originalTransactionId) ?? null) : null,
+    }))
+    .filter((reference) => reference.relatedTransactionId || reference.originalTransactionId)
+
+  const importedTransactionItems: Array<typeof transactionItems.$inferInsert> = []
+
+  for (const row of transactionItemRows) {
+    const transactionId = transactionIdMap.get(row.transactionId)
+    if (!transactionId) {
+      skippedRows += 1
+      continue
     }
 
-    for (const reference of relatedReferences) {
-      const nextRelatedId = reference.relatedTransactionId && importedTransactionIds.has(reference.relatedTransactionId) ? reference.relatedTransactionId : null
-      const nextOriginalId =
-        reference.originalTransactionId && importedTransactionIds.has(reference.originalTransactionId) ? reference.originalTransactionId : null
+    const categoryId = row.categoryId ? (categoryIdMap.get(row.categoryId) ?? null) : null
+    if (row.categoryId && !categoryId) {
+      skippedRows += 1
+      continue
+    }
 
-      if (!nextRelatedId && !nextOriginalId) {
-        continue
-      }
+    const subCategoryId = row.subCategoryId ? (categoryIdMap.get(row.subCategoryId) ?? null) : null
+    if (row.subCategoryId && !subCategoryId) {
+      skippedRows += 1
+      continue
+    }
 
-      await database.update(transactions)
+    importedTransactionItems.push({
+      id: crypto.randomUUID(),
+      transactionId,
+      name: row.name,
+      quantity: row.quantity,
+      unit: row.unit,
+      unitPrice: row.unitPrice,
+      promotionAmount: row.promotionAmount,
+      finalAmount: row.finalAmount,
+      categoryId,
+      subCategoryId,
+      createdAt: row.createdAt ?? now,
+      updatedAt: row.updatedAt ?? now,
+    })
+  }
+
+  const nextBaseCurrency = normalizeCurrencyOrDefault(settings.baseCurrency, user.baseCurrency)
+  const nextSubscriptionType = settings.subscriptionType ?? user.subscriptionType
+  const settingsChanged = nextBaseCurrency !== user.baseCurrency || nextSubscriptionType !== user.subscriptionType
+
+  // Wipe and re-import atomically: if any insert fails the whole transaction rolls back
+  // and the user's existing data is left untouched.
+  runDbTransaction((tx) => {
+    clearUserScopedData(tx, user.id)
+
+    forEachChunkSync(importedAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(accounts).values(chunk).run()
+    })
+
+    forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(categories).values(chunk).run()
+    })
+
+    forEachChunkSync(importedTrips, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(trips).values(chunk).run()
+    })
+
+    forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(transactions).values(chunk).run()
+    })
+
+    for (const reference of relatedUpdates) {
+      tx.update(transactions)
         .set({
-          relatedTransactionId: nextRelatedId,
-          originalTransactionId: nextOriginalId,
+          relatedTransactionId: reference.relatedTransactionId,
+          originalTransactionId: reference.originalTransactionId,
         })
         .where(eq(transactions.id, reference.id))
+        .run()
     }
 
-    if (importedTransactionItems.length > 0) {
-      await forEachChunk(importedTransactionItems, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(transactionItems).values(chunk)
-      })
-    }
-
-    const nextBaseCurrency = normalizeCurrencyOrDefault(settings.baseCurrency, user.baseCurrency)
-    const nextSubscriptionType = settings.subscriptionType ?? user.subscriptionType
-    const settingsChanged = nextBaseCurrency !== user.baseCurrency || nextSubscriptionType !== user.subscriptionType
+    forEachChunkSync(importedTransactionItems, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(transactionItems).values(chunk).run()
+    })
 
     if (settingsChanged) {
-      await database.update(users)
+      tx.update(users)
         .set({
           baseCurrency: nextBaseCurrency,
           subscriptionType: nextSubscriptionType,
           updatedAt: now,
         })
         .where(eq(users.id, user.id))
+        .run()
     }
-
-    return {
-      type: "flamette",
-      importedTransactions: importedTransactions.length,
-      importedAccounts: importedAccounts.length,
-      importedCategories: importedCategories.length,
-      importedSubCategories: importedCategories.filter((row) => row.parentId).length,
-      importedTransactionItems: importedTransactionItems.length,
-      updatedBalanceSnapshots: importedAccounts.length,
-      updatedSettings: settingsChanged ? 1 : 0,
-      skippedRows,
-    } satisfies ImportBackupResponse
   })
+
+  return {
+    type: "flamette",
+    importedTransactions: importedTransactions.length,
+    importedAccounts: importedAccounts.length,
+    importedCategories: importedCategories.length,
+    importedSubCategories: importedCategories.filter((row) => row.parentId).length,
+    importedTransactionItems: importedTransactionItems.length,
+    updatedBalanceSnapshots: importedAccounts.length,
+    updatedSettings: settingsChanged ? 1 : 0,
+    skippedRows,
+  } satisfies ImportBackupResponse
 }
 
 async function importOneMoneyBackup(user: UserRecord, file: File): Promise<ImportBackupResponse> {
@@ -1219,7 +1177,7 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
 
   for (const balance of parsed.balances) {
     allAccountNames.add(balance.name.trim())
-    const normalized = normalizeCurrencyOrNull(balance.currency) ?? normalizeText(balance.currency)?.toUpperCase() ?? null
+    const normalized = normalizeCurrencyOrNull(balance.currency) ?? normalizeTrimmed(balance.currency)?.toUpperCase() ?? null
     if (normalized) {
       accountCurrencyHints.set(balance.name.trim(), normalized)
     }
@@ -1228,7 +1186,7 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
   for (const transaction of parsed.transactions) {
     if (transaction.fromAccount.trim()) {
       allAccountNames.add(transaction.fromAccount.trim())
-      const sourceCurrency = normalizeCurrencyOrNull(transaction.currency) ?? normalizeText(transaction.currency)?.toUpperCase() ?? null
+      const sourceCurrency = normalizeCurrencyOrNull(transaction.currency) ?? normalizeTrimmed(transaction.currency)?.toUpperCase() ?? null
       if (sourceCurrency && !accountCurrencyHints.has(transaction.fromAccount.trim())) {
         accountCurrencyHints.set(transaction.fromAccount.trim(), sourceCurrency)
       }
@@ -1236,7 +1194,7 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
 
     if (transaction.type === "Transfer" && transaction.target.trim()) {
       allAccountNames.add(transaction.target.trim())
-      const targetCurrency = normalizeCurrencyOrNull(transaction.currency2) ?? normalizeText(transaction.currency2)?.toUpperCase() ?? null
+      const targetCurrency = normalizeCurrencyOrNull(transaction.currency2) ?? normalizeTrimmed(transaction.currency2)?.toUpperCase() ?? null
       if (targetCurrency && !accountCurrencyHints.has(transaction.target.trim())) {
         accountCurrencyHints.set(transaction.target.trim(), targetCurrency)
       }
@@ -1245,229 +1203,224 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
 
   const now = new Date()
 
-  return runWithDb(async (database) => {
-    await clearUserScopedData(database, user.id)
+  const accountsByName = new Map<string, typeof accounts.$inferInsert>()
+  const importedAccounts: Array<typeof accounts.$inferInsert> = []
 
-    const accountsByName = new Map<string, typeof accounts.$inferInsert>()
-    const importedAccounts: Array<typeof accounts.$inferInsert> = []
-
-    for (const accountName of Array.from(allAccountNames).sort((left, right) => left.localeCompare(right))) {
-      if (!accountName) {
-        continue
-      }
-
-      const currencyHint = accountCurrencyHints.get(accountName) ?? defaultOneMoneyCurrency
-      const account = {
-        id: crypto.randomUUID(),
-        userId: user.id,
-        name: accountName,
-        description: null,
-        currency: normalizeCurrencyOrDefault(currencyHint, defaultOneMoneyCurrency),
-        color: pickAccountColor(accountName),
-        icon: defaultAccountIcon,
-        type: defaultOneMoneyAccountType as AccountType,
-        currentBalance: 0,
-        createdAt: now,
-        updatedAt: now,
-      }
-
-      accountsByName.set(accountName, account)
-      importedAccounts.push(account)
+  for (const accountName of Array.from(allAccountNames).sort((left, right) => left.localeCompare(right))) {
+    if (!accountName) {
+      continue
     }
 
-    const categoriesByKey = new Map<string, typeof categories.$inferInsert>()
-    const importedCategories: Array<typeof categories.$inferInsert> = []
-    let createdCategories = 0
-    let createdSubCategories = 0
-
-    const ensureCategory = (name: string, type: CategoryType, parentId: string | null) => {
-      const key = buildCategoryKey(name, type, parentId)
-      const existing = categoriesByKey.get(key)
-      if (existing) {
-        return existing
-      }
-
-      const category = {
-        id: crypto.randomUUID(),
-        userId: user.id,
-        name: name.trim(),
-        color: pickCategoryColor(key),
-        icon: parentId ? defaultChildCategoryIcon : type === "Income" ? "IconCoins" : defaultParentCategoryIcon,
-        parentId,
-        type,
-        createdAt: now,
-        updatedAt: now,
-      }
-
-      categoriesByKey.set(key, category)
-      importedCategories.push(category)
-
-      if (parentId) {
-        createdSubCategories += 1
-      } else {
-        createdCategories += 1
-      }
-
-      return category
+    const currencyHint = accountCurrencyHints.get(accountName) ?? defaultOneMoneyCurrency
+    const account = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      name: accountName,
+      description: null,
+      currency: normalizeCurrencyOrDefault(currencyHint, defaultOneMoneyCurrency),
+      color: pickAccountColor(accountName),
+      icon: defaultAccountIcon,
+      type: defaultOneMoneyAccountType as AccountType,
+      currentBalance: 0,
+      createdAt: now,
+      updatedAt: now,
     }
 
-    for (const row of parsed.transactions) {
-      if (row.type !== "Income" && row.type !== "Expense") {
-        continue
-      }
+    accountsByName.set(accountName, account)
+    importedAccounts.push(account)
+  }
 
-      if (!row.target.trim()) {
-        continue
-      }
+  const categoriesByKey = new Map<string, typeof categories.$inferInsert>()
+  const importedCategories: Array<typeof categories.$inferInsert> = []
+  let createdCategories = 0
+  let createdSubCategories = 0
 
+  const ensureCategory = (name: string, type: CategoryType, parentId: string | null) => {
+    const key = buildCategoryKey(name, type, parentId)
+    const existing = categoriesByKey.get(key)
+    if (existing) {
+      return existing
+    }
+
+    const category = {
+      id: crypto.randomUUID(),
+      userId: user.id,
+      name: name.trim(),
+      color: pickCategoryColor(key),
+      icon: parentId ? defaultChildCategoryIcon : type === "Income" ? "IconCoins" : defaultParentCategoryIcon,
+      parentId,
+      type,
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    categoriesByKey.set(key, category)
+    importedCategories.push(category)
+
+    if (parentId) {
+      createdSubCategories += 1
+    } else {
+      createdCategories += 1
+    }
+
+    return category
+  }
+
+  for (const row of parsed.transactions) {
+    if (row.type !== "Income" && row.type !== "Expense") {
+      continue
+    }
+
+    if (!row.target.trim()) {
+      continue
+    }
+
+    const categoryType: CategoryType = row.type === "Income" ? "Income" : "Expense"
+    const { parentName, childName } = parseCategoryParts(row.target)
+    const parent = ensureCategory(parentName, categoryType, null)
+
+    if (childName) {
+      ensureCategory(childName, categoryType, parent.id)
+    }
+  }
+
+  const importedTransactions: Array<typeof transactions.$inferInsert> = []
+  let skippedRows = parsed.skippedRows
+
+  for (const row of [...parsed.transactions].sort((left, right) => left.date.getTime() - right.date.getTime())) {
+    const sourceAccount = accountsByName.get(row.fromAccount.trim())
+
+    if (!sourceAccount || row.amount <= 0) {
+      skippedRows += 1
+      continue
+    }
+
+    if (row.type === "Expense" || row.type === "Income") {
       const categoryType: CategoryType = row.type === "Income" ? "Income" : "Expense"
       const { parentName, childName } = parseCategoryParts(row.target)
-      const parent = ensureCategory(parentName, categoryType, null)
+      const parent = categoriesByKey.get(buildCategoryKey(parentName, categoryType, null))
 
-      if (childName) {
-        ensureCategory(childName, categoryType, parent.id)
-      }
-    }
-
-    const importedTransactions: Array<typeof transactions.$inferInsert> = []
-    let skippedRows = parsed.skippedRows
-
-    for (const row of [...parsed.transactions].sort((left, right) => left.date.getTime() - right.date.getTime())) {
-      const sourceAccount = accountsByName.get(row.fromAccount.trim())
-
-      if (!sourceAccount || row.amount <= 0) {
+      if (!parent) {
         skippedRows += 1
         continue
       }
 
-      if (row.type === "Expense" || row.type === "Income") {
-        const categoryType: CategoryType = row.type === "Income" ? "Income" : "Expense"
-        const { parentName, childName } = parseCategoryParts(row.target)
-        const parent = categoriesByKey.get(buildCategoryKey(parentName, categoryType, null))
+      const child = childName ? (categoriesByKey.get(buildCategoryKey(childName, categoryType, parent.id)) ?? null) : null
 
-        if (!parent) {
-          skippedRows += 1
-          continue
-        }
+      importedTransactions.push({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        date: row.date,
+        type: row.type,
+        amount: row.amount,
+        amount2: row.amount2 > 0 ? row.amount2 : null,
+        currency: normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
+        currency2: normalizeCurrencyOrNull(row.currency2),
+        accountId: sourceAccount.id,
+        categoryId: parent.id,
+        subCategoryId: child?.id ?? null,
+        targetAccountId: null,
+        relatedTransactionId: null,
+        originalTransactionId: null,
+        tripId: null,
+        isRefund: false,
+        note: buildOneMoneyNote(row.tags, row.notes),
+        merchantName: null,
+        location: null,
+        createdAt: now,
+        updatedAt: now,
+      })
 
-        const child = childName ? (categoriesByKey.get(buildCategoryKey(childName, categoryType, parent.id)) ?? null) : null
+      sourceAccount.currentBalance = (sourceAccount.currentBalance ?? 0) + (row.type === "Income" ? row.amount : -row.amount)
+      continue
+    }
 
-        importedTransactions.push({
-          id: crypto.randomUUID(),
-          userId: user.id,
-          date: row.date,
-          type: row.type,
-          amount: row.amount,
-          amount2: row.amount2 > 0 ? row.amount2 : null,
-          currency: normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
-          currency2: normalizeCurrencyOrNull(row.currency2),
-          accountId: sourceAccount.id,
-          categoryId: parent.id,
-          subCategoryId: child?.id ?? null,
-          targetAccountId: null,
-          relatedTransactionId: null,
-          originalTransactionId: null,
-          tripId: null,
-          isRefund: false,
-          note: buildOneMoneyNote(row.tags, row.notes),
-          merchantName: null,
-          location: null,
-          createdAt: now,
-          updatedAt: now,
-        })
-
-        sourceAccount.currentBalance = (sourceAccount.currentBalance ?? 0) + (row.type === "Income" ? row.amount : -row.amount)
+    if (row.type === "Transfer") {
+      const targetAccount = accountsByName.get(row.target.trim())
+      if (!targetAccount) {
+        skippedRows += 1
         continue
       }
 
-      if (row.type === "Transfer") {
-        const targetAccount = accountsByName.get(row.target.trim())
-        if (!targetAccount) {
-          skippedRows += 1
-          continue
-        }
+      const targetAmount = row.amount2 > 0 ? row.amount2 : row.amount
 
-        const targetAmount = row.amount2 > 0 ? row.amount2 : row.amount
-
-        importedTransactions.push({
-          id: crypto.randomUUID(),
-          userId: user.id,
-          date: row.date,
-          type: "Transfer",
-          amount: row.amount,
-          amount2: targetAmount,
-          currency: normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
-          currency2: normalizeCurrencyOrNull(row.currency2) ?? targetAccount.currency,
-          accountId: sourceAccount.id,
-          categoryId: null,
-          subCategoryId: null,
-          targetAccountId: targetAccount.id,
-          relatedTransactionId: null,
-          originalTransactionId: null,
-          tripId: null,
-          isRefund: false,
-          note: buildOneMoneyNote(row.tags, row.notes),
-          merchantName: null,
-          location: null,
-          createdAt: now,
-          updatedAt: now,
-        })
-
-        sourceAccount.currentBalance = (sourceAccount.currentBalance ?? 0) - row.amount
-        targetAccount.currentBalance = (targetAccount.currentBalance ?? 0) + targetAmount
-        continue
-      }
-
-      skippedRows += 1
-    }
-
-    let updatedBalanceSnapshots = 0
-
-    for (const balance of parsed.balances) {
-      const account = accountsByName.get(balance.name.trim())
-      if (!account) {
-        continue
-      }
-
-      account.currentBalance = balance.balance
-      const normalizedCurrency = normalizeCurrencyOrNull(balance.currency)
-      if (normalizedCurrency) {
-        account.currency = normalizedCurrency
-      }
-
-      updatedBalanceSnapshots += 1
-    }
-
-    if (importedAccounts.length > 0) {
-      await forEachChunk(importedAccounts, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(accounts).values(chunk)
+      importedTransactions.push({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        date: row.date,
+        type: "Transfer",
+        amount: row.amount,
+        amount2: targetAmount,
+        currency: normalizeCurrencyOrNull(row.currency) ?? sourceAccount.currency,
+        currency2: normalizeCurrencyOrNull(row.currency2) ?? targetAccount.currency,
+        accountId: sourceAccount.id,
+        categoryId: null,
+        subCategoryId: null,
+        targetAccountId: targetAccount.id,
+        relatedTransactionId: null,
+        originalTransactionId: null,
+        tripId: null,
+        isRefund: false,
+        note: buildOneMoneyNote(row.tags, row.notes),
+        merchantName: null,
+        location: null,
+        createdAt: now,
+        updatedAt: now,
       })
+
+      sourceAccount.currentBalance = (sourceAccount.currentBalance ?? 0) - row.amount
+      targetAccount.currentBalance = (targetAccount.currentBalance ?? 0) + targetAmount
+      continue
     }
 
-    if (importedCategories.length > 0) {
-      await forEachChunk(importedCategories, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(categories).values(chunk)
-      })
+    skippedRows += 1
+  }
+
+  let updatedBalanceSnapshots = 0
+
+  for (const balance of parsed.balances) {
+    const account = accountsByName.get(balance.name.trim())
+    if (!account) {
+      continue
     }
 
-    if (importedTransactions.length > 0) {
-      await forEachChunk(importedTransactions, SQLITE_INSERT_BATCH_SIZE, async (chunk) => {
-        await database.insert(transactions).values(chunk)
-      })
+    account.currentBalance = balance.balance
+    const normalizedCurrency = normalizeCurrencyOrNull(balance.currency)
+    if (normalizedCurrency) {
+      account.currency = normalizedCurrency
     }
 
-    return {
-      type: "one-money",
-      importedTransactions: importedTransactions.length,
-      importedAccounts: importedAccounts.length,
-      importedCategories: createdCategories,
-      importedSubCategories: createdSubCategories,
-      importedTransactionItems: 0,
-      updatedBalanceSnapshots,
-      updatedSettings: 0,
-      skippedRows,
-    } satisfies ImportBackupResponse
+    updatedBalanceSnapshots += 1
+  }
+
+  // Wipe and re-import atomically so a failed import never leaves the user without data.
+  runDbTransaction((tx) => {
+    clearUserScopedData(tx, user.id)
+
+    forEachChunkSync(importedAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(accounts).values(chunk).run()
+    })
+
+    forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(categories).values(chunk).run()
+    })
+
+    forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(transactions).values(chunk).run()
+    })
   })
+
+  return {
+    type: "one-money",
+    importedTransactions: importedTransactions.length,
+    importedAccounts: importedAccounts.length,
+    importedCategories: createdCategories,
+    importedSubCategories: createdSubCategories,
+    importedTransactionItems: 0,
+    updatedBalanceSnapshots,
+    updatedSettings: 0,
+    skippedRows,
+  } satisfies ImportBackupResponse
 }
 
 export async function handleExportBackupRequest(request: Request) {
@@ -1503,14 +1456,4 @@ export async function handleImportBackupRequest(request: Request) {
   }
 
   return Response.json(await importOneMoneyBackup(user, fileValue))
-}
-
-export function toBackupErrorResponse(error: unknown) {
-  if (error instanceof HttpError) {
-    return new Response(error.message, { status: error.status })
-  }
-
-  console.error("backup request failed", error)
-  const message = error instanceof Error ? error.message : "Unexpected backup error."
-  return new Response(message, { status: 500 })
 }

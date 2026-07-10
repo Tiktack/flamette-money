@@ -13,9 +13,10 @@ export const currentUserQueryOptions = () =>
     staleTime: 60_000,
   })
 
+// The supported-currency list is static for the lifetime of the app.
 export const appInfoQueryOptions = () =>
-  queryOptions<AppInfo | null>({
+  queryOptions<AppInfo>({
     queryKey: queryKeys.appInfo(),
     queryFn: () => getAppInfo(),
-    staleTime: 60_000,
+    staleTime: Infinity,
   })

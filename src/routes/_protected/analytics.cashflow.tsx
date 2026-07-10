@@ -6,6 +6,8 @@ import { AddMoneyCircleIcon, ChartDownIcon, ChartUpIcon, CreditCardIcon } from "
 import { MetricCard } from "@/components/metric-card"
 
 import { EmptyState } from "@/components/empty-state"
+import { IntervalSelect } from "@/components/interval-select"
+import { CardSkeleton, MetricCardsSkeleton } from "@/components/page-skeletons"
 import { useCashflowSeriesReport } from "@/features/reports/hooks"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
 import { ComposedChart } from "@/components/charts/composed-chart"
@@ -22,11 +24,11 @@ import { ChartMarkers } from "@/components/charts/markers"
 import { ChartTripMarkerTooltip } from "@/components/chart-trip-marker-tooltip"
 import { useTrips } from "@/features/trips/hooks"
 import { bucketKeyToDate, buildTripMarkers, formatCompactNumber } from "@/lib/chart-utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { useSharedDateRangeQuery } from "@/lib/state/sharedDateRangeFilters"
 
 const INCOME_COLOR = "#2d7ff9"
 const SPENDING_COLOR = "#f08c44"
@@ -35,26 +37,15 @@ const SAVED_COLOR = "#2f8f5b"
 const OVERSPENT_COLOR = "#cb5a5a"
 
 export const Route = createFileRoute("/_protected/analytics/cashflow")({
+  head: () => ({ meta: [{ title: "Cashflow — Flamette Money" }] }),
   component: AnalyticsCashflowPage,
 })
 
 function AnalyticsCashflowPage() {
-  const [interval, setInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
-  const dateFilters = useSharedDateRangeFilters()
-  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+  const [reportInterval, setReportInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
+  const dateRangeQuery = useSharedDateRangeQuery()
 
-  const query = React.useMemo(() => {
-    const value: {
-      StartDate?: string
-      EndDate?: string
-      Interval: "Auto" | "Day" | "Week" | "Month"
-    } = { Interval: interval }
-
-    if (resolvedDateRange.start) value.StartDate = toApiDateString(resolvedDateRange.start)
-    if (resolvedDateRange.end) value.EndDate = toApiDateString(resolvedDateRange.end)
-
-    return value
-  }, [interval, resolvedDateRange.end, resolvedDateRange.start])
+  const query = React.useMemo(() => ({ ...dateRangeQuery, Interval: reportInterval }), [dateRangeQuery, reportInterval])
 
   const reportQuery = useCashflowSeriesReport(query)
   const report = reportQuery.data
@@ -79,7 +70,11 @@ function AnalyticsCashflowPage() {
 
   const tripsQuery = useTrips()
   const tripMarkers = React.useMemo(
-    () => buildTripMarkers(tripsQuery.data ?? [], chartData.map((point) => point.date)),
+    () =>
+      buildTripMarkers(
+        tripsQuery.data ?? [],
+        chartData.map((point) => point.date)
+      ),
     [tripsQuery.data, chartData]
   )
 
@@ -87,20 +82,15 @@ function AnalyticsCashflowPage() {
     <div className="flex flex-col gap-6">
       <SharedDateRangeToolbar />
 
-      {reportQuery.isError && chartData.length === 0 ? (
-        <EmptyState
-          eyebrow="Report"
-          title="Unable to load cashflow analytics"
-          description={getApiErrorMessage(reportQuery.error, "Try another date range or interval.")}
-        />
+      {reportQuery.isError && !report ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load cashflow analytics</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(reportQuery.error, "Try another date range or interval.")}</AlertDescription>
+        </Alert>
       ) : reportQuery.isPending ? (
         <>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-[118px] animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-          <div className="h-[460px] animate-pulse rounded-xl bg-muted" />
+          <MetricCardsSkeleton count={4} className="gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4" />
+          <CardSkeleton className="h-[460px]" />
         </>
       ) : chartData.length === 0 ? (
         <EmptyState
@@ -138,27 +128,14 @@ function AnalyticsCashflowPage() {
             <SavingsRadialCard savingsRate={savingsRate} income={income} spending={spending} net={net} />
           </div>
 
-          <Card className="border-border bg-card/95 shadow-none">
+          <Card>
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>Cashflow</CardTitle>
                   <CardDescription>Bars show net result; lines track income and spending.</CardDescription>
                 </div>
-                <Select value={interval} onValueChange={(v) => setInterval((v as typeof interval) ?? "Auto")}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Auto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {(["Auto", "Day", "Week", "Month"] as const).map((v) => (
-                        <SelectItem key={v} value={v}>
-                          {v}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <IntervalSelect value={reportInterval} onValueChange={setReportInterval} />
               </div>
             </CardHeader>
             <CardContent>

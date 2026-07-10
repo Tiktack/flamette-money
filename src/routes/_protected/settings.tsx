@@ -16,9 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { useAppInfo, useCurrentUser } from "@/features/app/hooks"
 import { useSeedDemo } from "@/features/demo-seed/hooks"
+import { useExportBackup, useImportBackup } from "@/features/profile-backup/hooks"
 import type { BackupImportType } from "@/features/profile-backup/types"
 import { getApiErrorMessage } from "@/features/shared/errors"
-import { useExportBackup, useImportBackup, useResetData, useSettings, useUpdateSettings } from "@/features/settings/hooks"
+import { useResetData, useSettings, useUpdateSettings } from "@/features/settings/hooks"
 
 const fileAcceptByImportType: Record<BackupImportType, string> = {
   flamette: ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -31,6 +32,7 @@ const importFormatLabels: Record<BackupImportType, string> = {
 }
 
 export const Route = createFileRoute("/_protected/settings")({
+  head: () => ({ meta: [{ title: "Settings — Flamette Money" }] }),
   component: SettingsPage,
 })
 
@@ -65,7 +67,7 @@ function SettingsPage() {
   const resetFeedback = useTransientFeedback()
 
   const currencyOptions = appInfoQuery.data?.supportedCurrencies?.map((item) => item.code.toUpperCase()) ?? ["USD", "EUR", "GBP", "PLN", "CAD"]
-  const isPageLoading = currentUserQuery.isLoading && !currentUserQuery.data
+  const isPageLoading = currentUserQuery.isPending
   const seedButtonBusy = seedDemo.isPending || exportBackup.isPending
   const importRequiresConfirmation = importType === "flamette"
   const importAccept = fileAcceptByImportType[importType]
@@ -176,13 +178,8 @@ function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Workspace tools.</p>
-      </header>
-
-      <Card className="border-border/60 bg-card/90 shadow-sm">
+    <div className="flex flex-col gap-6">
+      <Card>
         <CardHeader>
           <CardTitle>Preferences</CardTitle>
         </CardHeader>
@@ -211,7 +208,7 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 bg-card/90 shadow-sm">
+      <Card>
         <CardHeader className="gap-1">
           <CardTitle>Data</CardTitle>
           <CardDescription>Backup, import and sample data.</CardDescription>
@@ -257,7 +254,7 @@ function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/30 bg-card/90 shadow-sm">
+      <Card className="border-destructive/30">
         <CardHeader className="gap-1">
           <CardTitle>Danger zone</CardTitle>
           <CardDescription>Remove workspace data.</CardDescription>
@@ -523,13 +520,8 @@ function StatusIcon({ success = false }: { success?: boolean }) {
 
 function SettingsPageSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
-      <div className="space-y-2">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-4 w-40" />
-      </div>
-
-      <Card className="border-border/60 bg-card/90 shadow-sm">
+    <div className="flex flex-col gap-6">
+      <Card>
         <CardHeader className="gap-2">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-4 w-28" />
@@ -540,7 +532,7 @@ function SettingsPageSkeleton() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 bg-card/90 shadow-sm">
+      <Card>
         <CardHeader className="gap-2">
           <Skeleton className="h-5 w-14" />
           <Skeleton className="h-4 w-36" />

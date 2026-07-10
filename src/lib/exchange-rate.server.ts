@@ -94,8 +94,11 @@ export async function getRatesToBase(baseCurrency: string) {
     cache.set(normalizedBase, { expiresAt: now + ttl, snapshot })
     return snapshot
   } catch {
+    // A transient API failure should not pin the hardcoded approximate rates for the full
+    // TTL — retry soon while still absorbing short outages.
+    const fallbackTtl = Math.min(ttl, 5 * 60 * 1000)
     const snapshot = buildFallbackSnapshot(normalizedBase)
-    cache.set(normalizedBase, { expiresAt: now + ttl, snapshot })
+    cache.set(normalizedBase, { expiresAt: now + fallbackTtl, snapshot })
     return snapshot
   }
 }

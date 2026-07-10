@@ -1,11 +1,13 @@
 import * as React from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { ArrowDown01Icon, ArrowUp01Icon, ChartUpIcon, CreditCardIcon, Wallet01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
+import { ChartUpIcon, CreditCardIcon, Wallet01Icon } from "@hugeicons/core-free-icons"
 
 import { MetricCard } from "@/components/metric-card"
+import { IntervalSelect } from "@/components/interval-select"
+import { CardSkeleton, MetricCardsSkeleton } from "@/components/page-skeletons"
 import { SharedDateRangeToolbar } from "@/components/shared-date-range-toolbar"
+import { TrendBadge, formatTrendLabel } from "@/components/trend-badge"
 import { AreaChart, Area } from "@/components/charts/area-chart"
 import { Grid } from "@/components/charts/grid"
 import { XAxis } from "@/components/charts/x-axis"
@@ -16,51 +18,36 @@ import { ChartMarkers } from "@/components/charts/markers"
 import { ChartTripMarkerTooltip } from "@/components/chart-trip-marker-tooltip"
 import { useTrips } from "@/features/trips/hooks"
 import { buildTripMarkers, formatCompactNumber } from "@/lib/chart-utils"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/empty-state"
-import { useCurrentUser } from "@/features/app/hooks"
 import { usePortfolioBalanceSeriesReport } from "@/features/reports/hooks"
+import { useSettings } from "@/features/settings/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, toNumber } from "@/lib/finance"
-import { resolveSharedDateRange, toApiDateString, useSharedDateRangeFilters } from "@/lib/state/sharedDateRangeFilters"
+import { useSharedDateRangeQuery } from "@/lib/state/sharedDateRangeFilters"
 
 const BALANCE_COLOR = "var(--chart-2)"
 
 export const Route = createFileRoute("/_protected/analytics/portfolio")({
+  head: () => ({ meta: [{ title: "Portfolio — Flamette Money" }] }),
   component: AnalyticsPortfolioPage,
 })
 
 function AnalyticsPortfolioPage() {
-  const [interval, setInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
-  const currentUserQuery = useCurrentUser()
-  const baseCurrency = currentUserQuery.data?.baseCurrency ?? "USD"
-  const dateFilters = useSharedDateRangeFilters()
-  const resolvedDateRange = React.useMemo(() => resolveSharedDateRange(dateFilters), [dateFilters])
+  const [reportInterval, setReportInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
+  const settingsQuery = useSettings()
+  const baseCurrency = settingsQuery.data?.baseCurrency ?? "USD"
+  const dateRangeQuery = useSharedDateRangeQuery()
 
-  const query = React.useMemo(() => {
-    const value: {
-      StartDate?: string
-      EndDate?: string
-      Interval: "Auto" | "Day" | "Week" | "Month"
-      BaseCurrency: string
-    } = {
-      Interval: interval,
-      BaseCurrency: baseCurrency,
-    }
+  const query = React.useMemo(
+    () => ({ ...dateRangeQuery, Interval: reportInterval, BaseCurrency: baseCurrency }),
+    [baseCurrency, dateRangeQuery, reportInterval]
+  )
 
-    if (resolvedDateRange.start) {
-      value.StartDate = toApiDateString(resolvedDateRange.start)
-    }
-
-    if (resolvedDateRange.end) {
-      value.EndDate = toApiDateString(resolvedDateRange.end)
-    }
-
-    return value
-  }, [baseCurrency, interval, resolvedDateRange.end, resolvedDateRange.start])
-
-  const reportQuery = usePortfolioBalanceSeriesReport(query)
+  // Wait for the user's settings so the report is not fired with the "USD"
+  // fallback first and refetched once the real base currency arrives.
+  const reportQuery = usePortfolioBalanceSeriesReport(query, { enabled: Boolean(settingsQuery.data) })
   const resolvedBaseCurrency = reportQuery.data?.baseCurrency ?? baseCurrency
   const points = reportQuery.data?.points
 
@@ -103,7 +90,11 @@ function AnalyticsPortfolioPage() {
   const chartData = chartPresentation.data
   const tripsQuery = useTrips()
   const tripMarkers = React.useMemo(
-    () => buildTripMarkers(tripsQuery.data ?? [], chartData.map((point) => point.date)),
+    () =>
+      buildTripMarkers(
+        tripsQuery.data ?? [],
+        chartData.map((point) => point.date)
+      ),
     [tripsQuery.data, chartData]
   )
   const summary = reportQuery.data?.summary
@@ -126,17 +117,16 @@ function AnalyticsPortfolioPage() {
     <div className="flex flex-col gap-6">
       <SharedDateRangeToolbar />
 
-      {reportQuery.isPending ? (
+      {reportQuery.isError && !reportQuery.data ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load the balance report</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(reportQuery.error, "Try a different range or interval.")}</AlertDescription>
+        </Alert>
+      ) : reportQuery.isPending ? (
         <>
-          <div className="grid gap-3 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-[98px] animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-          <div className="h-[460px] animate-pulse rounded-xl bg-muted" />
+          <MetricCardsSkeleton count={3} className="gap-3 sm:grid-cols-1 lg:grid-cols-3" />
+          <CardSkeleton className="h-[460px]" />
         </>
-      ) : reportQuery.isError ? (
-        <EmptyState eyebrow="Report" title="Unable to load the balance report" description={getApiErrorMessage(reportQuery.error, "Try a different range or interval.")} />
       ) : chartData.length === 0 ? (
         <EmptyState
           eyebrow="Report"
@@ -159,7 +149,7 @@ function AnalyticsPortfolioPage() {
               icon={CreditCardIcon}
               iconBgClassName="bg-emerald-500/10 dark:bg-emerald-500/15"
               iconColorClassName="text-emerald-600 dark:text-emerald-400"
-              badge={<PortfolioTrendBadge delta={delta} deltaPercent={deltaPercent} />}
+              badge={<TrendBadge delta={delta} isBetter={delta > 0} label={formatTrendLabel(deltaPercent)} />}
             />
             <MetricCard
               label="Peak balance"
@@ -170,30 +160,14 @@ function AnalyticsPortfolioPage() {
             />
           </div>
 
-          <Card className="border-border bg-card/95 shadow-none">
-            <CardHeader className="gap-4">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>Portfolio balance trend</CardTitle>
                   <CardDescription>Track total balances over time in {resolvedBaseCurrency} across the selected range.</CardDescription>
                 </div>
-                <div className="flex min-w-36 flex-col gap-2">
-                  <span className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">Interval</span>
-                  <Select value={interval} onValueChange={(value) => setInterval((value as typeof interval) ?? "Auto")}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Interval" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {(["Auto", "Day", "Week", "Month"] as const).map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <IntervalSelect value={reportInterval} onValueChange={setReportInterval} />
               </div>
             </CardHeader>
             <CardContent>
@@ -222,25 +196,6 @@ function AnalyticsPortfolioPage() {
           </Card>
         </>
       )}
-    </div>
-  )
-}
-
-function PortfolioTrendBadge({ delta, deltaPercent }: { delta: number; deltaPercent: number }) {
-  const isNeutral = delta === 0
-  const isPositive = delta > 0
-  const icon = isNeutral ? null : isPositive ? ArrowUp01Icon : ArrowDown01Icon
-  const className = isNeutral
-    ? "border-border bg-muted/40 text-muted-foreground"
-    : isPositive
-      ? "border-emerald-500/20 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300"
-      : "border-rose-500/20 bg-rose-500/6 text-rose-700 dark:text-rose-300"
-  const label = isNeutral ? "Flat" : `${deltaPercent > 0 ? "+" : ""}${deltaPercent.toFixed(1)}%`
-
-  return (
-    <div className={`inline-flex max-w-full shrink-0 items-center gap-1 rounded-md border px-2 py-1 font-mono text-[10px] leading-none font-medium tracking-[0.14em] uppercase ${className}`}>
-      {icon ? <HugeiconsIcon icon={icon} strokeWidth={2} className="size-3.5" /> : null}
-      <span>{label}</span>
     </div>
   )
 }

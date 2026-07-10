@@ -1,4 +1,3 @@
-import type { ComponentProps } from "react"
 import {
   AddMoneyCircleIcon,
   BankIcon,
@@ -16,9 +15,7 @@ import {
   Wallet02Icon,
   WalletCardsIcon,
 } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
-
-type HugeIcon = ComponentProps<typeof HugeiconsIcon>["icon"]
+import type { HugeIcon } from "@/lib/icons"
 
 export type AccountIconDefinition = {
   name: string

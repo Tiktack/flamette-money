@@ -4,10 +4,11 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import type { HugeIcon } from "@/lib/icons"
 
-export type MetricCardIcon = Parameters<typeof HugeiconsIcon>[0]["icon"]
+export type MetricCardIcon = HugeIcon
 
-export interface MetricCardProps {
+export type MetricCardProps = {
   label: string
   value: React.ReactNode
   /** Rendered below a border-t separator at the bottom of the card. */
@@ -35,7 +36,7 @@ export function MetricCard({
   className,
 }: MetricCardProps) {
   const valueClasses = cn(
-    "min-w-0 break-words text-[1.25rem] leading-[1] font-semibold tracking-[-0.04em] text-foreground tabular-nums @[15rem]/card:text-[1.45rem] @[18rem]/card:text-[1.65rem]",
+    "min-w-0 text-[1.25rem] leading-[1] font-semibold tracking-[-0.04em] break-words text-foreground tabular-nums @[15rem]/card:text-[1.45rem] @[18rem]/card:text-[1.65rem]",
     valueClassName
   )
 
@@ -43,7 +44,7 @@ export function MetricCard({
     <Card
       size="sm"
       className={cn(
-        "relative min-w-0 @container/card overflow-hidden border-border bg-card/95 shadow-none",
+        "@container/card relative min-w-0 overflow-hidden border-border bg-card/95 shadow-none",
         "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent",
         className
       )}

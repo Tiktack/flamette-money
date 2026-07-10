@@ -19,6 +19,7 @@ import { Route as ProtectedSettingsRouteImport } from './routes/_protected/setti
 import { Route as ProtectedCategoriesRouteImport } from './routes/_protected/categories'
 import { Route as ProtectedAnalyticsRouteImport } from './routes/_protected/analytics'
 import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts'
+import { Route as ProtectedAnalyticsIndexRouteImport } from './routes/_protected/analytics.index'
 import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
 import { Route as ApiReceiptsScanRouteImport } from './routes/api/receipts/scan'
 import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
@@ -77,6 +78,11 @@ const ProtectedAccountsRoute = ProtectedAccountsRouteImport.update({
   id: '/accounts',
   path: '/accounts',
   getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedAnalyticsIndexRoute = ProtectedAnalyticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProtectedAnalyticsRoute,
 } as any)
 const ApiSeedDemoRoute = ApiSeedDemoRouteImport.update({
   id: '/api/seed/demo',
@@ -147,12 +153,12 @@ export interface FileRoutesByFullPath {
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
   '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
+  '/analytics/': typeof ProtectedAnalyticsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/accounts': typeof ProtectedAccountsRoute
-  '/analytics': typeof ProtectedAnalyticsRouteWithChildren
   '/categories': typeof ProtectedCategoriesRoute
   '/settings': typeof ProtectedSettingsRoute
   '/transactions': typeof ProtectedTransactionsRoute
@@ -167,6 +173,7 @@ export interface FileRoutesByTo {
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
   '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
+  '/analytics': typeof ProtectedAnalyticsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -189,6 +196,7 @@ export interface FileRoutesById {
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
   '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
+  '/_protected/analytics/': typeof ProtectedAnalyticsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,12 +219,12 @@ export interface FileRouteTypes {
     | '/api/profile/import-backup'
     | '/api/receipts/scan'
     | '/api/seed/demo'
+    | '/analytics/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/sign-in'
     | '/accounts'
-    | '/analytics'
     | '/categories'
     | '/settings'
     | '/transactions'
@@ -231,6 +239,7 @@ export interface FileRouteTypes {
     | '/api/profile/import-backup'
     | '/api/receipts/scan'
     | '/api/seed/demo'
+    | '/analytics'
   id:
     | '__root__'
     | '/'
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/api/profile/import-backup'
     | '/api/receipts/scan'
     | '/api/seed/demo'
+    | '/_protected/analytics/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -338,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAccountsRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/analytics/': {
+      id: '/_protected/analytics/'
+      path: '/'
+      fullPath: '/analytics/'
+      preLoaderRoute: typeof ProtectedAnalyticsIndexRouteImport
+      parentRoute: typeof ProtectedAnalyticsRoute
+    }
     '/api/seed/demo': {
       id: '/api/seed/demo'
       path: '/api/seed/demo'
@@ -409,6 +426,7 @@ interface ProtectedAnalyticsRouteChildren {
   ProtectedAnalyticsCategoriesRoute: typeof ProtectedAnalyticsCategoriesRoute
   ProtectedAnalyticsCompareRoute: typeof ProtectedAnalyticsCompareRoute
   ProtectedAnalyticsPortfolioRoute: typeof ProtectedAnalyticsPortfolioRoute
+  ProtectedAnalyticsIndexRoute: typeof ProtectedAnalyticsIndexRoute
 }
 
 const ProtectedAnalyticsRouteChildren: ProtectedAnalyticsRouteChildren = {
@@ -416,6 +434,7 @@ const ProtectedAnalyticsRouteChildren: ProtectedAnalyticsRouteChildren = {
   ProtectedAnalyticsCategoriesRoute: ProtectedAnalyticsCategoriesRoute,
   ProtectedAnalyticsCompareRoute: ProtectedAnalyticsCompareRoute,
   ProtectedAnalyticsPortfolioRoute: ProtectedAnalyticsPortfolioRoute,
+  ProtectedAnalyticsIndexRoute: ProtectedAnalyticsIndexRoute,
 }
 
 const ProtectedAnalyticsRouteWithChildren =

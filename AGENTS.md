@@ -36,7 +36,7 @@ Flamette Money is a full-stack **TanStack Start** personal finance app focused o
 
 - `src\routes\` — file-based routes and API-style handlers
 - `src\features\` — feature modules with hooks, query options, types, services, and server functions
-- `src\features\shared\server\finance-data.server.ts` — central finance business rules and CRUD
+- `src\features\shared\server\` — shared server building blocks: `lookups.server.ts` (requireUser/requireAccount/…), `normalizers.server.ts`, `validators.ts` (zod schemas), `fx.server.ts` (currency conversion helpers), `user-data.server.ts` (user data wipe)
 - `src\lib\` — auth, db, env, bootstrap, currency, exchange rates, utilities
 - `src\components\` — shared app components
 - `src\components\ui\` — shadcn/ui primitives
@@ -45,7 +45,7 @@ Flamette Money is a full-stack **TanStack Start** personal finance app focused o
 
 ## Route and data flow
 
-- `src\routes\__root.tsx` sets up query client, toasts, tooltips, and document shell.
+- `src\routes\__root.tsx` sets up the query client, tooltips, and document shell.
 - `src\routes\_protected.tsx` is the authenticated layout and redirects unauthenticated users to `/sign-in`.
 - Protected pages live under `src\routes\_protected\`.
 - Use `src\routes\api\` only when raw `Request`/`Response`, upload, or download handling is needed.
@@ -53,7 +53,7 @@ Flamette Money is a full-stack **TanStack Start** personal finance app focused o
 Preferred implementation path for most product changes:
 
 1. update validators or feature types
-2. update service logic in `finance-data.server.ts` or feature `service.server.ts`
+2. update service logic in the feature's `service.server.ts` (shared rules live in `src\features\shared\server\`)
 3. expose through feature `server\functions.ts`
 4. wire query options and hooks
 5. update route and component usage
@@ -83,6 +83,8 @@ Main tables live in `src\lib\db\schema.ts`. The SQLite schema is created and kep
 - Keep request validation in Zod and business invariants in server code.
 - Prefer explicit thrown errors over silent fallbacks.
 - Reuse `src\lib\db\sqlite-batch.server.ts` for bulk SQLite work.
+- Wrap multi-write operations in `runDbTransaction()` from `src\lib\db\client.server.ts` (synchronous callback; use Drizzle's `.run()`/`.all()`/`.get()` inside).
+- Raw route handlers reuse `HttpError`/`fail`/`requireUserForRequest`/`toErrorResponse` from `src\lib\server\http.server.ts`.
 
 ## UI conventions
 
