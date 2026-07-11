@@ -653,6 +653,12 @@ export async function searchTransactionsFacetsData(query?: TransactionSearchQuer
 
 export async function createTransactionData(request: CreateTransactionRequest): Promise<CreateTransactionResponse> {
   const user = await requireUser()
+  return createTransactionForUser(user, request)
+}
+
+// Session-independent creation path shared with background jobs (email import). Enforces
+// the same validation and balance bookkeeping as interactive creation.
+export async function createTransactionForUser(user: UserRecord, request: CreateTransactionRequest): Promise<CreateTransactionResponse> {
   const validated = await validateTransactionRequest(user, request)
   const id = crypto.randomUUID()
   const now = new Date()

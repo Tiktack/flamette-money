@@ -148,6 +148,18 @@ export function getExchangeRateCacheHours() {
   return Number.parseInt(getEnvValue("EXCHANGE_RATE_CACHE_HOURS") ?? "5", 10)
 }
 
+export function getEmailImportEncryptionKey() {
+  return getEnvValue("EMAIL_IMPORT_ENCRYPTION_KEY")
+}
+
+export function getEmailImportDefaultPollMinutes() {
+  return Number.parseInt(getEnvValue("EMAIL_IMPORT_DEFAULT_POLL_MINUTES") ?? "60", 10)
+}
+
+export function getEmailImportMaxMessagesPerSync() {
+  return Number.parseInt(getEnvValue("EMAIL_IMPORT_MAX_MESSAGES_PER_SYNC") ?? "50", 10)
+}
+
 export function getOpenRouterApiKey() {
   return getEnvValue("OPENROUTER_API_KEY") ?? getEnvValue("OpenRouter__ApiKey") ?? getEnvValue("OPENROUTER_APIKEY")
 }

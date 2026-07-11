@@ -43,6 +43,13 @@ export const transactionMutationInvalidations = [
   ...transactionDerivedInvalidations,
 ] as const satisfies readonly QueryInvalidation[]
 
+export const emailImportInvalidations = [
+  { queryKey: queryKeys.emailConnections() },
+  { queryKey: queryKeys.emailImportRules() },
+  { queryKey: queryKeys.emailImportItemsAll() },
+  { queryKey: queryKeys.emailImportStatus() },
+] as const satisfies readonly QueryInvalidation[]
+
 export const fullDataRefreshInvalidations = [
   { queryKey: queryKeys.authMe() },
   { queryKey: queryKeys.accounts() },

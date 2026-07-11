@@ -5,6 +5,13 @@ import { db } from "@/lib/db/client.server"
 import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
 
 export async function requireUser() {
+  // Covers dev and non-add-on deployments where the healthz watchdog isn't polling:
+  // the first authenticated request starts the email-import scheduler. Dynamic import
+  // avoids a static cycle (scheduler → sync → transactions service → this module).
+  void import("@/features/email-import/server/scheduler.server")
+    .then((scheduler) => scheduler.ensureEmailImportScheduler())
+    .catch(() => {})
+
   const session = await requireSessionData()
   const user = await db.query.users.findFirst({
     where: eq(users.id, session.user.id),

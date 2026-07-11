@@ -5,6 +5,9 @@ export const accountTypes = ["Cash", "DebitCard", "CreditCard", "Savings"] as co
 export const categoryTypes = ["Income", "Expense"] as const
 export const subscriptionTypes = ["Free", "Premium"] as const
 export const transactionTypes = ["Income", "Expense", "Transfer", "Refund"] as const
+export const emailImportItemStatuses = ["pending", "unparsed", "imported", "dismissed", "ignored", "error"] as const
+export const emailSyncStatuses = ["ok", "auth_failed", "folder_missing", "network", "error"] as const
+export const emailRuleMatchModes = ["all", "any"] as const
 
 const timestampDefault = sql`(cast(unixepoch('subsecond') * 1000 as integer))`
 
@@ -216,6 +219,88 @@ export const transactionItems = sqliteTable(
   (table) => [index("transaction_items_transaction_id_created_at_idx").on(table.transactionId, table.createdAt)]
 )
 
+export const emailConnections = sqliteTable(
+  "email_connections",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    host: text("host").notNull().default("imap.gmail.com"),
+    port: integer("port").notNull().default(993),
+    username: text("username").notNull(),
+    passwordEncrypted: text("password_encrypted").notNull(),
+    folder: text("folder").notNull(),
+    parserKey: text("parser_key").notNull().default("pko-bank-polski"),
+    defaultAccountId: text("default_account_id").references(() => accounts.id, { onDelete: "set null" }),
+    enabled: integer("enabled", { mode: "boolean" }).default(true).notNull(),
+    pollIntervalMinutes: integer("poll_interval_minutes").notNull().default(60),
+    uidValidity: integer("uid_validity"),
+    lastSeenUid: integer("last_seen_uid").notNull().default(0),
+    lastSyncAt: integer("last_sync_at", { mode: "timestamp_ms" }),
+    lastSyncStatus: text("last_sync_status", { enum: emailSyncStatuses }),
+    lastSyncError: text("last_sync_error"),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+  },
+  (table) => [index("email_connections_user_id_created_at_idx").on(table.userId, table.createdAt)]
+)
+
+export const emailImportRules = sqliteTable(
+  "email_import_rules",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).default(true).notNull(),
+    priority: integer("priority").notNull(),
+    matchMode: text("match_mode", { enum: emailRuleMatchModes }).notNull().default("all"),
+    conditions: text("conditions").notNull(),
+    action: text("action").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+  },
+  (table) => [index("email_import_rules_user_id_priority_idx").on(table.userId, table.priority)]
+)
+
+export const emailImportItems = sqliteTable(
+  "email_import_items",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    connectionId: text("connection_id")
+      .notNull()
+      .references(() => emailConnections.id, { onDelete: "cascade" }),
+    uidValidity: integer("uid_validity").notNull().default(0),
+    messageUid: integer("message_uid").notNull(),
+    messageId: text("message_id"),
+    subject: text("subject"),
+    fromAddress: text("from_address"),
+    emailDate: integer("email_date", { mode: "timestamp_ms" }),
+    rawText: text("raw_text"),
+    status: text("status", { enum: emailImportItemStatuses }).notNull(),
+    parsedJson: text("parsed_json"),
+    parseError: text("parse_error"),
+    matchedRuleId: text("matched_rule_id").references(() => emailImportRules.id, { onDelete: "set null" }),
+    transactionId: text("transaction_id").references(() => transactions.id, { onDelete: "set null" }),
+    error: text("error"),
+    importedAt: integer("imported_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
+  },
+  (table) => [
+    uniqueIndex("email_import_items_connection_uid_idx").on(table.connectionId, table.uidValidity, table.messageUid),
+    index("email_import_items_user_id_status_created_at_idx").on(table.userId, table.status, table.createdAt),
+    index("email_import_items_connection_id_message_id_idx").on(table.connectionId, table.messageId),
+  ]
+)
+
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   authAccounts: many(authAccounts),
@@ -223,6 +308,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   categories: many(categories),
   trips: many(trips),
   transactions: many(transactions),
+  emailConnections: many(emailConnections),
+  emailImportRules: many(emailImportRules),
+  emailImportItems: many(emailImportItems),
 }))
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
@@ -287,5 +375,44 @@ export const authAccountsRelations = relations(authAccounts, ({ one }) => ({
   user: one(users, {
     fields: [authAccounts.userId],
     references: [users.id],
+  }),
+}))
+
+export const emailConnectionsRelations = relations(emailConnections, ({ one, many }) => ({
+  user: one(users, {
+    fields: [emailConnections.userId],
+    references: [users.id],
+  }),
+  defaultAccount: one(accounts, {
+    fields: [emailConnections.defaultAccountId],
+    references: [accounts.id],
+  }),
+  items: many(emailImportItems),
+}))
+
+export const emailImportRulesRelations = relations(emailImportRules, ({ one, many }) => ({
+  user: one(users, {
+    fields: [emailImportRules.userId],
+    references: [users.id],
+  }),
+  items: many(emailImportItems),
+}))
+
+export const emailImportItemsRelations = relations(emailImportItems, ({ one }) => ({
+  user: one(users, {
+    fields: [emailImportItems.userId],
+    references: [users.id],
+  }),
+  connection: one(emailConnections, {
+    fields: [emailImportItems.connectionId],
+    references: [emailConnections.id],
+  }),
+  matchedRule: one(emailImportRules, {
+    fields: [emailImportItems.matchedRuleId],
+    references: [emailImportRules.id],
+  }),
+  transaction: one(transactions, {
+    fields: [emailImportItems.transactionId],
+    references: [transactions.id],
   }),
 }))

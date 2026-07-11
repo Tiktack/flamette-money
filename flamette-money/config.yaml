@@ -32,6 +32,7 @@ options:
   google_client_secret: ""
   github_client_id: ""
   github_client_secret: ""
+  email_import_encryption_key: ""
 schema:
   better_auth_secret: password
   better_auth_url: str?
@@ -45,3 +46,6 @@ schema:
   google_client_secret: password?
   github_client_id: str?
   github_client_secret: password?
+  email_import_encryption_key: password?
+  email_import_default_poll_minutes: int?
+  email_import_max_messages_per_sync: int?
