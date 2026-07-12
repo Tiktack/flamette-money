@@ -4,13 +4,28 @@ import { requireSessionData } from "@/lib/auth/session.server"
 import { db } from "@/lib/db/client.server"
 import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
 
-export async function requireUser() {
-  // Covers dev and non-add-on deployments where the healthz watchdog isn't polling:
-  // the first authenticated request starts the email-import scheduler. Dynamic import
-  // avoids a static cycle (scheduler → sync → transactions service → this module).
+// Fired once per process (not per request) so a broken dynamic import surfaces in the logs
+// instead of silently retrying on every authenticated call. `ensureEmailImportScheduler`
+// is itself idempotent; this flag only avoids the redundant import/promise churn.
+let schedulerBootstrapAttempted = false
+
+function startEmailImportSchedulerOnce() {
+  if (schedulerBootstrapAttempted) {
+    return
+  }
+  schedulerBootstrapAttempted = true
+
+  // Covers dev and non-add-on deployments where the healthz watchdog isn't polling. Dynamic
+  // import avoids a static cycle (scheduler → sync → transactions service → this module).
   void import("@/features/email-import/server/scheduler.server")
     .then((scheduler) => scheduler.ensureEmailImportScheduler())
-    .catch(() => {})
+    .catch((error) => {
+      console.error("[email-import] failed to start scheduler from requireUser", error)
+    })
+}
+
+export async function requireUser() {
+  startEmailImportSchedulerOnce()
 
   const session = await requireSessionData()
   const user = await db.query.users.findFirst({

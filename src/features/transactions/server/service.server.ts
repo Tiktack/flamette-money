@@ -651,6 +651,26 @@ export async function searchTransactionsFacetsData(query?: TransactionSearchQuer
   }
 }
 
+// Thrown when the transaction was durably committed but the follow-up read to build the
+// response failed. Callers that only need the id (e.g. email auto-import) can recover from
+// this without re-creating and duplicating the transaction.
+export class TransactionCommittedButNotReadError extends Error {
+  transactionId: string
+
+  constructor(transactionId: string, options?: { cause?: unknown }) {
+    super("The transaction was created but could not be read back.", options)
+    this.name = "TransactionCommittedButNotReadError"
+    this.transactionId = transactionId
+  }
+}
+
+export type CreateTransactionForUserOptions = {
+  // Runs inside the same DB transaction as the insert, so linking the new transaction to
+  // another row (e.g. an email import item) commits or rolls back atomically with it.
+  // Throwing here rolls back the whole creation.
+  withinTransaction?: (tx: AppTransaction, transactionId: string) => void
+}
+
 export async function createTransactionData(request: CreateTransactionRequest): Promise<CreateTransactionResponse> {
   const user = await requireUser()
   return createTransactionForUser(user, request)
@@ -658,7 +678,11 @@ export async function createTransactionData(request: CreateTransactionRequest): 
 
 // Session-independent creation path shared with background jobs (email import). Enforces
 // the same validation and balance bookkeeping as interactive creation.
-export async function createTransactionForUser(user: UserRecord, request: CreateTransactionRequest): Promise<CreateTransactionResponse> {
+export async function createTransactionForUser(
+  user: UserRecord,
+  request: CreateTransactionRequest,
+  options?: CreateTransactionForUserOptions
+): Promise<CreateTransactionResponse> {
   const validated = await validateTransactionRequest(user, request)
   const id = crypto.randomUUID()
   const now = new Date()
@@ -699,10 +723,19 @@ export async function createTransactionForUser(user: UserRecord, request: Create
       .run()
 
     insertTransactionItems(tx, itemsToInsert)
+
+    options?.withinTransaction?.(tx, id)
   })
 
-  const created = await requireTransaction(user.id, id)
-  return mapTransactionDetail(created)
+  // The transaction is committed at this point. A failure reading it back must not discard
+  // the successful write — otherwise the email-import path would mark the item "error" and
+  // re-create a duplicate on the next sync/re-parse.
+  try {
+    const created = await requireTransaction(user.id, id)
+    return mapTransactionDetail(created)
+  } catch (error) {
+    throw new TransactionCommittedButNotReadError(id, { cause: error })
+  }
 }
 
 export async function updateTransactionData(transactionId: string, request: UpdateTransactionRequest): Promise<UpdateTransactionResponse> {

@@ -17,10 +17,10 @@ import { Button } from "@/components/ui/button"
 import type { TransactionEditorDraft } from "@/components/transaction-editor-dialog"
 import { useAccounts } from "@/features/accounts/hooks"
 import { matchAccountIdByBankHint } from "@/features/email-import/account-hint"
-import { useEmailConnections, useEmailImportItems, useEmailImportRules, useLinkEmailImportItem, useReparseEmailImportItems } from "@/features/email-import/hooks"
+import { useApproveEmailImportItem, useEmailConnections, useEmailImportItems, useEmailImportRules, useReparseEmailImportItems } from "@/features/email-import/hooks"
 import { emailImportItemStatusOptions, type EmailImportItemDetail, type EmailImportItemListItem, type EmailImportItemStatus } from "@/features/email-import/types"
 import { getApiErrorMessage } from "@/features/shared/errors"
-import { formatCurrency, formatDateLabel } from "@/lib/finance"
+import { formatCurrency, formatDateInput, formatDateLabel } from "@/lib/finance"
 
 const DEFAULT_STATUSES: EmailImportItemStatus[] = ["pending", "unparsed", "error"]
 
@@ -37,7 +37,7 @@ function EmailImportReviewPage() {
   const connectionsQuery = useEmailConnections()
   const rulesQuery = useEmailImportRules()
   const accountsQuery = useAccounts()
-  const linkItem = useLinkEmailImportItem()
+  const approveItem = useApproveEmailImportItem()
   const reparseItems = useReparseEmailImportItems()
   const [statuses, setStatuses] = React.useState<string[]>(DEFAULT_STATUSES)
   const [connectionIds, setConnectionIds] = React.useState<string[]>(search.connection ? [search.connection] : [])
@@ -86,7 +86,9 @@ function EmailImportReviewPage() {
       const parsed = item.parsed
 
       return {
-        date: parsed?.bookedAt ?? (item.emailDate ? item.emailDate.slice(0, 10) : null),
+        // Fall back to the email's local calendar date (formatDateInput), matching the
+        // server auto-create path — not a UTC slice, which can land on the previous day.
+        date: parsed?.bookedAt ?? (item.emailDate ? formatDateInput(new Date(item.emailDate)) : null),
         type: parsed ? (parsed.direction === "income" ? "Income" : "Expense") : undefined,
         amount: parsed?.amount ?? null,
         currency: parsed?.currency ?? null,
@@ -108,16 +110,6 @@ function EmailImportReviewPage() {
       setApproveTarget({ itemId: item.id, draft: buildDraft(item) })
     },
     [buildDraft]
-  )
-
-  const handleCreated = React.useCallback(
-    (transactionId: string) => {
-      if (!approveTarget) {
-        return
-      }
-      linkItem.mutate({ id: approveTarget.itemId, transactionId })
-    },
-    [approveTarget, linkItem]
   )
 
   const handleReparse = async () => {
@@ -298,7 +290,13 @@ function EmailImportReviewPage() {
         mode="new"
         onOpenChange={(open) => !open && setApproveTarget(null)}
         initialDraft={approveTarget?.draft}
-        onCreated={handleCreated}
+        submitNewOverride={async (request) => {
+          if (!approveTarget) {
+            return
+          }
+          // Create the transaction and mark the review item imported in one atomic call.
+          await approveItem.mutateAsync({ id: approveTarget.itemId, request })
+        }}
       />
     </div>
   )

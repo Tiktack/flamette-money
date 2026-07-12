@@ -1,8 +1,10 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm"
 
 import { evaluateEmailRule, type EmailRuleAction, type EmailRuleCondition } from "@/features/email-import/rules"
-import { requireAccount, requireCategory, requireTransaction, requireUser } from "@/features/shared/server/lookups.server"
+import { requireAccount, requireCategory, requireUser } from "@/features/shared/server/lookups.server"
 import { emailRuleActionSchema, emailRuleConditionSchema, parsedEmailTransactionSchema } from "@/features/shared/server/validators"
+import type { CreateTransactionRequest } from "@/features/shared/types"
+import { createTransactionForUser, TransactionCommittedButNotReadError } from "@/features/transactions/server/service.server"
 import { decryptSecret, encryptSecret, SecretDecryptError } from "@/lib/crypto.server"
 import { db, runDbTransaction } from "@/lib/db/client.server"
 import { emailConnections, emailImportItems, emailImportRules } from "@/lib/db/schema"
@@ -445,17 +447,27 @@ export async function reorderEmailImportRulesData(orderedIds: string[]): Promise
   const user = await requireUser()
   const rows = await db.query.emailImportRules.findMany({
     where: eq(emailImportRules.userId, user.id),
-    columns: { id: true },
+    columns: { id: true, priority: true },
+    orderBy: [asc(emailImportRules.priority), asc(emailImportRules.createdAt)],
   })
 
   const existingIds = new Set(rows.map((row) => row.id))
-  if (existingIds.size !== orderedIds.length || orderedIds.some((id) => !existingIds.has(id))) {
+  const uniqueProvided = new Set(orderedIds)
+  // Every provided id must be a distinct rule that belongs to the user. We do NOT require
+  // the client to list every rule: rows hidden from the list (e.g. corrupt JSON that fails
+  // to map) would otherwise make reordering impossible, since the client never sees them.
+  if (uniqueProvided.size !== orderedIds.length || orderedIds.some((id) => !existingIds.has(id))) {
     throw new Error("The rule order is out of date. Refresh and try again.")
   }
 
+  // Any rules the client didn't send keep their existing relative order after the reordered
+  // ones, so a hidden/corrupt row can't block reordering the visible rules.
+  const trailingIds = rows.map((row) => row.id).filter((id) => !uniqueProvided.has(id))
+  const finalOrder = [...orderedIds, ...trailingIds]
+
   const now = new Date()
   runDbTransaction((tx) => {
-    orderedIds.forEach((id, index) => {
+    finalOrder.forEach((id, index) => {
       tx.update(emailImportRules)
         .set({ priority: index + 1, updatedAt: now })
         .where(and(eq(emailImportRules.userId, user.id), eq(emailImportRules.id, id)))
@@ -593,15 +605,39 @@ export async function getEmailImportItemData(itemId: string): Promise<EmailImpor
   return { ...mapItem(item), rawText: item.rawText }
 }
 
-export async function linkEmailImportItemData(itemId: string, transactionId: string): Promise<void> {
+// Approve a reviewed email into a transaction. Creating the transaction and marking the
+// item imported happen in ONE DB transaction, so a failure can never leave a created
+// transaction with a still-pending item (which a re-approve would then duplicate).
+export async function approveEmailImportItemData(itemId: string, request: CreateTransactionRequest): Promise<{ transactionId: string }> {
   const user = await requireUser()
-  await requireEmailImportItem(user.id, itemId)
-  await requireTransaction(user.id, transactionId)
+  const item = await requireEmailImportItem(user.id, itemId)
+  if (item.status === "imported") {
+    throw new Error("This email has already been imported.")
+  }
 
-  await db
-    .update(emailImportItems)
-    .set({ status: "imported", transactionId, importedAt: new Date(), error: null, updatedAt: new Date() })
-    .where(and(eq(emailImportItems.userId, user.id), eq(emailImportItems.id, itemId)))
+  try {
+    const created = await createTransactionForUser(user, request, {
+      withinTransaction: (tx, transactionId) => {
+        const linked = tx
+          .update(emailImportItems)
+          .set({ status: "imported", transactionId, importedAt: new Date(), error: null, updatedAt: new Date() })
+          // The `ne(..., "imported")` guard makes a concurrent approve of the same item a
+          // no-op update; 0 rows changed rolls back the whole creation.
+          .where(and(eq(emailImportItems.userId, user.id), eq(emailImportItems.id, itemId), ne(emailImportItems.status, "imported")))
+          .run()
+        if (linked.changes === 0) {
+          throw new Error("This email has already been imported.")
+        }
+      },
+    })
+    return { transactionId: created.id }
+  } catch (error) {
+    // The transaction and the link committed together; only the read-back failed.
+    if (error instanceof TransactionCommittedButNotReadError) {
+      return { transactionId: error.transactionId }
+    }
+    throw error
+  }
 }
 
 export async function dismissEmailImportItemData(itemId: string): Promise<void> {

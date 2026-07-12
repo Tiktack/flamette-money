@@ -50,7 +50,10 @@ export type TransactionEditorDialogProps = {
   presetTripId?: string
   presetType?: TransactionType
   initialDraft?: TransactionEditorDraft
-  onCreated?: (transactionId: string) => void
+  // Replaces the default create mutation in "new" mode (e.g. the email-import approve flow
+  // creates the transaction and links the review item atomically in one server call). It
+  // throws on failure so the dialog surfaces the error like any other save.
+  submitNewOverride?: (request: TransactionCreateRequest) => Promise<unknown>
 }
 
 type TransactionItemFormState = {
@@ -996,7 +999,7 @@ export function TransactionEditorDialog({
   presetTripId,
   presetType,
   initialDraft,
-  onCreated,
+  submitNewOverride,
 }: TransactionEditorDialogProps) {
   const accountsQuery = useAccounts()
   const appInfoQuery = useAppInfo()
@@ -1206,9 +1209,10 @@ export function TransactionEditorDialog({
     try {
       if (mode === "edit" && transactionId) {
         await updateTransaction.mutateAsync({ id: transactionId, request })
+      } else if (submitNewOverride) {
+        await submitNewOverride(request as TransactionCreateRequest)
       } else {
-        const created = await createTransaction.mutateAsync(request)
-        onCreated?.(created.id)
+        await createTransaction.mutateAsync(request)
       }
       onOpenChange(false)
     } catch (error) {

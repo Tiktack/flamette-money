@@ -10,12 +10,12 @@ import {
   emailImportStatusQueryOptions,
 } from "./query-options"
 import {
+  approveEmailImportItem,
   createEmailConnection,
   createEmailImportRule,
   deleteEmailConnection,
   deleteEmailImportRule,
   dismissEmailImportItem,
-  linkEmailImportItem,
   previewEmailImportRule,
   reorderEmailImportRules,
   reparseEmailImportItems,
@@ -34,6 +34,7 @@ import type {
   EmailRuleMatchMode,
 } from "./types"
 import type { EmailRuleCondition } from "./rules"
+import type { TransactionCreateRequest } from "@/features/transactions/types"
 
 export function useEmailConnections() {
   return useQuery(emailConnectionsQueryOptions())
@@ -146,12 +147,17 @@ export function usePreviewEmailImportRule() {
   })
 }
 
-export function useLinkEmailImportItem() {
+// Creates the transaction and marks the item imported atomically (server-side), then
+// refreshes both the import views and the transaction-derived caches.
+export function useApproveEmailImportItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, transactionId }: { id: string; transactionId: string }) => linkEmailImportItem({ data: { id, transactionId } }).then(() => undefined),
-    onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
+    mutationFn: ({ id, request }: { id: string; request: TransactionCreateRequest }) => approveEmailImportItem({ data: { id, request } }),
+    onSuccess: async () => {
+      await invalidateQueries(queryClient, emailImportInvalidations)
+      await invalidateQueries(queryClient, transactionMutationInvalidations)
+    },
   })
 }
 

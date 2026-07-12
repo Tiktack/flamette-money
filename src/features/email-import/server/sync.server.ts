@@ -173,15 +173,21 @@ export async function syncEmailConnection(connectionId: string): Promise<EmailIm
 
     const context = await buildEmailResolutionContext(connection)
     const result = emptySyncResult()
+    // messages are ascending; the cursor may only advance across UIDs whose item row is
+    // durably persisted, so we advance AFTER each success and stop at the first failure.
     let maxProcessedUid = fetchResult.uidValidityChanged ? 0 : connection.lastSeenUid
 
     for (const message of fetchResult.messages) {
       try {
         await processMessage(context, message, fetchResult.uidValidity, result)
       } catch (error) {
-        // Never let one poison message stall the cursor or the rest of the batch.
-        console.error(`[email-import] failed to process message uid=${message.uid} for connection ${connectionId}`, error)
+        // The item row was not durably written (e.g. the insert itself failed). Stop the
+        // batch WITHOUT advancing past this UID so the message is retried next sync instead
+        // of being skipped forever. A message that was inserted but failed later resolution
+        // is deduped on retry (and stays a visible pending item), so this never duplicates.
+        console.error(`[email-import] stopping sync batch at uid=${message.uid} for connection ${connectionId}; will retry next sync`, error)
         result.errors += 1
+        break
       }
       maxProcessedUid = Math.max(maxProcessedUid, message.uid)
     }

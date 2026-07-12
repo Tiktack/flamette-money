@@ -5,7 +5,7 @@ import {
   emailConnectionRequestSchema,
   emailConnectionTestSchema,
   emailConnectionUpdateSchema,
-  emailImportItemLinkSchema,
+  emailImportItemApproveSchema,
   emailImportItemsQuerySchema,
   emailImportReparseSchema,
   emailImportRuleRequestSchema,
@@ -15,6 +15,7 @@ import {
 } from "@/features/shared/server/validators"
 
 import {
+  approveEmailImportItemData,
   createEmailConnectionData,
   createEmailImportRuleData,
   deleteEmailConnectionData,
@@ -22,7 +23,6 @@ import {
   dismissEmailImportItemData,
   getEmailImportItemData,
   getEmailImportStatusData,
-  linkEmailImportItemData,
   listEmailConnectionsData,
   listEmailImportItemsData,
   listEmailImportRulesData,
@@ -96,11 +96,9 @@ export const getEmailImportItem = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => idSchema.parse(data))
   .handler(async ({ data }) => getEmailImportItemData(data.id))
 
-export const linkEmailImportItem = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailImportItemLinkSchema.parse(data))
-  .handler(async ({ data }) => {
-    await linkEmailImportItemData(data.id, data.transactionId)
-  })
+export const approveEmailImportItem = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => emailImportItemApproveSchema.parse(data))
+  .handler(async ({ data }) => approveEmailImportItemData(data.id, data.request))
 
 export const dismissEmailImportItem = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => idSchema.parse(data))

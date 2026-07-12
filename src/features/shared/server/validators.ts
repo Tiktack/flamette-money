@@ -270,9 +270,9 @@ export const emailImportItemsQuerySchema = z
   })
   .optional()
 
-export const emailImportItemLinkSchema = z.object({
+export const emailImportItemApproveSchema = z.object({
   id: z.string(),
-  transactionId: z.string(),
+  request: transactionRequestSchema,
 })
 
 export const emailImportReparseSchema = z.object({

@@ -5,7 +5,7 @@ import { matchAccountIdByBankHint } from "@/features/email-import/account-hint"
 import { evaluateEmailImportRules, type EmailImportRuleDefinition, type EmailRuleAction } from "@/features/email-import/rules"
 import { emailRuleActionSchema, emailRuleConditionSchema } from "@/features/shared/server/validators"
 import type { CreateTransactionRequest } from "@/features/shared/types"
-import { createTransactionForUser } from "@/features/transactions/server/service.server"
+import { createTransactionForUser, TransactionCommittedButNotReadError } from "@/features/transactions/server/service.server"
 import { normalizeCurrencyOrNull } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
 import { accounts, categories, emailConnections, emailImportRules, users } from "@/lib/db/schema"
@@ -106,7 +106,8 @@ function canAutoCreate(
     return false
   }
 
-  if (!context.accountById.has(assignment.accountId)) {
+  const account = context.accountById.get(assignment.accountId)
+  if (!account) {
     return false
   }
 
@@ -127,7 +128,15 @@ function canAutoCreate(
     }
   }
 
-  return normalizeCurrencyOrNull(parsed.currency) !== null
+  const normalizedCurrency = normalizeCurrencyOrNull(parsed.currency)
+  if (normalizedCurrency === null) {
+    return false
+  }
+
+  // The email's currency must match the target account's currency. Auto-creating a foreign
+  // amount would apply it raw to the account balance with no FX conversion (a EUR debit
+  // hitting a PLN account), so currency mismatches go to the review inbox instead.
+  return account.currency.trim().toUpperCase() === normalizedCurrency
 }
 
 function buildTransactionRequest(
@@ -186,6 +195,11 @@ export async function resolveEmailItem(context: EmailResolutionContext, input: B
     const created = await createTransactionForUser(context.user, request)
     return { status: "imported", parsed, matchedRuleId, transactionId: created.id }
   } catch (error) {
+    if (error instanceof TransactionCommittedButNotReadError) {
+      // The transaction was durably committed even though reading it back failed. Mark the
+      // item imported with the known id so a later re-parse won't create a duplicate.
+      return { status: "imported", parsed, matchedRuleId, transactionId: error.transactionId }
+    }
     const message = error instanceof Error ? error.message : "Creating the transaction failed."
     return { status: "error", parsed, matchedRuleId, error: message }
   }

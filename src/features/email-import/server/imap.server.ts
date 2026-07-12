@@ -153,18 +153,29 @@ export async function fetchNewMessages(
         .sort((a, b) => a - b)
         .slice(0, options.maxMessages)
 
+      // newUids is ascending; `messages` is returned as the contiguous prefix that was
+      // durably fetched. The caller advances the UID cursor only across returned messages,
+      // so stopping at the first transient fetch failure means those UIDs are retried on
+      // the next sync rather than being skipped past and lost forever.
       const messages: FetchedEmailMessage[] = []
 
       for (const uid of newUids) {
-        let source: Buffer | undefined
+        let fetched: Awaited<ReturnType<ImapFlow["fetchOne"]>>
         try {
-          const fetched = await client.fetchOne(String(uid), { source: true }, { uid: true })
-          source = fetched && typeof fetched !== "boolean" ? fetched.source : undefined
+          fetched = await client.fetchOne(String(uid), { source: true }, { uid: true })
         } catch (error) {
-          console.error(`[email-import] failed to fetch message uid=${uid}`, error)
+          // Transient fetch/protocol error — stop here so the cursor does not advance past
+          // an un-fetched message. Everything from this UID on is retried next sync.
+          console.error(`[email-import] stopping fetch batch at uid=${uid} (fetch failed); will retry next sync`, error)
+          break
         }
 
+        const source = fetched && typeof fetched !== "boolean" ? fetched.source : undefined
         if (!source) {
+          // No source returned means the message is no longer retrievable (deleted or moved
+          // out of the folder). There is nothing to fetch, so skip it and let the cursor
+          // advance past it.
+          console.warn(`[email-import] message uid=${uid} returned no source; skipping`)
           continue
         }
 
@@ -180,8 +191,9 @@ export async function fetchNewMessages(
             html: typeof parsed.html === "string" ? parsed.html.slice(0, MAX_STORED_TEXT_LENGTH) : null,
           })
         } catch (error) {
-          // Keep a stub so the message becomes a visible unparsed item instead of being
-          // silently skipped forever once the UID cursor moves past it.
+          // MIME parsing is deterministic, so retrying won't help — keep a stub so the
+          // message becomes a visible unparsed item instead of being silently skipped
+          // forever once the UID cursor moves past it.
           console.error(`[email-import] failed to parse MIME for uid=${uid}`, error)
           messages.push({ uid, messageId: null, subject: "", from: "", date: null, text: "", html: null })
         }
