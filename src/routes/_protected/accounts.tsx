@@ -42,6 +42,7 @@ type AccountFormState = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint: string
 }
 
 const defaultAccountForm: AccountFormState = {
@@ -52,6 +53,7 @@ const defaultAccountForm: AccountFormState = {
   icon: "Wallet01Icon",
   type: "Cash",
   currentBalance: 0,
+  bankAccountHint: "",
 }
 
 function AccountsPage() {
@@ -135,6 +137,7 @@ function AccountsPage() {
         icon: resolveAccountIconName(account.icon),
         type: account.type,
         currentBalance: toNumber(account.currentBalance),
+        bankAccountHint: account.bankAccountHint ?? "",
       })
     },
     [resetUpdateAccount]
@@ -522,6 +525,24 @@ function AccountDialog({
               placeholder="Add a short note about how you use this account"
               rows={3}
             />
+          </Field>
+          <Field className="md:col-span-2">
+            <FieldLabel htmlFor={`${title}-bank-hint`}>Bank account number (for email import)</FieldLabel>
+            <Input
+              id={`${title}-bank-hint`}
+              value={value.bankAccountHint}
+              onChange={(event) =>
+                onChange((state) => ({
+                  ...state,
+                  bankAccountHint: event.target.value,
+                }))
+              }
+              placeholder="e.g. 6630 — a unique fragment of the account or card number"
+            />
+            <p className="text-xs text-muted-foreground">
+              Bank notification emails mention a masked account number (like "15..6630"). When it matches this fragment, imported transactions land
+              on this account automatically. Leave empty if unused.
+            </p>
           </Field>
           <Field>
             <FieldLabel>Accent color</FieldLabel>

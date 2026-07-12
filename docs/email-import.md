@@ -49,8 +49,9 @@ Remaining unknowns, handled gracefully:
 Rules live under **Email import → Rules** and run top to bottom on every parsed email; **the first matching rule wins**.
 
 - **Conditions** on parsed fields: merchant / description / account hint (contains, is exactly — case-insensitive), amount (at least / at most / between), currency, direction (money in / money out), and source connection. A rule matches **all** or **any** of its conditions; a rule with no conditions matches every email (useful as a catch-all last rule).
-- **Actions**: assign an account, category + subcategory, and note — or **ignore** the email entirely.
-- **Auto-create** happens only when the email resolves to both an account (from the rule or the connection default) and a category whose type matches the direction. Anything else waits in the review inbox with whatever the rule did provide pre-filled.
+- **Actions**: assign an account, category + subcategory, and note — or **ignore** the email entirely. Rules normally leave the account on **Automatic** and only assign the category — the account is resolved separately (below), so one rule list serves every mailbox and bank account.
+- **Account resolution** (in order): the rule's explicit account → the account whose **"Bank account number"** field (set in the account editor) matches the masked number in the email (digits-only comparison, e.g. fragment `6630` matches "15..6630"; ambiguous matches are skipped) → the connection's default account. This is how one PKO profile with PLN/EUR/USD sub-accounts maps each email to the right app account without duplicating rules.
+- **Auto-create** happens only when the email resolves to both an account and a category whose type matches the direction. Anything else waits in the review inbox with whatever was resolved pre-filled.
 - The rule editor shows a **live preview** against the ~50 most recently parsed emails.
 - Rules reference accounts/categories by id; if a referenced entity is later deleted, the rule row shows a "Broken reference" badge and affected emails fall back to the review inbox.
 

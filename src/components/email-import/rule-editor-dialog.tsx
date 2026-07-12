@@ -528,7 +528,7 @@ export function RuleEditorDialog({
                 <Select
                   value={action.accountId ?? NO_SELECTION_VALUE}
                   items={[
-                    { value: NO_SELECTION_VALUE, label: "Connection default" },
+                    { value: NO_SELECTION_VALUE, label: "Automatic" },
                     ...accounts.map((account) => ({ value: account.id, label: account.name })),
                   ]}
                   onValueChange={(value) =>
@@ -536,11 +536,11 @@ export function RuleEditorDialog({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Connection default" />
+                    <SelectValue placeholder="Automatic" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value={NO_SELECTION_VALUE}>Connection default</SelectItem>
+                      <SelectItem value={NO_SELECTION_VALUE}>Automatic</SelectItem>
                       {accounts.map((account) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.name}
@@ -549,6 +549,9 @@ export function RuleEditorDialog({
                     </SelectGroup>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Automatic = the account whose bank account number matches the email, else the connection's default.
+                </p>
               </Field>
 
               <Field>

@@ -14,6 +14,7 @@ export const accountRequestSchema = z.object({
   icon: z.string(),
   type: z.enum(accountTypes),
   currentBalance: z.coerce.number(),
+  bankAccountHint: z.string().nullable().optional(),
 })
 
 export const accountUpdateSchema = z.object({
@@ -25,6 +26,7 @@ export const accountUpdateSchema = z.object({
     icon: z.string(),
     type: z.enum(accountTypes),
     currentBalance: z.coerce.number(),
+    bankAccountHint: z.string().nullable().optional(),
   }),
 })
 

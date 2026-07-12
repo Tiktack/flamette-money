@@ -102,6 +102,9 @@ export const accounts = sqliteTable(
     icon: text("icon").notNull(),
     type: text("type", { enum: accountTypes }).notNull(),
     currentBalance: real("current_balance").notNull().default(0),
+    // Masked bank account number fragment (e.g. "6630") used by email import to match
+    // notification emails to this account.
+    bankAccountHint: text("bank_account_hint"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
   },

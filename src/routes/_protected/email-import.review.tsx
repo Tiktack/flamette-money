@@ -15,6 +15,8 @@ import { CardSkeleton } from "@/components/page-skeletons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import type { TransactionEditorDraft } from "@/components/transaction-editor-dialog"
+import { useAccounts } from "@/features/accounts/hooks"
+import { matchAccountIdByBankHint } from "@/features/email-import/account-hint"
 import { useEmailConnections, useEmailImportItems, useEmailImportRules, useLinkEmailImportItem, useReparseEmailImportItems } from "@/features/email-import/hooks"
 import { emailImportItemStatusOptions, type EmailImportItemDetail, type EmailImportItemListItem, type EmailImportItemStatus } from "@/features/email-import/types"
 import { getApiErrorMessage } from "@/features/shared/errors"
@@ -34,6 +36,7 @@ function EmailImportReviewPage() {
   const search = Route.useSearch()
   const connectionsQuery = useEmailConnections()
   const rulesQuery = useEmailImportRules()
+  const accountsQuery = useAccounts()
   const linkItem = useLinkEmailImportItem()
   const reparseItems = useReparseEmailImportItems()
   const [statuses, setStatuses] = React.useState<string[]>(DEFAULT_STATUSES)
@@ -87,7 +90,8 @@ function EmailImportReviewPage() {
         type: parsed ? (parsed.direction === "income" ? "Income" : "Expense") : undefined,
         amount: parsed?.amount ?? null,
         currency: parsed?.currency ?? null,
-        accountId: assign?.accountId ?? connection?.defaultAccountId ?? null,
+        // Same resolution order as the server: rule → account matched by bank number → connection default.
+        accountId: assign?.accountId ?? matchAccountIdByBankHint(parsed?.accountHint, accountsQuery.data ?? []) ?? connection?.defaultAccountId ?? null,
         categoryId: assign?.categoryId ?? null,
         subCategoryId: assign?.subCategoryId ?? null,
         merchantName: parsed?.merchant ?? parsed?.description ?? null,
@@ -95,7 +99,7 @@ function EmailImportReviewPage() {
         note: assign?.note ?? (parsed ? null : item.subject),
       }
     },
-    [connections, rules]
+    [accountsQuery.data, connections, rules]
   )
 
   const handleApprove = React.useCallback(

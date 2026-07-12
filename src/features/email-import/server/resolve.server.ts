@@ -1,6 +1,7 @@
 import { format } from "date-fns"
 import { and, eq } from "drizzle-orm"
 
+import { matchAccountIdByBankHint } from "@/features/email-import/account-hint"
 import { evaluateEmailImportRules, type EmailImportRuleDefinition, type EmailRuleAction } from "@/features/email-import/rules"
 import { emailRuleActionSchema, emailRuleConditionSchema } from "@/features/shared/server/validators"
 import type { CreateTransactionRequest } from "@/features/shared/types"
@@ -82,10 +83,12 @@ export async function buildEmailResolutionContext(connection: EmailConnectionRec
   }
 }
 
-function resolveAssignment(action: EmailRuleAction | null, context: EmailResolutionContext) {
+// Account resolution order: explicit rule assignment → account matched by the email's
+// masked account number (bankAccountHint on accounts) → connection default.
+function resolveAssignment(action: EmailRuleAction | null, parsed: ParsedEmailTransaction, context: EmailResolutionContext) {
   const assign = action?.type === "assign" ? action : null
   return {
-    accountId: assign?.accountId ?? context.connection.defaultAccountId ?? null,
+    accountId: assign?.accountId ?? matchAccountIdByBankHint(parsed.accountHint, context.accountById.values()) ?? context.connection.defaultAccountId ?? null,
     categoryId: assign?.categoryId ?? null,
     subCategoryId: assign?.subCategoryId ?? null,
     note: assign?.note ?? null,
@@ -171,7 +174,7 @@ export async function resolveEmailItem(context: EmailResolutionContext, input: B
     return { status: "ignored", parsed, matchedRuleId: matchedRule.id }
   }
 
-  const assignment = resolveAssignment(matchedRule?.action ?? null, context)
+  const assignment = resolveAssignment(matchedRule?.action ?? null, parsed, context)
   const matchedRuleId = matchedRule?.id ?? null
 
   if (!canAutoCreate(parsed, assignment, context)) {

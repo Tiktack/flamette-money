@@ -279,7 +279,9 @@ export function ConnectionEditorDialog({
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">Used when a matching rule doesn't assign an account.</p>
+            <p className="text-xs text-muted-foreground">
+              Fallback when no rule assigns an account and the email's account number doesn't match any account's "bank account number" field.
+            </p>
           </Field>
         </FieldGroup>
 
