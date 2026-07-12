@@ -36,6 +36,7 @@ export async function listAccountsData(): Promise<AccountListItemResponse[]> {
       icon: account.icon,
       type: account.type,
       currentBalance: account.currentBalance,
+      bankAccountHint: account.bankAccountHint,
       sortBalance: account.currentBalance * (fx.ratesToBase[normalizeCurrencyOrDefault(account.currency, baseCurrency)] ?? 1),
     }))
     .sort((left, right) => {
@@ -48,6 +49,11 @@ export async function listAccountsData(): Promise<AccountListItemResponse[]> {
     .map(({ sortBalance: _ignoredSortBalance, ...account }) => account)
 }
 
+function normalizeBankAccountHint(value: string | null | undefined) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed.slice(0, 48) : null
+}
+
 export async function createAccountData(request: CreateAccountRequest): Promise<CreateAccountResponse> {
   const user = await requireUser()
   const name = normalizeRequiredName(request.name)
@@ -57,6 +63,7 @@ export async function createAccountData(request: CreateAccountRequest): Promise<
   const icon = normalizeIcon(request.icon)
   const type = normalizeAccountType(request.type)
   const currentBalance = parseAmount(request.currentBalance, "CurrentBalance")
+  const bankAccountHint = normalizeBankAccountHint(request.bankAccountHint)
   const now = new Date()
   const id = crypto.randomUUID()
 
@@ -70,6 +77,7 @@ export async function createAccountData(request: CreateAccountRequest): Promise<
     icon,
     type,
     currentBalance,
+    bankAccountHint,
     createdAt: now,
     updatedAt: now,
   })
@@ -83,6 +91,7 @@ export async function createAccountData(request: CreateAccountRequest): Promise<
     icon,
     type,
     currentBalance,
+    bankAccountHint,
   }
 }
 
@@ -95,6 +104,7 @@ export async function updateAccountData(accountId: string, request: UpdateAccoun
   const icon = normalizeIcon(request.icon)
   const type = normalizeAccountType(request.type)
   const currentBalance = parseAmount(request.currentBalance, "CurrentBalance")
+  const bankAccountHint = normalizeBankAccountHint(request.bankAccountHint)
   const now = new Date()
 
   await db
@@ -106,6 +116,7 @@ export async function updateAccountData(accountId: string, request: UpdateAccoun
       icon,
       type,
       currentBalance,
+      bankAccountHint,
       updatedAt: now,
     })
     .where(and(eq(accounts.userId, user.id), eq(accounts.id, account.id)))
@@ -119,6 +130,7 @@ export async function updateAccountData(accountId: string, request: UpdateAccoun
     icon,
     type,
     currentBalance,
+    bankAccountHint,
   }
 }
 

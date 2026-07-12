@@ -11,6 +11,7 @@ Flamette Money is a full-stack **TanStack Start** personal finance app focused o
 - transactions with transfers, refunds, search, and optional itemization
 - analytics and reporting with FX conversion
 - AI-assisted receipt scanning that returns **draft data only**
+- automatic email transaction import from bank notification mailboxes (IMAP polling + rules engine; see `docs\email-import.md`)
 
 ## Documentation policy
 
@@ -109,6 +110,9 @@ Use `.env.example` as the current environment reference.
 - `GITHUB_CLIENT_SECRET`
 - `OPENROUTER_API_KEY`
 - `OPENROUTER_MODEL`
+- `EMAIL_IMPORT_ENCRYPTION_KEY`
+- `EMAIL_IMPORT_DEFAULT_POLL_MINUTES`
+- `EMAIL_IMPORT_MAX_MESSAGES_PER_SYNC`
 
 ## Commands
 

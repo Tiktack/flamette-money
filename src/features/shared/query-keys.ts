@@ -23,4 +23,9 @@ export const queryKeys = {
   reportsComparison: (query?: Record<string, unknown>) => ["reports-comparison", query ?? {}] as const,
   appInfo: () => ["app-info"] as const,
   settings: () => ["settings"] as const,
+  emailConnections: () => ["email-connections"] as const,
+  emailImportRules: () => ["email-import-rules"] as const,
+  emailImportItemsAll: () => ["email-import-items"] as const,
+  emailImportItems: (query?: Record<string, unknown>) => ["email-import-items", query ?? {}] as const,
+  emailImportStatus: () => ["email-import-status"] as const,
 }

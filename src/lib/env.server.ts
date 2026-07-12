@@ -148,6 +148,28 @@ export function getExchangeRateCacheHours() {
   return Number.parseInt(getEnvValue("EXCHANGE_RATE_CACHE_HOURS") ?? "5", 10)
 }
 
+// A non-numeric or non-positive value falls back to the default instead of yielding NaN —
+// a NaN limit would silently make every email sync fetch zero messages forever.
+function parsePositiveIntEnv(name: string, fallback: number) {
+  const parsed = Number.parseInt(getEnvValue(name) ?? "", 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback
+  }
+  return parsed
+}
+
+export function getEmailImportEncryptionKey() {
+  return getEnvValue("EMAIL_IMPORT_ENCRYPTION_KEY")
+}
+
+export function getEmailImportDefaultPollMinutes() {
+  return parsePositiveIntEnv("EMAIL_IMPORT_DEFAULT_POLL_MINUTES", 60)
+}
+
+export function getEmailImportMaxMessagesPerSync() {
+  return parsePositiveIntEnv("EMAIL_IMPORT_MAX_MESSAGES_PER_SYNC", 50)
+}
+
 export function getOpenRouterApiKey() {
   return getEnvValue("OPENROUTER_API_KEY") ?? getEnvValue("OpenRouter__ApiKey") ?? getEnvValue("OPENROUTER_APIKEY")
 }

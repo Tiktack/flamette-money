@@ -7,6 +7,7 @@ export type AccountListItemResponse = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint: null | string
 }
 
 export type AccountType = "Cash" | "DebitCard" | "CreditCard" | "Savings"
@@ -167,6 +168,7 @@ export type CreateAccountRequest = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint?: null | string
 }
 
 export type CreateAccountResponse = {
@@ -178,6 +180,7 @@ export type CreateAccountResponse = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint: null | string
 }
 
 export type CreateCategoryRequest = {
@@ -281,6 +284,7 @@ export type GetAccountResponse = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint: null | string
 }
 
 export type GetTransactionResponse = {
@@ -506,6 +510,7 @@ export type UpdateAccountRequest = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint?: null | string
 }
 
 export type UpdateAccountResponse = {
@@ -517,6 +522,7 @@ export type UpdateAccountResponse = {
   icon: string
   type: AccountType
   currentBalance: number
+  bankAccountHint: null | string
 }
 
 export type UpdateCategoryRequest = {

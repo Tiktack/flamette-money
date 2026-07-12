@@ -26,6 +26,21 @@ import type { TransactionCreateRequest, TransactionDetail, TransactionType, Tran
 import { CategoryIconBadge } from "@/lib/category-icons"
 import { formatDateInput, toNumber } from "@/lib/finance"
 
+// Pre-fills the "new" form from an external draft (e.g. an email-import review item).
+// Every field is optional; missing values fall back to the normal defaults.
+export type TransactionEditorDraft = {
+  date?: string | null
+  type?: TransactionType
+  amount?: number | null
+  currency?: string | null
+  accountId?: string | null
+  categoryId?: string | null
+  subCategoryId?: string | null
+  merchantName?: string | null
+  location?: string | null
+  note?: string | null
+}
+
 export type TransactionEditorDialogProps = {
   open: boolean
   mode: "new" | "edit"
@@ -34,6 +49,11 @@ export type TransactionEditorDialogProps = {
   presetCategoryId?: string
   presetTripId?: string
   presetType?: TransactionType
+  initialDraft?: TransactionEditorDraft
+  // Replaces the default create mutation in "new" mode (e.g. the email-import approve flow
+  // creates the transaction and links the review item atomically in one server call). It
+  // throws on failure so the dialog surfaces the error like any other save.
+  submitNewOverride?: (request: TransactionCreateRequest) => Promise<unknown>
 }
 
 type TransactionItemFormState = {
@@ -149,6 +169,25 @@ function applyPresetCategory(state: TransactionFormState, presetCategoryId: stri
     type: category.type === "Income" ? "Income" : "Expense",
     categoryId: category.id,
     subCategoryId: null,
+  }
+}
+
+function applyEditorDraft(state: TransactionFormState, draft: TransactionEditorDraft): TransactionFormState {
+  const currency = draft.currency?.toUpperCase()
+
+  return {
+    ...state,
+    date: draft.date ?? state.date,
+    type: draft.type ?? state.type,
+    amount: draft.amount != null && draft.amount > 0 ? draft.amount : state.amount,
+    currency: currency ?? state.currency,
+    currency2: currency ?? state.currency2,
+    accountId: draft.accountId ?? state.accountId,
+    categoryId: draft.categoryId ?? state.categoryId,
+    subCategoryId: draft.subCategoryId ?? state.subCategoryId,
+    merchantName: draft.merchantName ?? state.merchantName,
+    location: draft.location ?? state.location,
+    note: draft.note ?? state.note,
   }
 }
 
@@ -951,7 +990,17 @@ function TransactionFormFields({
 
 // ─── Main dialog ────────────────────────────────────────────────────────
 
-export function TransactionEditorDialog({ open, mode, transactionId, onOpenChange, presetCategoryId, presetTripId, presetType }: TransactionEditorDialogProps) {
+export function TransactionEditorDialog({
+  open,
+  mode,
+  transactionId,
+  onOpenChange,
+  presetCategoryId,
+  presetTripId,
+  presetType,
+  initialDraft,
+  submitNewOverride,
+}: TransactionEditorDialogProps) {
   const accountsQuery = useAccounts()
   const appInfoQuery = useAppInfo()
   const categoriesQuery = useCategories()
@@ -1047,14 +1096,15 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
     const withPreset: TransactionFormState = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
     const defaultAccount = accountsQuery.data?.[0]
     const defaultCurrency = defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
-    setForm({
+    const withDefaults: TransactionFormState = {
       ...withPreset,
       accountId: defaultAccount?.id ?? "",
       currency: defaultCurrency,
       currency2: defaultCurrency,
       tripId: presetTripId ?? withPreset.tripId,
-    })
-  }, [accountsQuery.data, accountsQuery.isPending, categories, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
+    }
+    setForm(initialDraft ? applyEditorDraft(withDefaults, initialDraft) : withDefaults)
+  }, [accountsQuery.data, accountsQuery.isPending, categories, initialDraft, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
 
   React.useEffect(() => {
     return () => {
@@ -1159,6 +1209,8 @@ export function TransactionEditorDialog({ open, mode, transactionId, onOpenChang
     try {
       if (mode === "edit" && transactionId) {
         await updateTransaction.mutateAsync({ id: transactionId, request })
+      } else if (submitNewOverride) {
+        await submitNewOverride(request as TransactionCreateRequest)
       } else {
         await createTransaction.mutateAsync(request)
       }

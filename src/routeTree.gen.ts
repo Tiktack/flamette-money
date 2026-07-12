@@ -16,15 +16,19 @@ import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
 import { Route as ProtectedTripsRouteImport } from './routes/_protected/trips'
 import { Route as ProtectedTransactionsRouteImport } from './routes/_protected/transactions'
 import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
+import { Route as ProtectedEmailImportRouteImport } from './routes/_protected/email-import'
 import { Route as ProtectedCategoriesRouteImport } from './routes/_protected/categories'
 import { Route as ProtectedAnalyticsRouteImport } from './routes/_protected/analytics'
 import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts'
+import { Route as ProtectedEmailImportIndexRouteImport } from './routes/_protected/email-import.index'
 import { Route as ProtectedAnalyticsIndexRouteImport } from './routes/_protected/analytics.index'
 import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
 import { Route as ApiReceiptsScanRouteImport } from './routes/api/receipts/scan'
 import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
 import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ProtectedEmailImportRulesRouteImport } from './routes/_protected/email-import.rules'
+import { Route as ProtectedEmailImportReviewRouteImport } from './routes/_protected/email-import.review'
 import { Route as ProtectedAnalyticsPortfolioRouteImport } from './routes/_protected/analytics.portfolio'
 import { Route as ProtectedAnalyticsCompareRouteImport } from './routes/_protected/analytics.compare'
 import { Route as ProtectedAnalyticsCategoriesRouteImport } from './routes/_protected/analytics.categories'
@@ -64,6 +68,11 @@ const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedEmailImportRoute = ProtectedEmailImportRouteImport.update({
+  id: '/email-import',
+  path: '/email-import',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedCategoriesRoute = ProtectedCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
@@ -79,6 +88,12 @@ const ProtectedAccountsRoute = ProtectedAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedEmailImportIndexRoute =
+  ProtectedEmailImportIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ProtectedEmailImportRoute,
+  } as any)
 const ProtectedAnalyticsIndexRoute = ProtectedAnalyticsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -109,6 +124,18 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProtectedEmailImportRulesRoute =
+  ProtectedEmailImportRulesRouteImport.update({
+    id: '/rules',
+    path: '/rules',
+    getParentRoute: () => ProtectedEmailImportRoute,
+  } as any)
+const ProtectedEmailImportReviewRoute =
+  ProtectedEmailImportReviewRouteImport.update({
+    id: '/review',
+    path: '/review',
+    getParentRoute: () => ProtectedEmailImportRoute,
+  } as any)
 const ProtectedAnalyticsPortfolioRoute =
   ProtectedAnalyticsPortfolioRouteImport.update({
     id: '/portfolio',
@@ -140,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof ProtectedAccountsRoute
   '/analytics': typeof ProtectedAnalyticsRouteWithChildren
   '/categories': typeof ProtectedCategoriesRoute
+  '/email-import': typeof ProtectedEmailImportRouteWithChildren
   '/settings': typeof ProtectedSettingsRoute
   '/transactions': typeof ProtectedTransactionsRoute
   '/trips': typeof ProtectedTripsRoute
@@ -148,12 +176,15 @@ export interface FileRoutesByFullPath {
   '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
   '/analytics/compare': typeof ProtectedAnalyticsCompareRoute
   '/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
+  '/email-import/review': typeof ProtectedEmailImportReviewRoute
+  '/email-import/rules': typeof ProtectedEmailImportRulesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
   '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
   '/analytics/': typeof ProtectedAnalyticsIndexRoute
+  '/email-import/': typeof ProtectedEmailImportIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -168,12 +199,15 @@ export interface FileRoutesByTo {
   '/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
   '/analytics/compare': typeof ProtectedAnalyticsCompareRoute
   '/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
+  '/email-import/review': typeof ProtectedEmailImportReviewRoute
+  '/email-import/rules': typeof ProtectedEmailImportRulesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
   '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
   '/analytics': typeof ProtectedAnalyticsIndexRoute
+  '/email-import': typeof ProtectedEmailImportIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -183,6 +217,7 @@ export interface FileRoutesById {
   '/_protected/accounts': typeof ProtectedAccountsRoute
   '/_protected/analytics': typeof ProtectedAnalyticsRouteWithChildren
   '/_protected/categories': typeof ProtectedCategoriesRoute
+  '/_protected/email-import': typeof ProtectedEmailImportRouteWithChildren
   '/_protected/settings': typeof ProtectedSettingsRoute
   '/_protected/transactions': typeof ProtectedTransactionsRoute
   '/_protected/trips': typeof ProtectedTripsRoute
@@ -191,12 +226,15 @@ export interface FileRoutesById {
   '/_protected/analytics/categories': typeof ProtectedAnalyticsCategoriesRoute
   '/_protected/analytics/compare': typeof ProtectedAnalyticsCompareRoute
   '/_protected/analytics/portfolio': typeof ProtectedAnalyticsPortfolioRoute
+  '/_protected/email-import/review': typeof ProtectedEmailImportReviewRoute
+  '/_protected/email-import/rules': typeof ProtectedEmailImportRulesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
   '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
   '/_protected/analytics/': typeof ProtectedAnalyticsIndexRoute
+  '/_protected/email-import/': typeof ProtectedEmailImportIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -206,6 +244,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/analytics'
     | '/categories'
+    | '/email-import'
     | '/settings'
     | '/transactions'
     | '/trips'
@@ -214,12 +253,15 @@ export interface FileRouteTypes {
     | '/analytics/categories'
     | '/analytics/compare'
     | '/analytics/portfolio'
+    | '/email-import/review'
+    | '/email-import/rules'
     | '/api/auth/$'
     | '/api/profile/export-backup'
     | '/api/profile/import-backup'
     | '/api/receipts/scan'
     | '/api/seed/demo'
     | '/analytics/'
+    | '/email-import/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -234,12 +276,15 @@ export interface FileRouteTypes {
     | '/analytics/categories'
     | '/analytics/compare'
     | '/analytics/portfolio'
+    | '/email-import/review'
+    | '/email-import/rules'
     | '/api/auth/$'
     | '/api/profile/export-backup'
     | '/api/profile/import-backup'
     | '/api/receipts/scan'
     | '/api/seed/demo'
     | '/analytics'
+    | '/email-import'
   id:
     | '__root__'
     | '/'
@@ -248,6 +293,7 @@ export interface FileRouteTypes {
     | '/_protected/accounts'
     | '/_protected/analytics'
     | '/_protected/categories'
+    | '/_protected/email-import'
     | '/_protected/settings'
     | '/_protected/transactions'
     | '/_protected/trips'
@@ -256,12 +302,15 @@ export interface FileRouteTypes {
     | '/_protected/analytics/categories'
     | '/_protected/analytics/compare'
     | '/_protected/analytics/portfolio'
+    | '/_protected/email-import/review'
+    | '/_protected/email-import/rules'
     | '/api/auth/$'
     | '/api/profile/export-backup'
     | '/api/profile/import-backup'
     | '/api/receipts/scan'
     | '/api/seed/demo'
     | '/_protected/analytics/'
+    | '/_protected/email-import/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -327,6 +376,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedSettingsRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/email-import': {
+      id: '/_protected/email-import'
+      path: '/email-import'
+      fullPath: '/email-import'
+      preLoaderRoute: typeof ProtectedEmailImportRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/categories': {
       id: '/_protected/categories'
       path: '/categories'
@@ -347,6 +403,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/accounts'
       preLoaderRoute: typeof ProtectedAccountsRouteImport
       parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/email-import/': {
+      id: '/_protected/email-import/'
+      path: '/'
+      fullPath: '/email-import/'
+      preLoaderRoute: typeof ProtectedEmailImportIndexRouteImport
+      parentRoute: typeof ProtectedEmailImportRoute
     }
     '/_protected/analytics/': {
       id: '/_protected/analytics/'
@@ -389,6 +452,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_protected/email-import/rules': {
+      id: '/_protected/email-import/rules'
+      path: '/rules'
+      fullPath: '/email-import/rules'
+      preLoaderRoute: typeof ProtectedEmailImportRulesRouteImport
+      parentRoute: typeof ProtectedEmailImportRoute
+    }
+    '/_protected/email-import/review': {
+      id: '/_protected/email-import/review'
+      path: '/review'
+      fullPath: '/email-import/review'
+      preLoaderRoute: typeof ProtectedEmailImportReviewRouteImport
+      parentRoute: typeof ProtectedEmailImportRoute
     }
     '/_protected/analytics/portfolio': {
       id: '/_protected/analytics/portfolio'
@@ -440,10 +517,26 @@ const ProtectedAnalyticsRouteChildren: ProtectedAnalyticsRouteChildren = {
 const ProtectedAnalyticsRouteWithChildren =
   ProtectedAnalyticsRoute._addFileChildren(ProtectedAnalyticsRouteChildren)
 
+interface ProtectedEmailImportRouteChildren {
+  ProtectedEmailImportReviewRoute: typeof ProtectedEmailImportReviewRoute
+  ProtectedEmailImportRulesRoute: typeof ProtectedEmailImportRulesRoute
+  ProtectedEmailImportIndexRoute: typeof ProtectedEmailImportIndexRoute
+}
+
+const ProtectedEmailImportRouteChildren: ProtectedEmailImportRouteChildren = {
+  ProtectedEmailImportReviewRoute: ProtectedEmailImportReviewRoute,
+  ProtectedEmailImportRulesRoute: ProtectedEmailImportRulesRoute,
+  ProtectedEmailImportIndexRoute: ProtectedEmailImportIndexRoute,
+}
+
+const ProtectedEmailImportRouteWithChildren =
+  ProtectedEmailImportRoute._addFileChildren(ProtectedEmailImportRouteChildren)
+
 interface ProtectedRouteChildren {
   ProtectedAccountsRoute: typeof ProtectedAccountsRoute
   ProtectedAnalyticsRoute: typeof ProtectedAnalyticsRouteWithChildren
   ProtectedCategoriesRoute: typeof ProtectedCategoriesRoute
+  ProtectedEmailImportRoute: typeof ProtectedEmailImportRouteWithChildren
   ProtectedSettingsRoute: typeof ProtectedSettingsRoute
   ProtectedTransactionsRoute: typeof ProtectedTransactionsRoute
   ProtectedTripsRoute: typeof ProtectedTripsRoute
@@ -453,6 +546,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAccountsRoute: ProtectedAccountsRoute,
   ProtectedAnalyticsRoute: ProtectedAnalyticsRouteWithChildren,
   ProtectedCategoriesRoute: ProtectedCategoriesRoute,
+  ProtectedEmailImportRoute: ProtectedEmailImportRouteWithChildren,
   ProtectedSettingsRoute: ProtectedSettingsRoute,
   ProtectedTransactionsRoute: ProtectedTransactionsRoute,
   ProtectedTripsRoute: ProtectedTripsRoute,

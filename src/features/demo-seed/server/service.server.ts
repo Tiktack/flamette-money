@@ -359,6 +359,7 @@ export async function handleSeedDemoRequest(request: Request) {
       icon: definition.icon,
       type: definition.type,
       currentBalance: definition.currentBalance,
+      bankAccountHint: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }

@@ -18,7 +18,9 @@ const config = defineConfig(({ mode }) => {
     },
     ssr: {
       // better-sqlite3 is a native module and must not be bundled into the server build.
-      external: ["better-sqlite3"],
+      // imapflow and mailparser are server-only mail libraries; externalizing keeps their
+      // CJS/stream internals out of the SSR bundle.
+      external: ["better-sqlite3", "imapflow", "mailparser"],
     },
   }
 })

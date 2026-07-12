@@ -6,7 +6,7 @@ import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail } from "@/components/ui/sidebar"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ChartRingIcon, CommandIcon, CreditCardIcon, MapsIcon, PieChartIcon, SentIcon } from "@hugeicons/core-free-icons"
+import { ChartRingIcon, CommandIcon, CreditCardIcon, Mail01Icon, MapsIcon, PieChartIcon, SentIcon } from "@hugeicons/core-free-icons"
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   user: {
@@ -77,6 +77,29 @@ export function AppSidebar({ user, isLoggingOut, onNewTransaction, onLogout, ...
         to: "/transactions" as const,
         icon: <HugeiconsIcon icon={SentIcon} strokeWidth={2} />,
         isActive: pathname.startsWith("/transactions"),
+      },
+      {
+        title: "Email import",
+        to: "/email-import" as const,
+        icon: <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} />,
+        isActive: pathname.startsWith("/email-import"),
+        items: [
+          {
+            title: "Connections",
+            to: "/email-import" as const,
+            isActive: pathname === "/email-import",
+          },
+          {
+            title: "Rules",
+            to: "/email-import/rules" as const,
+            isActive: pathname === "/email-import/rules",
+          },
+          {
+            title: "Review inbox",
+            to: "/email-import/review" as const,
+            isActive: pathname === "/email-import/review",
+          },
+        ],
       },
     ],
     [pathname]

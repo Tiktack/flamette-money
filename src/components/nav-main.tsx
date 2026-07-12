@@ -23,6 +23,9 @@ type AppRoute =
   | "/categories"
   | "/trips"
   | "/transactions"
+  | "/email-import"
+  | "/email-import/rules"
+  | "/email-import/review"
 
 export function NavMain({
   items,
