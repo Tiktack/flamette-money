@@ -1,6 +1,6 @@
 ---
 name: Flamette Money
-version: "1.0.3"
+version: "1.0.4"
 slug: flamette_money
 description: Self-hosted multi-currency personal finance app backed by a local SQLite database.
 url: https://github.com/Tiktack/flamette-money
