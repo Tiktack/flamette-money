@@ -91,6 +91,7 @@ function EmailImportReviewPage() {
         categoryId: assign?.categoryId ?? null,
         subCategoryId: assign?.subCategoryId ?? null,
         merchantName: parsed?.merchant ?? parsed?.description ?? null,
+        location: parsed?.location ?? null,
         note: assign?.note ?? (parsed ? null : item.subject),
       }
     },

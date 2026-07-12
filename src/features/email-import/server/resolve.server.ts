@@ -146,7 +146,7 @@ function buildTransactionRequest(
     originalTransactionId: null,
     note: assignment.note,
     merchantName: parsed.merchant ?? parsed.description,
-    location: null,
+    location: parsed.location,
     amount2: null,
     currency: normalizeCurrencyOrNull(parsed.currency),
     currency2: null,

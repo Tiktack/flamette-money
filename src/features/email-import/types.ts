@@ -12,6 +12,7 @@ export type ParsedEmailTransaction = {
   bookedAt: string | null
   description: string | null
   merchant: string | null
+  location: string | null
   accountHint: string | null
   balanceAfter: number | null
 }

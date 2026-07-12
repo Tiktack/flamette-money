@@ -37,6 +37,7 @@ export type TransactionEditorDraft = {
   categoryId?: string | null
   subCategoryId?: string | null
   merchantName?: string | null
+  location?: string | null
   note?: string | null
 }
 
@@ -182,6 +183,7 @@ function applyEditorDraft(state: TransactionFormState, draft: TransactionEditorD
     categoryId: draft.categoryId ?? state.categoryId,
     subCategoryId: draft.subCategoryId ?? state.subCategoryId,
     merchantName: draft.merchantName ?? state.merchantName,
+    location: draft.location ?? state.location,
     note: draft.note ?? state.note,
   }
 }

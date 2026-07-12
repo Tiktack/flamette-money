@@ -100,6 +100,7 @@ export function ReviewItemDialog({
                   <DetailRow label="Amount" value={<span className="font-medium tabular-nums">{formatCurrency(parsed.amount, parsed.currency)}</span>} />
                   <DetailRow label="Booked" value={parsed.bookedAt ? formatDateLabel(parsed.bookedAt) : null} />
                   <DetailRow label="Merchant" value={parsed.merchant} />
+                  <DetailRow label="Location" value={parsed.location} />
                   <DetailRow label="Account hint" value={parsed.accountHint} />
                   <DetailRow
                     label="Balance after"

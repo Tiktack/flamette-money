@@ -187,6 +187,8 @@ export const parsedEmailTransactionSchema = z.object({
   bookedAt: z.string().nullable(),
   description: z.string().nullable(),
   merchant: z.string().nullable(),
+  // Defaulted so payloads stored before the field existed still validate.
+  location: z.string().nullable().default(null),
   accountHint: z.string().nullable(),
   balanceAfter: z.number().nullable(),
 })

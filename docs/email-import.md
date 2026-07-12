@@ -24,13 +24,25 @@ Gmail label ──IMAP poll──▶ fetch new emails ──▶ deterministic pa
 
 The app password is encrypted at rest (AES-256-GCM) with a key derived from `EMAIL_IMPORT_ENCRYPTION_KEY`, falling back to `BETTER_AUTH_SECRET`. **Rotating the effective secret invalidates stored passwords** — syncs then fail with "Sign-in failed" until the password is re-entered on the connection.
 
-## Parser status: TO VERIFY
+## Parser status
 
-The PKO Bank Polski parser (`src/features/email-import/server/parsers/pko-bank-polski.ts`) is seeded with commonly observed iPKO notification phrases ("Płatność kartą", "Przelew przychodzący", "Dostępne środki", …) but has **not yet been verified against real emails**. Until it is:
+The PKO Bank Polski parser (`src/features/email-import/server/parsers/pko-bank-polski.ts`) has a **primary path verified against real templates** captured on 2026-07-12 — "Rozliczenie transakcji kartą lub BLIKIEM" (card and BLIK internet payments) and "Obciążenie konta" (BLIK phone transfer). The decoded body backbone it targets:
 
-- Unrecognized emails are kept in the **review inbox** with status **Unparsed** and their full raw text preserved.
-- To finalize the parser: open a few unparsed items, read the raw text, adjust the matcher table / extraction regexes (all marked `TO VERIFY against real template`), then press **Re-parse** — the stored history is re-processed through the parser and rules without refetching mail, auto-creating transactions where possible.
-- Card authorization holds ("blokada środków") are deliberately not matched to avoid double-importing a hold plus its settlement; revisit once real templates confirm which notifications PKO sends.
+```
+Twoje konto o numerze 15..6630 zostało obciążone kwotą -35,56 PLN, w tym:
+-35,56 PLN Płatność kartą, sprzedawca: eLeclerc 01 , miejsce: PLGdansk
+Data waluty: 2026-07-10
+Stan konta po operacji: +61636,80 PLN
+```
+
+Extracted fields: direction ("obciążone" = expense; "uznane" = income — income wording still TO VERIFY against a real credit email), total amount + currency, masked account number (account hint), merchant (`sprzedawca:`/`odbiorca:`/`nadawca:`), location (`miejsce:`), full detail line as description (label values with inner colons like `tytuł: ... OD: ... DO: ...` are handled), booked date (`Data waluty`, falls back to the email header date), and balance after (`Stan konta po operacji/transakcji`).
+
+Remaining unknowns, handled gracefully:
+
+- Unrecognized emails are kept in the **review inbox** with status **Unparsed** and their full raw text preserved; after adjusting the parser, press **Re-parse** to re-process stored history through parser and rules without refetching mail.
+- A legacy phrase-matcher fallback covers notification types not captured yet (ATM withdrawals, standing orders, incoming transfers — marked `TO VERIFY`).
+- Aggregated settlements (multiple detail lines under one total) import as one transaction with the first line as description plus a "(+N more)" marker — TO VERIFY.
+- Card authorization holds ("blokada środków") are deliberately not matched to avoid double-importing a hold plus its settlement.
 
 ## Rules
 
