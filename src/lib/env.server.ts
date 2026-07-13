@@ -169,11 +169,3 @@ export function getEmailImportDefaultPollMinutes() {
 export function getEmailImportMaxMessagesPerSync() {
   return parsePositiveIntEnv("EMAIL_IMPORT_MAX_MESSAGES_PER_SYNC", 50)
 }
-
-export function getOpenRouterApiKey() {
-  return getEnvValue("OPENROUTER_API_KEY") ?? getEnvValue("OpenRouter__ApiKey") ?? getEnvValue("OPENROUTER_APIKEY")
-}
-
-export function getOpenRouterModel() {
-  return getEnvValue("OPENROUTER_MODEL") ?? getEnvValue("OpenRouter__Model") ?? "nvidia/llama-3.3-nemotron-super-49b-v1:free"
-}

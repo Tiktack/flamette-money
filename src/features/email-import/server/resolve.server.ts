@@ -162,7 +162,6 @@ function buildTransactionRequest(
     amount2: null,
     currency: normalizeCurrencyOrNull(parsed.currency),
     currency2: null,
-    items: null,
   }
 }
 

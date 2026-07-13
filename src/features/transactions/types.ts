@@ -1,8 +1,6 @@
 export type {
-  CreateTransactionItemRequest as TransactionItemCreateRequest,
   CreateTransactionRequest as TransactionCreateRequest,
   GetTransactionResponse as TransactionDetail,
-  TransactionItemResponse as TransactionItem,
   TransactionListItemResponse as TransactionListItem,
   TransactionSearchQuery,
   TransactionType,

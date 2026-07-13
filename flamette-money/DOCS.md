@@ -19,7 +19,6 @@ host with a local SQLite database — no Cloudflare account or external database
 | `better_auth_trusted_origins`             | Recommended | Usually the same value as `better_auth_url`.                                                                                    |
 | `better_auth_use_secure_cookies`          | No          | Auto-derived from the URL (https ⇒ on). Set `false` for plain-http LAN access.                                                  |
 | `disable_signups`                         | No          | Turn on to block all new registrations (email + social). Existing users still sign in; the first account can always be created. |
-| `openrouter_api_key` / `openrouter_model` | No          | Enable AI receipt scanning.                                                                                                     |
 | `exchange_rate_api_key`                   | No          | Enable live currency conversion in reports.                                                                                     |
 | `google_*` / `github_*`                   | No          | Optional social login (needs a public https URL).                                                                               |
 

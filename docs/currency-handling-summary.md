@@ -4,7 +4,7 @@ Last updated: 2026-07-04
 
 ## Scope
 
-Currency and FX behavior for accounts, transfers, refunds, analytics/report conversion, and receipt scanning in the TanStack Start server code.
+Currency and FX behavior for accounts, transfers, refunds, and analytics/report conversion in the TanStack Start server code.
 
 ## Product rules
 
@@ -36,11 +36,6 @@ Currency and FX behavior for accounts, transfers, refunds, analytics/report conv
 - `src/lib/exchange-rate.server.ts` fetches `https://v6.exchangerate-api.com/v6/<key>/latest/<base>` and normalizes to rates-to-base.
 - Snapshots are cached in memory for `EXCHANGE_RATE_CACHE_HOURS` (default 5 h).
 - Without an API key, or when a fetch fails, hardcoded approximate fallback rates are used. Failure-path fallbacks are cached for at most 5 minutes so a transient outage does not pin stale rates for the full TTL.
-
-## Receipt scan
-
-- Scanning returns draft data only — no transaction is created and no balance is mutated.
-- The scanned currency pre-fills the editor form; the user reviews before saving.
 
 ## Configuration
 

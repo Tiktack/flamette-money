@@ -23,7 +23,6 @@ import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accou
 import { Route as ProtectedEmailImportIndexRouteImport } from './routes/_protected/email-import.index'
 import { Route as ProtectedAnalyticsIndexRouteImport } from './routes/_protected/analytics.index'
 import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
-import { Route as ApiReceiptsScanRouteImport } from './routes/api/receipts/scan'
 import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
 import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -104,11 +103,6 @@ const ApiSeedDemoRoute = ApiSeedDemoRouteImport.update({
   path: '/api/seed/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiReceiptsScanRoute = ApiReceiptsScanRouteImport.update({
-  id: '/api/receipts/scan',
-  path: '/api/receipts/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiProfileImportBackupRoute = ApiProfileImportBackupRouteImport.update({
   id: '/api/profile/import-backup',
   path: '/api/profile/import-backup',
@@ -181,7 +175,6 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
-  '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
   '/analytics/': typeof ProtectedAnalyticsIndexRoute
   '/email-import/': typeof ProtectedEmailImportIndexRoute
@@ -204,7 +197,6 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
-  '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
   '/analytics': typeof ProtectedAnalyticsIndexRoute
   '/email-import': typeof ProtectedEmailImportIndexRoute
@@ -231,7 +223,6 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/profile/export-backup': typeof ApiProfileExportBackupRoute
   '/api/profile/import-backup': typeof ApiProfileImportBackupRoute
-  '/api/receipts/scan': typeof ApiReceiptsScanRoute
   '/api/seed/demo': typeof ApiSeedDemoRoute
   '/_protected/analytics/': typeof ProtectedAnalyticsIndexRoute
   '/_protected/email-import/': typeof ProtectedEmailImportIndexRoute
@@ -258,7 +249,6 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/profile/export-backup'
     | '/api/profile/import-backup'
-    | '/api/receipts/scan'
     | '/api/seed/demo'
     | '/analytics/'
     | '/email-import/'
@@ -281,7 +271,6 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/profile/export-backup'
     | '/api/profile/import-backup'
-    | '/api/receipts/scan'
     | '/api/seed/demo'
     | '/analytics'
     | '/email-import'
@@ -307,7 +296,6 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/profile/export-backup'
     | '/api/profile/import-backup'
-    | '/api/receipts/scan'
     | '/api/seed/demo'
     | '/_protected/analytics/'
     | '/_protected/email-import/'
@@ -321,7 +309,6 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiProfileExportBackupRoute: typeof ApiProfileExportBackupRoute
   ApiProfileImportBackupRoute: typeof ApiProfileImportBackupRoute
-  ApiReceiptsScanRoute: typeof ApiReceiptsScanRoute
   ApiSeedDemoRoute: typeof ApiSeedDemoRoute
 }
 
@@ -423,13 +410,6 @@ declare module '@tanstack/react-router' {
       path: '/api/seed/demo'
       fullPath: '/api/seed/demo'
       preLoaderRoute: typeof ApiSeedDemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/receipts/scan': {
-      id: '/api/receipts/scan'
-      path: '/api/receipts/scan'
-      fullPath: '/api/receipts/scan'
-      preLoaderRoute: typeof ApiReceiptsScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/profile/import-backup': {
@@ -564,7 +544,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiProfileExportBackupRoute: ApiProfileExportBackupRoute,
   ApiProfileImportBackupRoute: ApiProfileImportBackupRoute,
-  ApiReceiptsScanRoute: ApiReceiptsScanRoute,
   ApiSeedDemoRoute: ApiSeedDemoRoute,
 }
 export const routeTree = rootRouteImport

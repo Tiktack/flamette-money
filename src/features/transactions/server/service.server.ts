@@ -2,8 +2,7 @@ import { and, desc, eq, gte, inArray, lte, or, sql, type SQL } from "drizzle-orm
 
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db, runDbTransaction, type AppTransaction } from "@/lib/db/client.server"
-import { forEachChunkSync, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
-import { accounts, categories, transactionItems, transactions, transactionTypes } from "@/lib/db/schema"
+import { accounts, transactions, transactionTypes } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { roundMoney } from "@/lib/finance"
 import { endOfDay, parseAmount, parseDateInput, parsePositiveAmount, startOfDay } from "@/lib/server/parsing.server"
@@ -15,16 +14,13 @@ import {
   normalizeMerchantName,
   normalizeNote,
   normalizeOptionalSupportedCurrency,
-  normalizeRequiredName,
   normalizeTransactionType,
-  normalizeTrimmed,
 } from "@/features/shared/server/normalizers.server"
 
 import type {
   CreateTransactionRequest,
   CreateTransactionResponse,
   GetTransactionResponse,
-  TransactionItemResponse,
   TransactionListItemResponse,
   TransactionSearchQuery,
   UpdateTransactionRequest,
@@ -37,11 +33,6 @@ type TransactionType = (typeof transactionTypes)[number]
 type UserRecord = Awaited<ReturnType<typeof requireUser>>
 type AccountRecord = typeof accounts.$inferSelect
 type TransactionRecord = typeof transactions.$inferSelect
-type TransactionItemRecord = typeof transactionItems.$inferSelect
-
-type LoadedTransaction = TransactionRecord & {
-  items: TransactionItemRecord[]
-}
 
 type TransactionListRow = Pick<
   TransactionRecord,
@@ -62,9 +53,7 @@ type TransactionListRow = Pick<
   | "note"
   | "merchantName"
   | "location"
-> & {
-  itemCount: number | string
-}
+>
 
 type TransactionSummaryRow = Pick<TransactionRecord, "accountId" | "amount" | "currency" | "type">
 
@@ -122,12 +111,6 @@ function applyBalanceDelta(tx: AppTransaction, accountId: string, delta: number,
     .run()
 }
 
-function insertTransactionItems(tx: AppTransaction, rows: (typeof transactionItems.$inferInsert)[]) {
-  forEachChunkSync(rows, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-    tx.insert(transactionItems).values(chunk).run()
-  })
-}
-
 async function findDependentRefund(userId: string, transactionId: string) {
   return db.query.transactions.findFirst({
     where: and(eq(transactions.userId, userId), eq(transactions.originalTransactionId, transactionId)),
@@ -141,20 +124,6 @@ function normalizeAmount2(type: TransactionType, amount: number, amount2: number
   }
 
   return amount2 ?? null
-}
-
-function mapTransactionItems(items: TransactionItemRecord[]): TransactionItemResponse[] {
-  return items.map((item) => ({
-    id: item.id,
-    name: item.name,
-    quantity: item.quantity,
-    unit: item.unit,
-    unitPrice: item.unitPrice,
-    promotionAmount: item.promotionAmount,
-    finalAmount: item.finalAmount,
-    categoryId: item.categoryId,
-    subCategoryId: item.subCategoryId,
-  }))
 }
 
 function mapTransactionListItem(transaction: TransactionListRow): TransactionListItemResponse {
@@ -176,11 +145,10 @@ function mapTransactionListItem(transaction: TransactionListRow): TransactionLis
     note: transaction.note,
     merchantName: transaction.merchantName,
     location: transaction.location,
-    itemCount: Number(transaction.itemCount ?? 0),
   }
 }
 
-function mapTransactionDetail(transaction: LoadedTransaction): GetTransactionResponse & CreateTransactionResponse & UpdateTransactionResponse {
+function mapTransactionDetail(transaction: TransactionRecord): GetTransactionResponse & CreateTransactionResponse & UpdateTransactionResponse {
   return {
     id: transaction.id,
     date: transaction.date.toISOString(),
@@ -199,7 +167,6 @@ function mapTransactionDetail(transaction: LoadedTransaction): GetTransactionRes
     note: transaction.note,
     merchantName: transaction.merchantName,
     location: transaction.location,
-    items: mapTransactionItems(transaction.items),
   }
 }
 
@@ -269,10 +236,6 @@ function buildTransactionWhere(userId: string, query: NormalizedTransactionSearc
   return and(...conditions)!
 }
 
-function getListItemCountSql() {
-  return sql<number>`coalesce((select count(*) from transaction_items where transaction_items.transaction_id = ${transactions.id}), 0)`
-}
-
 async function listTransactionRows(userId: string, query?: TransactionSearchQuery): Promise<TransactionListRow[]> {
   const normalizedQuery = normalizeTransactionSearchQuery(query)
   const whereClause = buildTransactionWhere(userId, normalizedQuery)
@@ -294,7 +257,6 @@ async function listTransactionRows(userId: string, query?: TransactionSearchQuer
     note: transactions.note,
     merchantName: transactions.merchantName,
     location: transactions.location,
-    itemCount: getListItemCountSql().as("item_count"),
   }
 
   if (normalizedQuery.page && normalizedQuery.pageSize) {
@@ -336,59 +298,6 @@ async function listTransactionFacetRows(userId: string, query?: TransactionSearc
     })
     .from(transactions)
     .where(buildTransactionWhere(userId, normalizeTransactionSearchQuery(query)))
-}
-
-async function buildTransactionItems(userId: string, itemsInput: CreateTransactionRequest["items"] | UpdateTransactionRequest["items"], transactionId: string) {
-  const rows: (typeof transactionItems.$inferInsert)[] = []
-
-  // Item categories must belong to the requesting user — the FK alone only checks existence.
-  const itemCategoryIds = new Set<string>()
-
-  for (const item of itemsInput ?? []) {
-    if (item.categoryId) {
-      itemCategoryIds.add(item.categoryId)
-    }
-
-    if (item.subCategoryId) {
-      itemCategoryIds.add(item.subCategoryId)
-    }
-  }
-
-  if (itemCategoryIds.size > 0) {
-    const owned = await db
-      .select({ id: categories.id })
-      .from(categories)
-      .where(and(eq(categories.userId, userId), inArray(categories.id, [...itemCategoryIds])))
-
-    if (owned.length !== itemCategoryIds.size) {
-      throw new Error("Item category was not found.")
-    }
-  }
-
-  for (const item of itemsInput ?? []) {
-    const name = normalizeRequiredName(item.name, "Item name")
-    const quantity = item.quantity ? parseAmount(item.quantity, "Quantity") : 1
-    const unitPrice = parseAmount(item.unitPrice, "Unit price")
-    const promotionAmount = parseAmount(item.promotionAmount, "Promotion amount")
-    const finalAmount = unitPrice * (quantity > 0 ? quantity : 1) - promotionAmount
-
-    rows.push({
-      id: crypto.randomUUID(),
-      transactionId,
-      name,
-      quantity: quantity > 0 ? quantity : 1,
-      unit: normalizeTrimmed(item.unit),
-      unitPrice,
-      promotionAmount,
-      finalAmount,
-      categoryId: item.categoryId,
-      subCategoryId: item.subCategoryId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    })
-  }
-
-  return rows
 }
 
 async function validateTransactionRequest(user: UserRecord, request: CreateTransactionRequest | UpdateTransactionRequest, currentTransactionId?: string) {
@@ -686,7 +595,6 @@ export async function createTransactionForUser(
   const validated = await validateTransactionRequest(user, request)
   const id = crypto.randomUUID()
   const now = new Date()
-  const itemsToInsert = await buildTransactionItems(user.id, request.items, id)
 
   runDbTransaction((tx) => {
     const deltas = getBalanceDeltas(validated.type, validated.amount, validated.amount2)
@@ -722,8 +630,6 @@ export async function createTransactionForUser(
       })
       .run()
 
-    insertTransactionItems(tx, itemsToInsert)
-
     options?.withinTransaction?.(tx, id)
   })
 
@@ -743,7 +649,6 @@ export async function updateTransactionData(transactionId: string, request: Upda
   const existing = await requireTransaction(user.id, transactionId)
   const validated = await validateTransactionRequest(user, request, transactionId)
   const now = new Date()
-  const nextItems = await buildTransactionItems(user.id, request.items, transactionId)
 
   // Refunds inherit account/category from their original expense — don't let an edit pull
   // that expense out from under them.
@@ -798,9 +703,6 @@ export async function updateTransactionData(transactionId: string, request: Upda
       })
       .where(and(eq(transactions.id, existing.id), eq(transactions.userId, user.id)))
       .run()
-
-    tx.delete(transactionItems).where(eq(transactionItems.transactionId, existing.id)).run()
-    insertTransactionItems(tx, nextItems)
   })
 
   const updated = await requireTransaction(user.id, existing.id)
@@ -827,7 +729,6 @@ export async function deleteTransactionData(transactionId: string) {
       applyBalanceDelta(tx, transaction.targetAccountId, -deltas.targetDelta, now)
     }
 
-    tx.delete(transactionItems).where(eq(transactionItems.transactionId, transaction.id)).run()
     tx.delete(transactions)
       .where(and(eq(transactions.id, transaction.id), eq(transactions.userId, user.id)))
       .run()

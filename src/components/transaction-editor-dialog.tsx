@@ -1,27 +1,22 @@
 import * as React from "react"
 
-import { Camera01Icon, Cancel01Icon, CloudUploadIcon, Edit01Icon, ImageUploadIcon, Loading03Icon, Tick01Icon } from "@hugeicons/core-free-icons"
+import { Edit01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { useAccounts } from "@/features/accounts/hooks"
 import { useAppInfo } from "@/features/app/hooks"
 import { useCategories } from "@/features/categories/hooks"
-import { useScanReceipt } from "@/features/receipt-scan/hooks"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { useCreateTransaction, useTransaction, useTransactionsSearch, useUpdateTransaction } from "@/features/transactions/hooks"
 import { useTrips } from "@/features/trips/hooks"
 import type { CategoryHierarchy } from "@/features/categories/types"
-import type { ReceiptScanResult } from "@/features/receipt-scan/types"
 import type { TransactionCreateRequest, TransactionDetail, TransactionType, TransactionUpdateRequest } from "@/features/transactions/types"
 import { CategoryIconBadge } from "@/lib/category-icons"
 import { formatDateInput, toNumber } from "@/lib/finance"
@@ -56,16 +51,6 @@ export type TransactionEditorDialogProps = {
   submitNewOverride?: (request: TransactionCreateRequest) => Promise<unknown>
 }
 
-type TransactionItemFormState = {
-  name: string
-  quantity: number | ""
-  unit: string
-  unitPrice: number | ""
-  promotionAmount: number | ""
-  categoryId: string | null
-  subCategoryId: string | null
-}
-
 type TransactionFormState = {
   date: string
   type: TransactionType
@@ -82,7 +67,6 @@ type TransactionFormState = {
   note: string
   merchantName: string
   location: string
-  items: TransactionItemFormState[]
 }
 
 const defaultType: TransactionType = "Expense"
@@ -115,7 +99,6 @@ function buildDefaultState(type: TransactionType): TransactionFormState {
     note: "",
     merchantName: "",
     location: "",
-    items: [],
   }
 }
 
@@ -136,15 +119,6 @@ function fillFromTransaction(transaction: TransactionDetail): TransactionFormSta
     note: transaction.note ?? "",
     merchantName: transaction.merchantName ?? "",
     location: transaction.location ?? "",
-    items: (transaction.items ?? []).map((item) => ({
-      name: item.name,
-      quantity: toNumber(item.quantity),
-      unit: item.unit ?? "",
-      unitPrice: toNumber(item.unitPrice),
-      promotionAmount: toNumber(item.promotionAmount),
-      categoryId: item.categoryId,
-      subCategoryId: item.subCategoryId,
-    })),
   }
 }
 
@@ -189,161 +163,6 @@ function applyEditorDraft(state: TransactionFormState, draft: TransactionEditorD
     location: draft.location ?? state.location,
     note: draft.note ?? state.note,
   }
-}
-
-function applyReceiptScanToForm(state: TransactionFormState, scanResult: ReceiptScanResult): TransactionFormState {
-  const parsedDate = scanResult.date ? new Date(scanResult.date) : null
-  const items: TransactionItemFormState[] = (scanResult.items ?? []).map((item) => ({
-    name: item.name ?? "",
-    quantity: toNumber(item.quantity) || 1,
-    unit: item.unit ?? "",
-    unitPrice: toNumber(item.unitPrice),
-    promotionAmount: toNumber(item.promotionAmount),
-    categoryId: item.categoryId,
-    subCategoryId: item.subCategoryId,
-  }))
-
-  const firstCategorized = items.find((item) => item.categoryId || item.subCategoryId)
-
-  return {
-    ...state,
-    type: "Expense",
-    date: parsedDate && !Number.isNaN(parsedDate.getTime()) ? formatDateInput(parsedDate) : state.date,
-    amount: toNumber(scanResult.amount) > 0 ? toNumber(scanResult.amount) : state.amount,
-    amount2: "",
-    currency: scanResult.currency ? scanResult.currency.toUpperCase() : state.currency,
-    currency2: scanResult.currency ? scanResult.currency.toUpperCase() : state.currency2,
-    merchantName: scanResult.merchant?.trim() || state.merchantName,
-    categoryId: firstCategorized?.categoryId ?? state.categoryId,
-    subCategoryId: firstCategorized?.subCategoryId ?? state.subCategoryId,
-    items,
-  }
-}
-
-// ─── Receipt drop zone ──────────────────────────────────────────────────
-
-function ReceiptDropZone({
-  scanning,
-  scanPreview,
-  scanResult,
-  scanError,
-  accountId,
-  onScan,
-}: {
-  scanning: boolean
-  scanPreview: string | null
-  scanResult: ReceiptScanResult | null
-  scanError: string | null
-  accountId: string
-  onScan: (file: File) => void
-}) {
-  const [dragOver, setDragOver] = React.useState(false)
-  const inputRef = React.useRef<HTMLInputElement>(null)
-
-  const handleFiles = (files: FileList | null) => {
-    const file = files?.[0]
-    if (!file) return
-    onScan(file)
-  }
-
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault()
-    setDragOver(false)
-    handleFiles(event.dataTransfer.files)
-  }
-
-  if (scanning) {
-    return (
-      <div className="flex flex-col items-center gap-4 rounded-2xl border border-border/40 bg-muted/10 py-10">
-        <div className="relative">
-          <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-          <div className="relative flex size-16 items-center justify-center rounded-full bg-primary/10">
-            <HugeiconsIcon icon={Loading03Icon} className="size-8 animate-spin text-primary" />
-          </div>
-        </div>
-        <div className="text-center">
-          <p className="font-medium text-foreground">Analyzing receipt...</p>
-          <p className="text-sm text-muted-foreground">AI is extracting items, amounts, and categories</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (scanResult && scanPreview) {
-    return (
-      <div className="grid gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-        <div className="flex items-start gap-4">
-          <img alt="Receipt" className="h-28 w-20 shrink-0 rounded-xl border border-border/60 object-cover shadow-sm" src={scanPreview} />
-          <div className="flex flex-1 flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={Tick01Icon} className="size-4 text-emerald-500" />
-              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Scan complete</span>
-            </div>
-            {scanResult.merchant ? <p className="text-base font-semibold text-foreground">{scanResult.merchant}</p> : null}
-            <div className="flex flex-wrap gap-2">
-              {scanResult.date ? <Badge variant="secondary">{new Date(scanResult.date).toLocaleDateString()}</Badge> : null}
-              {toNumber(scanResult.amount) > 0 ? (
-                <Badge variant="secondary">
-                  {toNumber(scanResult.amount).toFixed(2)} {scanResult.currency?.toUpperCase()}
-                </Badge>
-              ) : null}
-              <Badge variant="outline">{scanResult.items?.length ?? 0} items</Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">Draft applied to form below. Review and adjust before saving.</p>
-          </div>
-        </div>
-        <Button type="button" variant="outline" size="sm" className="w-fit" onClick={() => inputRef.current?.click()}>
-          <HugeiconsIcon icon={Camera01Icon} className="size-4" />
-          Scan different receipt
-        </Button>
-        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => handleFiles(event.target.files)} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid gap-3">
-      {!accountId ? (
-        <Alert>
-          <AlertTitle>Select an account first</AlertTitle>
-          <AlertDescription>Choose the account this expense will be charged to before scanning.</AlertDescription>
-        </Alert>
-      ) : (
-        <button
-          type="button"
-          className={`group relative flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed transition-all ${
-            dragOver ? "scale-[1.01] border-primary bg-primary/5" : "border-border/60 bg-muted/20 hover:border-primary/40 hover:bg-muted/40"
-          }`}
-          onDragOver={(event) => {
-            event.preventDefault()
-            setDragOver(true)
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          onClick={() => inputRef.current?.click()}
-        >
-          <div
-            className={`flex size-14 items-center justify-center rounded-2xl transition-colors ${
-              dragOver ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-            }`}
-          >
-            <HugeiconsIcon icon={dragOver ? CloudUploadIcon : ImageUploadIcon} className="size-7" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-medium text-foreground">{dragOver ? "Drop receipt image here" : "Upload receipt image"}</p>
-            <p className="text-xs text-muted-foreground">Drag & drop or click to browse. Supports JPEG, PNG, and WebP.</p>
-          </div>
-        </button>
-      )}
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => handleFiles(event.target.files)} />
-      {scanError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Scan failed</AlertTitle>
-          <AlertDescription>{scanError}</AlertDescription>
-        </Alert>
-      ) : null}
-    </div>
-  )
 }
 
 // ─── Transaction form fields ────────────────────────────────────────────
@@ -750,240 +569,6 @@ function TransactionFormFields({
           />
         </Field>
       </FieldGroup>
-
-      {/* Items section */}
-      <Separator />
-      <div className="grid gap-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-foreground">Line items</p>
-            <p className="text-xs text-muted-foreground">Optional itemized breakdown for receipt-style transactions.</p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setForm((state) => ({
-                ...state,
-                items: [
-                  ...state.items,
-                  {
-                    name: "",
-                    quantity: 1,
-                    unit: "",
-                    unitPrice: 0,
-                    promotionAmount: 0,
-                    categoryId: state.categoryId,
-                    subCategoryId: state.subCategoryId,
-                  },
-                ],
-              }))
-            }
-          >
-            Add item
-          </Button>
-        </div>
-        {form.items.length === 0 ? (
-          <p className="py-2 text-center text-xs text-muted-foreground">No itemized lines yet.</p>
-        ) : (
-          <div className="grid gap-3">
-            {form.items.map((item, index) => {
-              const itemParent = item.categoryId ? (categories.find((category) => category.id === item.categoryId) ?? null) : null
-              const itemFinal = toNumber(item.unitPrice) * toNumber(item.quantity) - toNumber(item.promotionAmount)
-
-              return (
-                // Index key only — deriving the key from the name remounts the card (and drops
-                // input focus) on every keystroke.
-                <div key={index} className="rounded-xl border border-border/60 bg-muted/15 p-3">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="flex size-6 items-center justify-center rounded-md bg-muted text-xs font-medium text-muted-foreground">{index + 1}</span>
-                      <span className="text-sm font-medium">{item.name || "Untitled item"}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {itemFinal > 0 ? <Badge variant="secondary">{itemFinal.toFixed(2)}</Badge> : null}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.filter((_, itemIndex) => itemIndex !== index),
-                          }))
-                        }
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                  <FieldGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                    <Field className="lg:col-span-2">
-                      <FieldLabel>Name</FieldLabel>
-                      <Input
-                        value={item.name}
-                        onChange={(event) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((entry, i) => (i === index ? { ...entry, name: event.target.value } : entry)),
-                          }))
-                        }
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel>Qty</FieldLabel>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={(event) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((entry, i) =>
-                              i === index
-                                ? {
-                                    ...entry,
-                                    quantity: event.target.value === "" ? "" : Number(event.target.value) || 0,
-                                  }
-                                : entry
-                            ),
-                          }))
-                        }
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel>Unit price</FieldLabel>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={item.unitPrice}
-                        onChange={(event) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((entry, i) =>
-                              i === index
-                                ? {
-                                    ...entry,
-                                    unitPrice: event.target.value === "" ? "" : Number(event.target.value) || 0,
-                                  }
-                                : entry
-                            ),
-                          }))
-                        }
-                      />
-                    </Field>
-                    <Field>
-                      <FieldLabel>Discount</FieldLabel>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={item.promotionAmount}
-                        onChange={(event) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((entry, i) =>
-                              i === index
-                                ? {
-                                    ...entry,
-                                    promotionAmount: event.target.value === "" ? "" : Number(event.target.value) || 0,
-                                  }
-                                : entry
-                            ),
-                          }))
-                        }
-                      />
-                    </Field>
-                  </FieldGroup>
-                  <FieldGroup className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <Field>
-                      <FieldLabel>Category</FieldLabel>
-                      <Select
-                        value={item.categoryId ?? ""}
-                        onValueChange={(value) =>
-                          setForm((state) => ({
-                            ...state,
-                            items: state.items.map((entry, i) =>
-                              i === index
-                                ? {
-                                    ...entry,
-                                    categoryId: value,
-                                    subCategoryId: null,
-                                  }
-                                : entry
-                            ),
-                          }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Category">
-                            {(value) => {
-                              const selected = typeof value === "string" && value ? categoryMap.get(value) : null
-                              if (!selected) {
-                                return "Category"
-                              }
-                              return (
-                                <>
-                                  <CategoryIconBadge icon={selected.icon} color={selected.color} className="size-5 rounded-md" iconClassName="size-3" />
-                                  <span>{selected.name}</span>
-                                </>
-                              )
-                            }}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {allowedParents.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                <CategoryIconBadge icon={category.icon} color={category.color} className="size-5 rounded-md" iconClassName="size-3" />
-                                <span>{category.name}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    {itemParent?.subcategories.length ? (
-                      <Field>
-                        <FieldLabel>Subcategory</FieldLabel>
-                        <div className="flex flex-wrap gap-1.5">
-                          {itemParent.subcategories.map((subcategory) => (
-                            <Button
-                              key={subcategory.id}
-                              type="button"
-                              size="sm"
-                              variant={item.subCategoryId === subcategory.id ? "default" : "outline"}
-                              onClick={() =>
-                                setForm((state) => ({
-                                  ...state,
-                                  items: state.items.map((entry, i) =>
-                                    i === index
-                                      ? {
-                                          ...entry,
-                                          subCategoryId: entry.subCategoryId === subcategory.id ? null : subcategory.id,
-                                        }
-                                      : entry
-                                  ),
-                                }))
-                              }
-                            >
-                              <CategoryIconBadge icon={subcategory.icon} color={subcategory.color} className="size-4 rounded-[5px]" iconClassName="size-2.5" />
-                              {subcategory.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </Field>
-                    ) : null}
-                  </FieldGroup>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
     </div>
   )
 }
@@ -1007,10 +592,6 @@ export function TransactionEditorDialog({
   const tripsQuery = useTrips()
   const [form, setForm] = React.useState<TransactionFormState>(() => buildDefaultState(presetType ?? defaultType))
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
-  const [scanPreview, setScanPreview] = React.useState<string | null>(null)
-  const [scanResult, setScanResult] = React.useState<ReceiptScanResult | null>(null)
-  const [scanError, setScanError] = React.useState<string | null>(null)
-  const [activeTab, setActiveTab] = React.useState<string | number | null>("manual")
   const recentTransactionsQuery = useTransactionsSearch(
     form.type === "Refund" && form.accountId
       ? {
@@ -1025,7 +606,6 @@ export function TransactionEditorDialog({
   const transactionQuery = useTransaction(mode === "edit" ? transactionId : undefined)
   const createTransaction = useCreateTransaction()
   const updateTransaction = useUpdateTransaction()
-  const scanReceipt = useScanReceipt()
 
   const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
   const categoryMap = React.useMemo(() => buildCategoryMap(categories), [categories])
@@ -1082,10 +662,6 @@ export function TransactionEditorDialog({
 
     hydratedRef.current = true
     setErrorMessage(null)
-    setScanError(null)
-    setScanResult(null)
-    setScanPreview(null)
-    setActiveTab("manual")
 
     if (mode === "edit" && transactionQuery.data) {
       setForm(fillFromTransaction(transactionQuery.data))
@@ -1105,40 +681,6 @@ export function TransactionEditorDialog({
     }
     setForm(initialDraft ? applyEditorDraft(withDefaults, initialDraft) : withDefaults)
   }, [accountsQuery.data, accountsQuery.isPending, categories, initialDraft, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
-
-  React.useEffect(() => {
-    return () => {
-      if (scanPreview) {
-        URL.revokeObjectURL(scanPreview)
-      }
-    }
-  }, [scanPreview])
-
-  const handleScan = async (file: File) => {
-    if (scanPreview) {
-      URL.revokeObjectURL(scanPreview)
-    }
-
-    setScanResult(null)
-    setScanError(null)
-    setScanPreview(URL.createObjectURL(file))
-
-    if (!form.accountId) {
-      setScanError("Select an account before scanning a receipt.")
-      return
-    }
-
-    try {
-      const result = await scanReceipt.mutateAsync({
-        file,
-        accountId: form.accountId,
-      })
-      setScanResult(result)
-      setForm((state) => applyReceiptScanToForm(state, result))
-    } catch (error) {
-      setScanError(getApiErrorMessage(error, "Failed to scan receipt."))
-    }
-  }
 
   const handleSubmit = async () => {
     setErrorMessage(null)
@@ -1193,17 +735,6 @@ export function TransactionEditorDialog({
       note: form.note.trim() || null,
       merchantName: form.merchantName.trim() || null,
       location: form.location.trim() || null,
-      items: form.items.length
-        ? form.items.map((item) => ({
-            name: item.name,
-            quantity: toNumber(item.quantity) || 1,
-            unit: item.unit.trim() || null,
-            unitPrice: toNumber(item.unitPrice),
-            promotionAmount: toNumber(item.promotionAmount),
-            categoryId: item.categoryId,
-            subCategoryId: item.subCategoryId,
-          }))
-        : null,
     }
 
     try {
@@ -1271,9 +802,7 @@ export function TransactionEditorDialog({
               "New transaction"
             )}
           </DialogTitle>
-          <DialogDescription>
-            {mode === "edit" ? "Update the transaction details below." : "Add a transaction manually or scan a receipt to auto-fill the form."}
-          </DialogDescription>
+          <DialogDescription>{mode === "edit" ? "Update the transaction details below." : "Add a new transaction to your records."}</DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[72vh] overflow-y-auto pr-1">
@@ -1284,80 +813,6 @@ export function TransactionEditorDialog({
               <AlertTitle>Unable to load transaction</AlertTitle>
               <AlertDescription>{getApiErrorMessage(transactionQuery.error, "Try reopening the editor.")}</AlertDescription>
             </Alert>
-          ) : mode === "new" ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList variant="line" className="mb-5 w-full">
-                <TabsTrigger value="manual" className="gap-1.5">
-                  <HugeiconsIcon icon={Edit01Icon} className="size-4" />
-                  Manual entry
-                </TabsTrigger>
-                <TabsTrigger value="scan" className="gap-1.5">
-                  <HugeiconsIcon icon={Camera01Icon} className="size-4" />
-                  Scan receipt
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="manual">{formFields}</TabsContent>
-
-              <TabsContent value="scan">
-                <div className="grid gap-6">
-                  {/* Step 1: Account selection for scan */}
-                  <FieldGroup className="grid gap-4 sm:grid-cols-2">
-                    <Field>
-                      <FieldLabel>Account</FieldLabel>
-                      <Select
-                        value={form.accountId}
-                        items={accountsData.map((account) => ({ value: account.id, label: account.name }))}
-                        onValueChange={(value) => {
-                          const nextAccountId = value ?? ""
-                          setForm((state) => ({
-                            ...state,
-                            accountId: nextAccountId,
-                            currency: accountMap.get(nextAccountId)?.currency ?? state.currency,
-                            currency2: accountMap.get(nextAccountId)?.currency ?? state.currency2,
-                          }))
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            {accountsData.map((account) => (
-                              <SelectItem key={account.id} value={account.id}>
-                                {account.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </FieldGroup>
-
-                  {/* Step 2: Upload area */}
-                  <ReceiptDropZone
-                    scanning={scanReceipt.isPending}
-                    scanPreview={scanPreview}
-                    scanResult={scanResult}
-                    scanError={scanError}
-                    accountId={form.accountId}
-                    onScan={handleScan}
-                  />
-
-                  {/* Step 3: Review form (shown after scan completes) */}
-                  {scanResult ? (
-                    <>
-                      <Separator />
-                      <div className="grid gap-1">
-                        <h3 className="text-sm font-medium text-foreground">Review & adjust</h3>
-                        <p className="text-xs text-muted-foreground">The scanned data has been filled in below. Make any corrections before saving.</p>
-                      </div>
-                      {formFields}
-                    </>
-                  ) : null}
-                </div>
-              </TabsContent>
-            </Tabs>
           ) : (
             formFields
           )}

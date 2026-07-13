@@ -200,16 +200,6 @@ export type CreateCategoryResponse = {
   parentId: null | string
 }
 
-export type CreateTransactionItemRequest = {
-  name: string
-  quantity: number
-  unit: null | string
-  unitPrice: number
-  promotionAmount: number
-  categoryId: null | string
-  subCategoryId: null | string
-}
-
 export type CreateTransactionRequest = {
   date: string
   type: TransactionType
@@ -226,7 +216,6 @@ export type CreateTransactionRequest = {
   amount2?: null | number
   currency?: null | string
   currency2?: null | string
-  items?: null | Array<CreateTransactionItemRequest>
 }
 
 export type CreateTransactionResponse = {
@@ -247,7 +236,6 @@ export type CreateTransactionResponse = {
   note: null | string
   merchantName: null | string
   location: null | string
-  items: Array<TransactionItemResponse>
 }
 
 export type CreateTripRequest = {
@@ -305,7 +293,6 @@ export type GetTransactionResponse = {
   note: null | string
   merchantName: null | string
   location: null | string
-  items: Array<TransactionItemResponse>
 }
 
 export type ImportBackupResponse = {
@@ -314,7 +301,6 @@ export type ImportBackupResponse = {
   importedAccounts: number
   importedCategories: number
   importedSubCategories: number
-  importedTransactionItems: number
   updatedBalanceSnapshots: number
   updatedSettings: number
   skippedRows: number
@@ -369,18 +355,6 @@ export type PortfolioBalanceSummaryResponse = {
   dayCount: number
 }
 
-export type ReceiptItemResponse = {
-  name: string
-  quantity: number
-  unit: null | string
-  unitPrice: number
-  promotionAmount: number
-  finalAmount: number
-  categoryName: null | string
-  categoryId: null | string
-  subCategoryId: null | string
-}
-
 export type ReportBucketResponse = {
   key: string
   label: string
@@ -421,15 +395,6 @@ export type ResetUserDataResponse = {
   deletedCategories: number
   deletedAccounts: number
   deletedTrips: number
-  deletedTransactionItems: number
-}
-
-export type ScanReceiptResponse = {
-  merchant: null | string
-  date: null | string
-  amount: number
-  currency: null | string
-  items: Array<ReceiptItemResponse>
 }
 
 export type SeedDemoResponse = {
@@ -442,18 +407,6 @@ export type SeedDemoResponse = {
 }
 
 export type SubscriptionType = "Free" | "Premium"
-
-export type TransactionItemResponse = {
-  id: string
-  name: string
-  quantity: number
-  unit: null | string
-  unitPrice: number
-  promotionAmount: number
-  finalAmount: number
-  categoryId: null | string
-  subCategoryId: null | string
-}
 
 export type TransactionListItemResponse = {
   id: string
@@ -473,7 +426,6 @@ export type TransactionListItemResponse = {
   note: null | string
   merchantName: null | string
   location: null | string
-  itemCount: number
 }
 
 export type TransactionSearchQuery = {
@@ -557,7 +509,6 @@ export type UpdateTransactionRequest = {
   amount2?: null | number
   currency?: null | string
   currency2?: null | string
-  items?: null | Array<CreateTransactionItemRequest>
 }
 
 export type UpdateTransactionResponse = {
@@ -578,7 +529,6 @@ export type UpdateTransactionResponse = {
   note: null | string
   merchantName: null | string
   location: null | string
-  items: Array<TransactionItemResponse>
 }
 
 export type UpdateTripRequest = {

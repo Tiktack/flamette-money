@@ -2,7 +2,7 @@ import { and, count, eq, isNotNull, isNull } from "drizzle-orm"
 
 import { ensureUserBootstrap } from "@/lib/bootstrap.server"
 import { db, runDbTransaction } from "@/lib/db/client.server"
-import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
+import { accounts, categories, transactions, trips, users } from "@/lib/db/schema"
 
 import { requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeSupportedCurrency } from "@/features/shared/server/normalizers.server"
@@ -41,12 +41,6 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
 
   const result = runDbTransaction((tx) => {
     const [{ deletedTransactions }] = tx.select({ deletedTransactions: count() }).from(transactions).where(eq(transactions.userId, user.id)).all()
-    const [{ deletedTransactionItems }] = tx
-      .select({ deletedTransactionItems: count() })
-      .from(transactionItems)
-      .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
-      .where(eq(transactions.userId, user.id))
-      .all()
     const [{ deletedChildCategories }] = tx
       .select({ deletedChildCategories: count() })
       .from(categories)
@@ -74,7 +68,6 @@ export async function resetUserData(): Promise<ResetUserDataResponse> {
       deletedCategories: deletedChildCategories + deletedParentCategories,
       deletedAccounts,
       deletedTrips,
-      deletedTransactionItems,
     }
   })
 

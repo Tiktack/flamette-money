@@ -11,12 +11,10 @@ Demo video: [One drive recording](https://1drv.ms/v/c/8ba5588398ffdc42/IQAvCzSkE
 - **Advanced Transactions**:
   - Support for Income, Expense, Transfers, and Refunds.
   - Automatic balance adjustments.
-  - Transaction itemization with category overrides.
 - **Reporting**:
   - Category breakdowns.
   - Time-series analytics.
   - Refund-adjusted expense totals.
-- **Receipt Scanning**: AI-assisted receipt parsing to draft transactions from images.
 - **Search**: Powerful multi-filter transaction search.
 - **Multi-currency**: Integration with exchange rate APIs for accurate cross-currency reporting.
 - **Trip Tracking**: Organize transactions by trips for better travel expense management.
@@ -49,8 +47,6 @@ To run `frontend-new` with the full local TanStack Start stack, configure these 
 - `DATABASE_URL`: SQLite file path. Defaults to `file:./data/flamette-money.db`.
 - `EXCHANGE_RATE_API_KEY`: Optional, enables live FX refreshes.
 - `EXCHANGE_RATE_CACHE_HOURS`: Optional FX cache TTL in hours.
-- `OPENROUTER_API_KEY`: Optional, enables AI receipt scanning.
-- `OPENROUTER_MODEL`: Optional OpenRouter model override for receipt scanning.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`: Optional Google OAuth credentials.
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`: Optional GitHub OAuth credentials.
 

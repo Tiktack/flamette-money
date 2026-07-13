@@ -22,8 +22,6 @@ const OPTION_TO_ENV = {
   github_client_secret: "GITHUB_CLIENT_SECRET",
   exchange_rate_api_key: "EXCHANGE_RATE_API_KEY",
   exchange_rate_cache_hours: "EXCHANGE_RATE_CACHE_HOURS",
-  openrouter_api_key: "OPENROUTER_API_KEY",
-  openrouter_model: "OPENROUTER_MODEL",
   email_import_encryption_key: "EMAIL_IMPORT_ENCRYPTION_KEY",
   email_import_default_poll_minutes: "EMAIL_IMPORT_DEFAULT_POLL_MINUTES",
   email_import_max_messages_per_sync: "EMAIL_IMPORT_MAX_MESSAGES_PER_SYNC",

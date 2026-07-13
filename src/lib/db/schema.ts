@@ -197,31 +197,6 @@ export const transactions = sqliteTable(
   ]
 )
 
-export const transactionItems = sqliteTable(
-  "transaction_items",
-  {
-    id: text("id").primaryKey(),
-    transactionId: text("transaction_id")
-      .notNull()
-      .references(() => transactions.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    quantity: real("quantity").notNull().default(1),
-    unit: text("unit"),
-    unitPrice: real("unit_price").notNull().default(0),
-    promotionAmount: real("promotion_amount").notNull().default(0),
-    finalAmount: real("final_amount").notNull().default(0),
-    categoryId: text("category_id").references(() => categories.id, {
-      onDelete: "restrict",
-    }),
-    subCategoryId: text("sub_category_id").references(() => categories.id, {
-      onDelete: "restrict",
-    }),
-    createdAt: integer("created_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).default(timestampDefault).notNull(),
-  },
-  (table) => [index("transaction_items_transaction_id_created_at_idx").on(table.transactionId, table.createdAt)]
-)
-
 export const emailConnections = sqliteTable(
   "email_connections",
   {
@@ -344,7 +319,7 @@ export const tripsRelations = relations(trips, ({ one, many }) => ({
   transactions: many(transactions),
 }))
 
-export const transactionsRelations = relations(transactions, ({ one, many }) => ({
+export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, {
     fields: [transactions.userId],
     references: [users.id],
@@ -356,14 +331,6 @@ export const transactionsRelations = relations(transactions, ({ one, many }) => 
   trip: one(trips, {
     fields: [transactions.tripId],
     references: [trips.id],
-  }),
-  items: many(transactionItems),
-}))
-
-export const transactionItemsRelations = relations(transactionItems, ({ one }) => ({
-  transaction: one(transactions, {
-    fields: [transactionItems.transactionId],
-    references: [transactions.id],
   }),
 }))
 
