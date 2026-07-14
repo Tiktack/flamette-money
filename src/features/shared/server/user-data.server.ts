@@ -25,8 +25,6 @@ export function clearUserScopedData(tx: AppTransaction, userId: string) {
     .where(eq(transactions.userId, userId))
     .run()
 
-  // transaction_items.transaction_id uses ON DELETE CASCADE, so removing
-  // the user's transactions also clears their items without chunked deletes.
   tx.delete(transactions).where(eq(transactions.userId, userId)).run()
   tx.delete(trips).where(eq(trips.userId, userId)).run()
   tx.delete(categories)

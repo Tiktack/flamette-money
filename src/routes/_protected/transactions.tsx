@@ -348,17 +348,7 @@ function TransactionsPage() {
       {
         accessorKey: "date",
         header: "Date",
-        cell: ({ row }) => {
-          const transaction = row.original
-          const itemCount = toNumber(transaction.itemCount)
-
-          return (
-            <div>
-              <p className="text-foreground">{formatDateLabel(transaction.date)}</p>
-              {itemCount > 0 ? <p className="text-sm text-muted-foreground">{itemCount} items</p> : null}
-            </div>
-          )
-        },
+        cell: ({ row }) => <p className="text-foreground">{formatDateLabel(row.original.date)}</p>,
       },
       {
         id: "actions",

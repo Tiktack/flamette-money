@@ -61,16 +61,6 @@ export const tripUpdateSchema = z.object({
   request: tripRequestSchema,
 })
 
-export const transactionItemSchema = z.object({
-  name: z.string(),
-  quantity: z.coerce.number(),
-  unit: z.string().nullable(),
-  unitPrice: z.coerce.number(),
-  promotionAmount: z.coerce.number(),
-  categoryId: z.string().nullable(),
-  subCategoryId: z.string().nullable(),
-})
-
 export const transactionRequestSchema = z.object({
   date: z.string(),
   type: z.enum(transactionTypes),
@@ -87,7 +77,6 @@ export const transactionRequestSchema = z.object({
   amount2: numberLike,
   currency: z.string().nullable().optional(),
   currency2: z.string().nullable().optional(),
-  items: z.array(transactionItemSchema).nullable().optional(),
 })
 
 export const transactionUpdateSchema = z.object({

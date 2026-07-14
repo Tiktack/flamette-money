@@ -136,21 +136,3 @@ CREATE INDEX IF NOT EXISTS transactions_user_id_date_idx ON transactions(user_id
 CREATE INDEX IF NOT EXISTS transactions_user_id_account_id_date_idx ON transactions(user_id, account_id, date);
 CREATE INDEX IF NOT EXISTS transactions_user_id_category_id_date_idx ON transactions(user_id, category_id, date);
 CREATE INDEX IF NOT EXISTS transactions_user_id_trip_id_date_idx ON transactions(user_id, trip_id, date);
-
-CREATE TABLE IF NOT EXISTS transaction_items (
-  id TEXT PRIMARY KEY NOT NULL,
-  transaction_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  quantity REAL NOT NULL DEFAULT 1,
-  unit TEXT,
-  unit_price REAL NOT NULL DEFAULT 0,
-  promotion_amount REAL NOT NULL DEFAULT 0,
-  final_amount REAL NOT NULL DEFAULT 0,
-  category_id TEXT,
-  sub_category_id TEXT,
-  created_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
-  updated_at INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
-  FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
-  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
-  FOREIGN KEY (sub_category_id) REFERENCES categories(id) ON DELETE RESTRICT
-);

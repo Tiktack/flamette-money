@@ -8,9 +8,8 @@ Flamette Money is a full-stack **TanStack Start** personal finance app focused o
 
 - multi-currency accounts with accurate balances
 - hierarchical income and expense categories
-- transactions with transfers, refunds, search, and optional itemization
+- transactions with transfers, refunds, and search
 - analytics and reporting with FX conversion
-- AI-assisted receipt scanning that returns **draft data only**
 - automatic email transaction import from bank notification mailboxes (IMAP polling + rules engine; see `docs\email-import.md`)
 
 ## Documentation policy
@@ -70,8 +69,6 @@ Main tables live in `src\lib\db\schema.ts`. The SQLite schema is created and kep
 - Default categories are seeded by `ensureUserBootstrap()`.
 - Transfers must match source and target account currencies.
 - Refunds must point to an original expense transaction and preserve account/category alignment.
-- Transaction items are optional and create/update flows replace stored items explicitly.
-- Receipt scanning returns draft data only and does not create transactions.
 - Reports convert values into the user's base currency and treat refunds as expense-reducing values.
 
 ## Auth and data conventions
@@ -108,8 +105,6 @@ Use `.env.example` as the current environment reference.
 - `GOOGLE_CLIENT_SECRET`
 - `GITHUB_CLIENT_ID`
 - `GITHUB_CLIENT_SECRET`
-- `OPENROUTER_API_KEY`
-- `OPENROUTER_MODEL`
 - `EMAIL_IMPORT_ENCRYPTION_KEY`
 - `EMAIL_IMPORT_DEFAULT_POLL_MINUTES`
 - `EMAIL_IMPORT_MAX_MESSAGES_PER_SYNC`

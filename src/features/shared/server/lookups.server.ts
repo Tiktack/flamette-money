@@ -1,8 +1,8 @@
-import { and, asc, eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 
 import { requireSessionData } from "@/lib/auth/session.server"
 import { db } from "@/lib/db/client.server"
-import { accounts, categories, transactionItems, transactions, trips, users } from "@/lib/db/schema"
+import { accounts, categories, transactions, trips, users } from "@/lib/db/schema"
 
 // Fired once per process (not per request) so a broken dynamic import surfaces in the logs
 // instead of silently retrying on every authenticated call. `ensureEmailImportScheduler`
@@ -78,11 +78,6 @@ export async function requireTrip(userId: string, tripId: string) {
 export async function requireTransaction(userId: string, transactionId: string) {
   const transaction = await db.query.transactions.findFirst({
     where: and(eq(transactions.userId, userId), eq(transactions.id, transactionId)),
-    with: {
-      items: {
-        orderBy: [asc(transactionItems.createdAt)],
-      },
-    },
   })
 
   if (!transaction) {

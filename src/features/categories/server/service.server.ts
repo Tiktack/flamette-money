@@ -1,7 +1,7 @@
 import { and, asc, eq, or } from "drizzle-orm"
 
 import { db } from "@/lib/db/client.server"
-import { categories, transactionItems, transactions } from "@/lib/db/schema"
+import { categories, transactions } from "@/lib/db/schema"
 
 import { requireCategory, requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeCategoryColor, normalizeCategoryType, normalizeIcon, normalizeRequiredName } from "@/features/shared/server/normalizers.server"
@@ -152,15 +152,6 @@ export async function deleteCategoryData(categoryId: string) {
 
   if (hasTransactions) {
     throw new Error("Category cannot be deleted because it is used by transactions.")
-  }
-
-  const hasItemUsage = await db.query.transactionItems.findFirst({
-    where: or(eq(transactionItems.categoryId, categoryId), eq(transactionItems.subCategoryId, categoryId)),
-    columns: { id: true },
-  })
-
-  if (hasItemUsage) {
-    throw new Error("Category cannot be deleted because it is used by transaction items.")
   }
 
   const hasChildren = await db.query.categories.findFirst({

@@ -14,7 +14,4 @@ CREATE INDEX IF NOT EXISTS transactions_user_id_date_created_at_idx
 CREATE INDEX IF NOT EXISTS transactions_user_id_type_date_idx
   ON transactions(user_id, type, date);
 
-CREATE INDEX IF NOT EXISTS transaction_items_transaction_id_created_at_idx
-  ON transaction_items(transaction_id, created_at);
-
 PRAGMA optimize;

@@ -14,12 +14,6 @@ configuration:
   disable_signups:
     name: Disable new sign-ups
     description: Block all new account registrations (email and social) on this private server. Existing users can still sign in. The first account can always be created on a fresh instance.
-  openrouter_api_key:
-    name: OpenRouter API key
-    description: Optional. Enables AI receipt scanning.
-  openrouter_model:
-    name: OpenRouter model
-    description: Optional model override for receipt scanning.
   exchange_rate_api_key:
     name: Exchange rate API key
     description: Optional. Enables live currency conversion in reports.

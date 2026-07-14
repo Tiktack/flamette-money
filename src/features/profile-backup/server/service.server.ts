@@ -1,21 +1,10 @@
-import { eq, inArray } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import * as XLSX from "xlsx"
 
 import { normalizeCurrencyOrDefault, normalizeCurrencyOrNull } from "@/lib/currency"
 import { db, runDbTransaction } from "@/lib/db/client.server"
-import { forEachChunk, forEachChunkSync, SQLITE_IN_CLAUSE_BATCH_SIZE, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
-import {
-  accounts,
-  accountTypes,
-  categories,
-  categoryTypes,
-  subscriptionTypes,
-  transactionItems,
-  transactions,
-  transactionTypes,
-  trips,
-  users,
-} from "@/lib/db/schema"
+import { forEachChunkSync, SQLITE_INSERT_BATCH_SIZE } from "@/lib/db/sqlite-batch.server"
+import { accounts, accountTypes, categories, categoryTypes, subscriptionTypes, transactions, transactionTypes, trips, users } from "@/lib/db/schema"
 import { fail, requireUserForRequest } from "@/lib/server/http.server"
 
 import {
@@ -38,7 +27,6 @@ const accountsSheetName = "Accounts"
 const categoriesSheetName = "Categories"
 const tripsSheetName = "Trips"
 const transactionsSheetName = "Transactions"
-const transactionItemsSheetName = "TransactionItems"
 
 const defaultAccountColor = "#4C6EF5"
 const defaultAccountIcon = "IconWallet"
@@ -109,21 +97,6 @@ type FlametteTransactionRow = {
   merchantName: string | null
   location: string | null
   tripId: string | null
-  createdAt: Date | null
-  updatedAt: Date | null
-}
-
-type FlametteTransactionItemRow = {
-  id: string
-  transactionId: string
-  name: string
-  quantity: number
-  unit: string | null
-  unitPrice: number
-  promotionAmount: number
-  finalAmount: number
-  categoryId: string | null
-  subCategoryId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -450,30 +423,6 @@ function parseFlametteTransactions(workbook: XLSX.WorkBook) {
     }))
 }
 
-function parseFlametteTransactionItems(workbook: XLSX.WorkBook) {
-  const rows = getSheetRows(workbook, transactionItemsSheetName)
-  const headerRow = rows[0] ?? []
-  const headers = getHeaderMap(headerRow)
-
-  return rows
-    .slice(1)
-    .filter(hasNonEmptyCell)
-    .map<FlametteTransactionItemRow>((row) => ({
-      id: requireRowValue(row, headers, "Id"),
-      transactionId: requireRowValue(row, headers, "TransactionId"),
-      name: requireRowValue(row, headers, "Name"),
-      quantity: parseNumber(requireRowValue(row, headers, "Quantity"), "Quantity"),
-      unit: normalizeTrimmed(getRowValue(row, headers, "Unit")),
-      unitPrice: parseNumber(requireRowValue(row, headers, "UnitPrice"), "UnitPrice"),
-      promotionAmount: parseNumber(requireRowValue(row, headers, "PromotionAmount"), "PromotionAmount"),
-      finalAmount: parseNumber(requireRowValue(row, headers, "FinalAmount"), "FinalAmount"),
-      categoryId: normalizeTrimmed(getRowValue(row, headers, "CategoryId")),
-      subCategoryId: normalizeTrimmed(getRowValue(row, headers, "SubCategoryId")),
-      createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
-      updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
-    }))
-}
-
 function pickAccountColor(accountName: string) {
   const palette = ["#4C6EF5", "#339AF0", "#22B8CF", "#20C997", "#51CF66", "#FCC419", "#FF922B", "#FF6B6B", "#CC5DE8"]
   const hash = Array.from(accountName.trim().toUpperCase()).reduce((total, character) => total * 31 + character.charCodeAt(0), 0)
@@ -724,20 +673,6 @@ async function exportFlametteBackup(user: UserRecord) {
     orderBy: (table, { asc }) => [asc(table.date), asc(table.id)],
   })
 
-  const transactionIds = userTransactions.map((transaction) => transaction.id)
-  const userTransactionItems: Array<typeof transactionItems.$inferSelect> = []
-
-  if (transactionIds.length > 0) {
-    await forEachChunk(transactionIds, SQLITE_IN_CLAUSE_BATCH_SIZE, async (chunk) => {
-      const items = await db.query.transactionItems.findMany({
-        where: inArray(transactionItems.transactionId, chunk),
-        orderBy: (table, { asc }) => [asc(table.transactionId), asc(table.id)],
-      })
-
-      userTransactionItems.push(...items)
-    })
-  }
-
   const workbook = buildWorkbook()
 
   appendWorksheet(workbook, settingsSheetName, [
@@ -840,24 +775,6 @@ async function exportFlametteBackup(user: UserRecord) {
     ]),
   ])
 
-  appendWorksheet(workbook, transactionItemsSheetName, [
-    ["Id", "TransactionId", "Name", "Quantity", "Unit", "UnitPrice", "PromotionAmount", "FinalAmount", "CategoryId", "SubCategoryId", "CreatedAt", "UpdatedAt"],
-    ...userTransactionItems.map((item) => [
-      item.id,
-      item.transactionId,
-      item.name,
-      formatNumber(item.quantity),
-      item.unit ?? "",
-      formatNumber(item.unitPrice),
-      formatNumber(item.promotionAmount),
-      formatNumber(item.finalAmount),
-      item.categoryId ?? "",
-      item.subCategoryId ?? "",
-      formatIso(item.createdAt),
-      formatIso(item.updatedAt),
-    ]),
-  ])
-
   const payload = XLSX.write(workbook, {
     type: "buffer",
     bookType: "xlsx",
@@ -884,7 +801,6 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
   const categoryRows = parseFlametteCategories(workbook)
   const tripRows = parseFlametteTrips(workbook)
   const transactionRows = parseFlametteTransactions(workbook)
-  const transactionItemRows = parseFlametteTransactionItems(workbook)
 
   const now = new Date()
   let skippedRows = 0
@@ -1064,43 +980,6 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
     }))
     .filter((reference) => reference.relatedTransactionId || reference.originalTransactionId)
 
-  const importedTransactionItems: Array<typeof transactionItems.$inferInsert> = []
-
-  for (const row of transactionItemRows) {
-    const transactionId = transactionIdMap.get(row.transactionId)
-    if (!transactionId) {
-      skippedRows += 1
-      continue
-    }
-
-    const categoryId = row.categoryId ? (categoryIdMap.get(row.categoryId) ?? null) : null
-    if (row.categoryId && !categoryId) {
-      skippedRows += 1
-      continue
-    }
-
-    const subCategoryId = row.subCategoryId ? (categoryIdMap.get(row.subCategoryId) ?? null) : null
-    if (row.subCategoryId && !subCategoryId) {
-      skippedRows += 1
-      continue
-    }
-
-    importedTransactionItems.push({
-      id: crypto.randomUUID(),
-      transactionId,
-      name: row.name,
-      quantity: row.quantity,
-      unit: row.unit,
-      unitPrice: row.unitPrice,
-      promotionAmount: row.promotionAmount,
-      finalAmount: row.finalAmount,
-      categoryId,
-      subCategoryId,
-      createdAt: row.createdAt ?? now,
-      updatedAt: row.updatedAt ?? now,
-    })
-  }
-
   const nextBaseCurrency = normalizeCurrencyOrDefault(settings.baseCurrency, user.baseCurrency)
   const nextSubscriptionType = settings.subscriptionType ?? user.subscriptionType
   const settingsChanged = nextBaseCurrency !== user.baseCurrency || nextSubscriptionType !== user.subscriptionType
@@ -1136,10 +1015,6 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
         .run()
     }
 
-    forEachChunkSync(importedTransactionItems, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(transactionItems).values(chunk).run()
-    })
-
     if (settingsChanged) {
       tx.update(users)
         .set({
@@ -1158,7 +1033,6 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
     importedAccounts: importedAccounts.length,
     importedCategories: importedCategories.length,
     importedSubCategories: importedCategories.filter((row) => row.parentId).length,
-    importedTransactionItems: importedTransactionItems.length,
     updatedBalanceSnapshots: importedAccounts.length,
     updatedSettings: settingsChanged ? 1 : 0,
     skippedRows,
@@ -1416,7 +1290,6 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
     importedAccounts: importedAccounts.length,
     importedCategories: createdCategories,
     importedSubCategories: createdSubCategories,
-    importedTransactionItems: 0,
     updatedBalanceSnapshots,
     updatedSettings: 0,
     skippedRows,
