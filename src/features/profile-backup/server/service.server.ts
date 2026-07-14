@@ -802,7 +802,6 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
   const tripRows = parseFlametteTrips(workbook)
   const transactionRows = parseFlametteTransactions(workbook)
 
-  // Older backups may still carry a TransactionItems sheet; it is intentionally ignored.
   const now = new Date()
   let skippedRows = 0
 
