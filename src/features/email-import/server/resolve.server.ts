@@ -14,6 +14,7 @@ import { z } from "zod"
 import type { ParsedEmailTransaction } from "../types"
 import type { BankEmailInput } from "./parsers/types"
 import { getBankEmailParser } from "./parsers/registry"
+import { reconcileTransactionForUser } from "./reconcile.server"
 
 type UserRecord = typeof users.$inferSelect
 type EmailConnectionRecord = typeof emailConnections.$inferSelect
@@ -32,7 +33,9 @@ export type EmailResolutionOutcome =
   | { status: "unparsed"; parseError: string }
   | { status: "ignored"; parsed: ParsedEmailTransaction; matchedRuleId: string }
   | { status: "pending"; parsed: ParsedEmailTransaction; matchedRuleId: string | null }
-  | { status: "imported"; parsed: ParsedEmailTransaction; matchedRuleId: string | null; transactionId: string }
+  // reconciled: the email was matched to a transaction the user had already entered by
+  // hand (same account/day/amount) and linked to it instead of creating a new one.
+  | { status: "imported"; parsed: ParsedEmailTransaction; matchedRuleId: string | null; transactionId: string; reconciled: boolean }
   | { status: "error"; parsed: ParsedEmailTransaction; matchedRuleId: string | null; error: string }
 
 const conditionsReadSchema = z.array(emailRuleConditionSchema)
@@ -191,13 +194,19 @@ export async function resolveEmailItem(context: EmailResolutionContext, input: B
 
   try {
     const request = buildTransactionRequest(parsed, assignment, input.date)
+
+    const reconciled = await reconcileTransactionForUser(context.user, request)
+    if (reconciled) {
+      return { status: "imported", parsed, matchedRuleId, transactionId: reconciled.id, reconciled: true }
+    }
+
     const created = await createTransactionForUser(context.user, request)
-    return { status: "imported", parsed, matchedRuleId, transactionId: created.id }
+    return { status: "imported", parsed, matchedRuleId, transactionId: created.id, reconciled: false }
   } catch (error) {
     if (error instanceof TransactionCommittedButNotReadError) {
       // The transaction was durably committed even though reading it back failed. Mark the
       // item imported with the known id so a later re-parse won't create a duplicate.
-      return { status: "imported", parsed, matchedRuleId, transactionId: error.transactionId }
+      return { status: "imported", parsed, matchedRuleId, transactionId: error.transactionId, reconciled: false }
     }
     const message = error instanceof Error ? error.message : "Creating the transaction failed."
     return { status: "error", parsed, matchedRuleId, error: message }

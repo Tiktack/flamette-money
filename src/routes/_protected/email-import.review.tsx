@@ -118,11 +118,10 @@ function EmailImportReviewPage() {
       const result = await reparseItems.mutateAsync({
         connectionId: connectionIds.length === 1 ? connectionIds[0] : undefined,
       })
-      setReparseMessage(
-        result.fetched === 0
-          ? "Nothing to re-parse."
-          : `Re-parsed ${result.fetched}: ${result.imported} imported, ${result.pending} to review, ${result.unparsed} still unparsed.`
-      )
+      const parts = [`${result.imported} imported`]
+      if (result.linked > 0) parts.push(`${result.linked} matched to existing`)
+      parts.push(`${result.pending} to review`, `${result.unparsed} still unparsed`)
+      setReparseMessage(result.fetched === 0 ? "Nothing to re-parse." : `Re-parsed ${result.fetched}: ${parts.join(", ")}.`)
     } catch (error) {
       setReparseMessage(getApiErrorMessage(error, "Re-parse failed."))
     }

@@ -6,7 +6,7 @@ import { emailRuleActionSchema, emailRuleConditionSchema, parsedEmailTransaction
 import type { CreateTransactionRequest } from "@/features/shared/types"
 import { createTransactionForUser, TransactionCommittedButNotReadError } from "@/features/transactions/server/service.server"
 import { decryptSecret, encryptSecret, SecretDecryptError } from "@/lib/crypto.server"
-import { db, runDbTransaction } from "@/lib/db/client.server"
+import { db, runDbTransaction, type AppTransaction } from "@/lib/db/client.server"
 import { emailConnections, emailImportItems, emailImportRules } from "@/lib/db/schema"
 import { getEmailImportDefaultPollMinutes } from "@/lib/env.server"
 import { z } from "zod"
@@ -31,8 +31,9 @@ import type {
 } from "../types"
 import { EmailSyncError, testImapConnection } from "./imap.server"
 import { listParserOptions } from "./parsers/registry"
+import { reconcileTransactionForUser } from "./reconcile.server"
 import { buildEmailResolutionContext, resolveEmailItem } from "./resolve.server"
-import { applyOutcomeFields, runExclusiveEmailSync } from "./sync.server"
+import { applyOutcomeFields, countOutcome, isEmailSyncInFlight, runExclusiveEmailSync } from "./sync.server"
 
 const DEFAULT_HOST = "imap.gmail.com"
 const DEFAULT_PORT = 993
@@ -235,6 +236,38 @@ export async function deleteEmailConnectionData(connectionId: string): Promise<v
   const user = await requireUser()
   await requireEmailConnection(user.id, connectionId)
   await db.delete(emailConnections).where(and(eq(emailConnections.userId, user.id), eq(emailConnections.id, connectionId)))
+}
+
+// Wipes a connection's import history so the next sync re-reads the whole mailbox folder:
+// every item (including imported/dismissed dedupe records) is deleted and the UID cursor is
+// reset. Transactions that were already created are kept — a re-imported email links back
+// to its matching transaction through reconciliation instead of duplicating it.
+export async function resetEmailConnectionData(connectionId: string): Promise<void> {
+  const user = await requireUser()
+  await requireEmailConnection(user.id, connectionId)
+
+  // A running sync would re-insert items and advance the cursor mid-reset.
+  if (isEmailSyncInFlight(connectionId)) {
+    throw new Error("A sync for this connection is running. Try again in a moment.")
+  }
+
+  runDbTransaction((tx) => {
+    tx.delete(emailImportItems)
+      .where(and(eq(emailImportItems.userId, user.id), eq(emailImportItems.connectionId, connectionId)))
+      .run()
+    tx.update(emailConnections)
+      .set({
+        uidValidity: null,
+        lastSeenUid: 0,
+        lastSyncAt: null,
+        lastSyncStatus: null,
+        lastSyncError: null,
+        consecutiveFailures: 0,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(emailConnections.userId, user.id), eq(emailConnections.id, connectionId)))
+      .run()
+  })
 }
 
 export async function testEmailConnectionData(request: EmailConnectionTestRequest): Promise<EmailConnectionTestResult> {
@@ -615,21 +648,28 @@ export async function approveEmailImportItemData(itemId: string, request: Create
     throw new Error("This email has already been imported.")
   }
 
+  const linkItem = (tx: AppTransaction, transactionId: string) => {
+    const linked = tx
+      .update(emailImportItems)
+      .set({ status: "imported", transactionId, importedAt: new Date(), error: null, updatedAt: new Date() })
+      // The `ne(..., "imported")` guard makes a concurrent approve of the same item a
+      // no-op update; 0 rows changed rolls back the whole creation.
+      .where(and(eq(emailImportItems.userId, user.id), eq(emailImportItems.id, itemId), ne(emailImportItems.status, "imported")))
+      .run()
+    if (linked.changes === 0) {
+      throw new Error("This email has already been imported.")
+    }
+  }
+
   try {
-    const created = await createTransactionForUser(user, request, {
-      withinTransaction: (tx, transactionId) => {
-        const linked = tx
-          .update(emailImportItems)
-          .set({ status: "imported", transactionId, importedAt: new Date(), error: null, updatedAt: new Date() })
-          // The `ne(..., "imported")` guard makes a concurrent approve of the same item a
-          // no-op update; 0 rows changed rolls back the whole creation.
-          .where(and(eq(emailImportItems.userId, user.id), eq(emailImportItems.id, itemId), ne(emailImportItems.status, "imported")))
-          .run()
-        if (linked.changes === 0) {
-          throw new Error("This email has already been imported.")
-        }
-      },
-    })
+    // If the user already recorded this transaction by hand, link the email to it instead
+    // of creating a duplicate.
+    const reconciled = await reconcileTransactionForUser(user, request, { withinTransaction: linkItem })
+    if (reconciled) {
+      return { transactionId: reconciled.id }
+    }
+
+    const created = await createTransactionForUser(user, request, { withinTransaction: linkItem })
     return { transactionId: created.id }
   } catch (error) {
     // The transaction and the link committed together; only the read-back failed.
@@ -686,7 +726,7 @@ export async function reparseEmailImportItemsData(request: { ids?: string[]; con
     orderBy: [asc(emailImportItems.createdAt)],
   })
 
-  const result: EmailImportSyncResult = { fetched: items.length, imported: 0, pending: 0, unparsed: 0, ignored: 0, errors: 0 }
+  const result: EmailImportSyncResult = { fetched: items.length, imported: 0, linked: 0, pending: 0, unparsed: 0, ignored: 0, errors: 0 }
   const contextByConnection = new Map<string, Awaited<ReturnType<typeof buildEmailResolutionContext>>>()
 
   for (const item of items) {
@@ -707,11 +747,7 @@ export async function reparseEmailImportItemsData(request: { ids?: string[]; con
 
     await db.update(emailImportItems).set(applyOutcomeFields(outcome, new Date())).where(eq(emailImportItems.id, item.id))
 
-    if (outcome.status === "imported") result.imported += 1
-    else if (outcome.status === "pending") result.pending += 1
-    else if (outcome.status === "unparsed") result.unparsed += 1
-    else if (outcome.status === "ignored") result.ignored += 1
-    else result.errors += 1
+    countOutcome(result, outcome)
   }
 
   return result

@@ -19,6 +19,7 @@ import {
   previewEmailImportRule,
   reorderEmailImportRules,
   reparseEmailImportItems,
+  resetEmailConnection,
   restoreEmailImportItem,
   syncEmailConnectionNow,
   testEmailConnection,
@@ -82,6 +83,15 @@ export function useDeleteEmailConnection() {
 
   return useMutation({
     mutationFn: (id: string) => deleteEmailConnection({ data: { id } }).then(() => undefined),
+    onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
+  })
+}
+
+export function useResetEmailConnection() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => resetEmailConnection({ data: { id } }).then(() => undefined),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }

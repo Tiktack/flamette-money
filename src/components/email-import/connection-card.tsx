@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { Delete02Icon, Edit01Icon, FolderLibraryIcon, Loading03Icon, MailAtSign01Icon, RefreshIcon } from "@hugeicons/core-free-icons"
+import { Delete02Icon, Edit01Icon, FolderLibraryIcon, Loading03Icon, MailAtSign01Icon, RefreshIcon, RotateLeft01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "@tanstack/react-router"
 
@@ -29,6 +29,7 @@ function formatSyncResult(result: EmailImportSyncResult) {
 
   const parts = [`${result.fetched} new`]
   if (result.imported > 0) parts.push(`${result.imported} imported`)
+  if (result.linked > 0) parts.push(`${result.linked} matched to existing`)
   if (result.pending > 0) parts.push(`${result.pending} to review`)
   if (result.unparsed > 0) parts.push(`${result.unparsed} unparsed`)
   if (result.ignored > 0) parts.push(`${result.ignored} ignored`)
@@ -52,10 +53,12 @@ function formatLastSync(lastSyncAt: string | null) {
 export function ConnectionCard({
   connection,
   onEdit,
+  onReset,
   onDelete,
 }: {
   connection: EmailConnectionSummary
   onEdit: () => void
+  onReset: () => void
   onDelete: () => void
 }) {
   const syncNow = useSyncEmailConnectionNow()
@@ -148,6 +151,13 @@ export function ConnectionCard({
             <HugeiconsIcon icon={Edit01Icon} strokeWidth={2} />
             <span className="sr-only">Edit connection</span>
           </Button>
+          <Tooltip>
+            <TooltipTrigger render={<Button variant="ghost" size="icon-sm" onClick={onReset} />}>
+              <HugeiconsIcon icon={RotateLeft01Icon} strokeWidth={2} />
+              <span className="sr-only">Reset import history</span>
+            </TooltipTrigger>
+            <TooltipContent>Reset import history</TooltipContent>
+          </Tooltip>
           <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={onDelete}>
             <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
             <span className="sr-only">Delete connection</span>
