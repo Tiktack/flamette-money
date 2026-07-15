@@ -88,7 +88,7 @@ async function tick(state: SchedulerState) {
         const result = await runExclusiveEmailSync(connection.id)
         if (result.fetched > 0) {
           console.log(
-            `[email-import] synced "${connection.name}": ${result.fetched} fetched, ${result.imported} imported, ${result.pending} pending, ${result.unparsed} unparsed`
+            `[email-import] synced "${connection.name}": ${result.fetched} fetched, ${result.imported} imported, ${result.linked} matched to existing, ${result.pending} pending, ${result.unparsed} unparsed`
           )
         }
       } catch (error) {

@@ -146,6 +146,9 @@ export type EmailImportItemsResponse = {
 export type EmailImportSyncResult = {
   fetched: number
   imported: number
+  // Emails matched to an existing transaction (same account, day and amount) and linked to
+  // it instead of creating a new one.
+  linked: number
   pending: number
   unparsed: number
   ignored: number

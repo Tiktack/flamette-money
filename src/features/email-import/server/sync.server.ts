@@ -34,12 +34,14 @@ export async function runExclusiveEmailSync(connectionId: string): Promise<Email
 }
 
 function emptySyncResult(): EmailImportSyncResult {
-  return { fetched: 0, imported: 0, pending: 0, unparsed: 0, ignored: 0, errors: 0 }
+  return { fetched: 0, imported: 0, linked: 0, pending: 0, unparsed: 0, ignored: 0, errors: 0 }
 }
 
-function countOutcome(result: EmailImportSyncResult, outcome: EmailResolutionOutcome) {
-  if (outcome.status === "imported") result.imported += 1
-  else if (outcome.status === "pending") result.pending += 1
+export function countOutcome(result: EmailImportSyncResult, outcome: EmailResolutionOutcome) {
+  if (outcome.status === "imported") {
+    if (outcome.reconciled) result.linked += 1
+    else result.imported += 1
+  } else if (outcome.status === "pending") result.pending += 1
   else if (outcome.status === "unparsed") result.unparsed += 1
   else if (outcome.status === "ignored") result.ignored += 1
   else result.errors += 1

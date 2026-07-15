@@ -29,6 +29,7 @@ import {
   previewEmailImportRuleData,
   reorderEmailImportRulesData,
   reparseEmailImportItemsData,
+  resetEmailConnectionData,
   restoreEmailImportItemData,
   syncEmailConnectionNowData,
   testEmailConnectionData,
@@ -61,6 +62,12 @@ export const testEmailConnection = createServerFn({ method: "POST" })
 export const syncEmailConnectionNow = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => idSchema.parse(data))
   .handler(async ({ data }) => syncEmailConnectionNowData(data.id))
+
+export const resetEmailConnection = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => idSchema.parse(data))
+  .handler(async ({ data }) => {
+    await resetEmailConnectionData(data.id)
+  })
 
 export const listEmailImportRules = createServerFn({ method: "GET" }).handler(async () => listEmailImportRulesData())
 
