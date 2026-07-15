@@ -11,7 +11,7 @@ import { CardSkeleton } from "@/components/page-skeletons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useDeleteEmailConnection, useEmailConnections } from "@/features/email-import/hooks"
+import { useDeleteEmailConnection, useEmailConnections, useResetEmailConnection } from "@/features/email-import/hooks"
 import type { EmailConnectionSummary } from "@/features/email-import/types"
 import { getApiErrorMessage } from "@/features/shared/errors"
 
@@ -23,8 +23,10 @@ export const Route = createFileRoute("/_protected/email-import/")({
 function EmailImportConnectionsPage() {
   const connectionsQuery = useEmailConnections()
   const deleteConnection = useDeleteEmailConnection()
+  const resetConnection = useResetEmailConnection()
   const [editor, setEditor] = React.useState<{ connection: EmailConnectionSummary | null } | null>(null)
   const [deleteTarget, setDeleteTarget] = React.useState<EmailConnectionSummary | null>(null)
+  const [resetTarget, setResetTarget] = React.useState<EmailConnectionSummary | null>(null)
 
   const connections = connectionsQuery.data?.connections ?? []
   const parserOptions = connectionsQuery.data?.parserOptions ?? []
@@ -37,6 +39,19 @@ function EmailImportConnectionsPage() {
     try {
       await deleteConnection.mutateAsync(deleteTarget.id)
       setDeleteTarget(null)
+    } catch {
+      // rendered below
+    }
+  }
+
+  const handleReset = async () => {
+    if (!resetTarget) {
+      return
+    }
+
+    try {
+      await resetConnection.mutateAsync(resetTarget.id)
+      setResetTarget(null)
     } catch {
       // rendered below
     }
@@ -83,6 +98,7 @@ function EmailImportConnectionsPage() {
               key={connection.id}
               connection={connection}
               onEdit={() => setEditor({ connection })}
+              onReset={() => setResetTarget(connection)}
               onDelete={() => setDeleteTarget(connection)}
             />
           ))}
@@ -95,6 +111,33 @@ function EmailImportConnectionsPage() {
         connection={editor?.connection ?? null}
         parserOptions={parserOptions}
       />
+
+      <Dialog open={Boolean(resetTarget)} onOpenChange={(open) => !open && setResetTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset import history</DialogTitle>
+            <DialogDescription>
+              This clears "{resetTarget?.name}"'s processed-email records and sync position, so the next sync re-reads the whole mailbox folder from
+              the beginning. Transactions that were already created stay untouched — re-imported emails link back to a matching transaction (same
+              account, day, and amount) instead of duplicating it.
+            </DialogDescription>
+          </DialogHeader>
+          {resetConnection.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Reset failed</AlertTitle>
+              <AlertDescription>{getApiErrorMessage(resetConnection.error, "Unable to reset the connection.")}</AlertDescription>
+            </Alert>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleReset} disabled={resetConnection.isPending}>
+              {resetConnection.isPending ? "Resetting" : "Reset"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
