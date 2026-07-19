@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -46,7 +47,7 @@ function SettingsPage() {
   const exportBackup = useExportBackup()
   const resetData = useResetData()
   const [years, setYears] = React.useState(3)
-  const [seedValue, setSeedValue] = React.useState("")
+  const [seedValue, setSeedValue] = React.useState<number | null>(null)
   const [downloadAfterSeed, setDownloadAfterSeed] = React.useState(true)
   const [importOpen, setImportOpen] = React.useState(false)
   const [seedOpen, setSeedOpen] = React.useState(false)
@@ -141,7 +142,7 @@ function SettingsPage() {
     try {
       await seedDemo.mutateAsync({
         years,
-        seed: seedValue.trim() ? Number(seedValue) : undefined,
+        seed: seedValue ?? undefined,
       })
 
       if (downloadAfterSeed) {
@@ -386,31 +387,32 @@ function SettingsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
                 <FieldLabel htmlFor="seed-years">Years</FieldLabel>
-                <Input
+                <NumberInput
                   id="seed-years"
-                  type="number"
                   min={1}
                   max={20}
+                  decimalScale={0}
+                  showStepper
                   value={years}
-                  onChange={(event) => {
+                  onValueChange={(nextYears) => {
                     setSeedError(null)
                     seedFeedback.reset()
-                    const nextYears = Number(event.target.value)
-                    setYears(Number.isFinite(nextYears) && nextYears > 0 ? Math.min(Math.trunc(nextYears), 20) : 1)
+                    setYears(nextYears ?? 1)
                   }}
                 />
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="seed-value">Seed</FieldLabel>
-                <Input
+                <NumberInput
                   id="seed-value"
-                  type="number"
+                  min={0}
+                  decimalScale={0}
                   value={seedValue}
-                  onChange={(event) => {
+                  onValueChange={(nextSeed) => {
                     setSeedError(null)
                     seedFeedback.reset()
-                    setSeedValue(event.target.value)
+                    setSeedValue(nextSeed)
                   }}
                   placeholder="Optional"
                 />

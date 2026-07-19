@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { accountIconOptions, getAccountIconDefinition, resolveAccountIconName } from "@/lib/account-icons"
@@ -499,14 +500,14 @@ function AccountDialog({
           </Field>
           <Field>
             <FieldLabel htmlFor={`${title}-balance`}>Current balance</FieldLabel>
-            <Input
+            <NumberInput
               id={`${title}-balance`}
-              type="number"
+              decimalScale={2}
               value={value.currentBalance}
-              onChange={(event) =>
+              onValueChange={(nextBalance) =>
                 onChange((state) => ({
                   ...state,
-                  currentBalance: Number(event.target.value) || 0,
+                  currentBalance: nextBalance ?? 0,
                 }))
               }
             />

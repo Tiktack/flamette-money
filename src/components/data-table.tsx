@@ -42,6 +42,11 @@ type DataTableProps<TData, TValue> = {
   emptyMessage?: string
   pageSizeOptions?: number[]
   className?: string
+  // Changing this key resets pagination to the first page. Callers whose filtering happens
+  // server-side (so the table only sees a new `data` array) pass their query here — a plain
+  // data refresh (e.g. after deleting a row) then keeps the current page, while a filter
+  // change still jumps back to page one.
+  paginationResetKey?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -56,6 +61,7 @@ export function DataTable<TData, TValue>({
   emptyMessage = "No results.",
   pageSizeOptions = [10, 20, 30, 40, 50],
   className,
+  paginationResetKey,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -64,6 +70,10 @@ export function DataTable<TData, TValue>({
     pageIndex: 0,
     pageSize: pageSizeOptions[0] ?? 10,
   })
+
+  const goToFirstPage = React.useCallback(() => {
+    setPagination((state) => (state.pageIndex === 0 ? state : { ...state, pageIndex: 0 }))
+  }, [])
 
   const table = useReactTable({
     data,
@@ -74,8 +84,18 @@ export function DataTable<TData, TValue>({
       columnVisibility,
       pagination,
     },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    // The default resets to page one on ANY data identity change — including a background
+    // refetch after deleting a row on page 3. We reset explicitly (sort/filter changes and
+    // paginationResetKey) and clamp out-of-range pages below instead.
+    autoResetPageIndex: false,
+    onSortingChange: (updater) => {
+      setSorting(updater)
+      goToFirstPage()
+    },
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater)
+      goToFirstPage()
+    },
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
@@ -86,6 +106,22 @@ export function DataTable<TData, TValue>({
 
   const toggleableColumns = table.getAllColumns().filter((column) => typeof column.accessorFn !== "undefined" && column.getCanHide())
   const pageCount = Math.max(table.getPageCount(), 1)
+
+  const isFirstResetKeyRender = React.useRef(true)
+  React.useEffect(() => {
+    if (isFirstResetKeyRender.current) {
+      isFirstResetKeyRender.current = false
+      return
+    }
+
+    goToFirstPage()
+  }, [goToFirstPage, paginationResetKey])
+
+  // When the data shrinks (deletes, external filtering) the current page can fall past the
+  // end; move to the last remaining page instead of showing an empty table.
+  React.useEffect(() => {
+    setPagination((state) => (state.pageIndex > pageCount - 1 ? { ...state, pageIndex: pageCount - 1 } : state))
+  }, [pageCount])
   const isControlledSearch = typeof onSearchChange === "function"
   const showSearch = Boolean(searchColumn || isControlledSearch || searchValue !== undefined)
 
