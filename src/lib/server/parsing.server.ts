@@ -28,17 +28,31 @@ export function parseDateInput(value: string, fieldName: string) {
   return parsed
 }
 
-// Date-only strings ("YYYY-MM-DD") parse as UTC midnight, and transaction dates are stored
-// that way — day boundaries must use UTC too, or filters and report buckets shift by the
-// server's timezone offset.
-export function startOfDay(value: string) {
-  const date = parseDateInput(value, "StartDate")
+// Filter dates arrive as "YYYY-MM-DD" or as timezone-less local datetimes
+// ("YYYY-MM-DDTHH:mm:ss" from toApiDateString). new Date() parses the datetime form in the
+// server's local timezone, shifting the calendar day on any non-UTC server — so read the
+// calendar date straight from the string and anchor it at UTC midnight, matching how
+// transaction dates are stored.
+const calendarDatePattern = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s]|$)/
+
+export function parseCalendarDateUtc(value: string, fieldName: string) {
+  const match = calendarDatePattern.exec(value)
+
+  if (match) {
+    return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+  }
+
+  const date = parseDateInput(value, fieldName)
   date.setUTCHours(0, 0, 0, 0)
   return date
 }
 
+export function startOfDay(value: string) {
+  return parseCalendarDateUtc(value, "StartDate")
+}
+
 export function endOfDay(value: string) {
-  const date = parseDateInput(value, "EndDate")
+  const date = parseCalendarDateUtc(value, "EndDate")
   date.setUTCHours(23, 59, 59, 999)
   return date
 }

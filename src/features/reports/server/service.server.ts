@@ -7,7 +7,7 @@ import { db } from "@/lib/db/client.server"
 import { roundMoney } from "@/lib/finance"
 import { accounts, categories, transactions, trips } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
-import { endOfDay, parseDateInput, startOfDay } from "@/lib/server/parsing.server"
+import { endOfDay, parseCalendarDateUtc, startOfDay } from "@/lib/server/parsing.server"
 
 import type {
   CashflowSeriesReportQuery,
@@ -1013,10 +1013,10 @@ export async function getComparisonReportData(query?: ComparisonReportQuery): Pr
   const defaultBStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1))
   const defaultBEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0))
 
-  const aStart = query?.PeriodAStart ? asDateOnly(parseDateInput(query.PeriodAStart, "PeriodAStart")) : defaultAStart
-  const aEnd = query?.PeriodAEnd ? asDateOnly(parseDateInput(query.PeriodAEnd, "PeriodAEnd")) : defaultAEnd
-  const bStart = query?.PeriodBStart ? asDateOnly(parseDateInput(query.PeriodBStart, "PeriodBStart")) : defaultBStart
-  const bEnd = query?.PeriodBEnd ? asDateOnly(parseDateInput(query.PeriodBEnd, "PeriodBEnd")) : defaultBEnd
+  const aStart = query?.PeriodAStart ? parseCalendarDateUtc(query.PeriodAStart, "PeriodAStart") : defaultAStart
+  const aEnd = query?.PeriodAEnd ? parseCalendarDateUtc(query.PeriodAEnd, "PeriodAEnd") : defaultAEnd
+  const bStart = query?.PeriodBStart ? parseCalendarDateUtc(query.PeriodBStart, "PeriodBStart") : defaultBStart
+  const bEnd = query?.PeriodBEnd ? parseCalendarDateUtc(query.PeriodBEnd, "PeriodBEnd") : defaultBEnd
 
   if (aStart > aEnd) {
     throw new Error("PeriodAStart cannot be after PeriodAEnd.")

@@ -12,17 +12,17 @@ import { parsePositiveAmount } from "@/lib/server/parsing.server"
 // amount, anything else is a different transaction.
 const AMOUNT_EPSILON = 0.005
 
-// A transaction "on calendar day D" is stored under two different conventions: email
-// auto-imports parse "yyyy-MM-dd" as UTC midnight, while the transaction editor sends
-// local-midnight datetimes (a manual entry for Jul 14 in UTC+2 is stored at Jul 13 22:00Z).
-// Matching must accept both, so candidates are fetched over a window wide enough for any
-// UTC offset and kept when either their UTC or their server-local calendar day equals D.
+// Day-granularity dates are stored at UTC midnight. The transaction editor used to send
+// local-midnight datetimes (a manual entry for Jul 14 in UTC+2 was stored at Jul 13 22:00Z)
+// until migration 0006 normalized them — matching still tolerates both conventions as
+// defense: candidates are fetched over a window wide enough for any UTC offset and kept
+// when either their UTC or their server-local calendar day equals D.
 const MAX_TZ_OFFSET_MS = 14 * 3_600_000
 
 const leadingDayRegex = /^(\d{4}-\d{2}-\d{2})/
 
 // Every caller encodes the intended calendar day as the string's leading "yyyy-MM-dd"
-// ("2026-07-14" from the email parser, "2026-07-14T00:00:00" from the editor).
+// (both the email parser and the transaction editor send plain "2026-07-14").
 function requestCalendarDay(value: string): string | null {
   const match = leadingDayRegex.exec(value.trim())
   if (match) {
