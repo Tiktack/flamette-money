@@ -710,7 +710,10 @@ export function TransactionEditorDialog({
     }
 
     const request: TransactionCreateRequest | TransactionUpdateRequest = {
-      date: new Date(`${form.date}T00:00:00`).toISOString(),
+      // Send the calendar day as-is; the server stores it at UTC midnight. Converting via
+      // new Date(...).toISOString() would shift it to local-midnight-in-UTC (previous day
+      // for UTC+ zones), breaking day-based filters and report buckets.
+      date: form.date,
       type: form.type,
       amount: toNumber(form.amount),
       amount2: requiresTarget ? (form.amount2 == null ? toNumber(form.amount) : toNumber(form.amount2)) : form.amount2 == null ? null : toNumber(form.amount2),

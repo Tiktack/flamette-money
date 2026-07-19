@@ -254,6 +254,26 @@ function parseOptionalDate(value: string) {
   return parseDate(normalized, "Date")
 }
 
+// Transaction and trip dates are day-granularity and stored at UTC midnight. Backups taken
+// before migration 0006 carry editor-created rows at local-midnight-in-UTC — snap those to
+// UTC midnight of their local calendar day on restore so old backups don't reintroduce them.
+function snapToUtcDay(date: Date) {
+  if (date.getTime() % 86_400_000 === 0) {
+    return date
+  }
+
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+}
+
+function parseDayDate(value: string, fieldName: string) {
+  return snapToUtcDay(parseDate(value, fieldName))
+}
+
+function parseOptionalDayDate(value: string) {
+  const parsed = parseOptionalDate(value)
+  return parsed ? snapToUtcDay(parsed) : null
+}
+
 /** Converts the shared normalizers' plain Errors into 400 HttpErrors so imports reject cleanly. */
 function asBadRequest<T>(normalize: () => T): T {
   try {
@@ -383,8 +403,8 @@ function parseFlametteTrips(workbook: XLSX.WorkBook) {
       id: requireRowValue(row, headers, "Id"),
       name: requireRowValue(row, headers, "Name"),
       country: normalizeTrimmed(getRowValue(row, headers, "Country")),
-      startDate: parseOptionalDate(getRowValue(row, headers, "StartDate")),
-      endDate: parseOptionalDate(getRowValue(row, headers, "EndDate")),
+      startDate: parseOptionalDayDate(getRowValue(row, headers, "StartDate")),
+      endDate: parseOptionalDayDate(getRowValue(row, headers, "EndDate")),
       imageUrl: normalizeTrimmed(getRowValue(row, headers, "ImageUrl")),
       createdAt: parseOptionalDate(getRowValue(row, headers, "CreatedAt")),
       updatedAt: parseOptionalDate(getRowValue(row, headers, "UpdatedAt")),
@@ -401,7 +421,7 @@ function parseFlametteTransactions(workbook: XLSX.WorkBook) {
     .filter(hasNonEmptyCell)
     .map<FlametteTransactionRow>((row) => ({
       id: requireRowValue(row, headers, "Id"),
-      date: parseDate(requireRowValue(row, headers, "Date"), "Date"),
+      date: parseDayDate(requireRowValue(row, headers, "Date"), "Date"),
       type: normalizeTransactionType(requireRowValue(row, headers, "Type")),
       amount: parseNumber(requireRowValue(row, headers, "Amount"), "Amount"),
       amount2: parseOptionalNumber(getRowValue(row, headers, "Amount2")),
@@ -485,9 +505,18 @@ function tryParseOneMoneyDate(raw: string) {
   const day = Number(match[2])
   const yearPart = Number(match[3])
   const year = match[3]?.length === 2 ? 2000 + yearPart : yearPart
-  const parsed = new Date(year, month - 1, day)
+  // Day-granularity dates are stored at UTC midnight; new Date(y, m, d) would pin the row
+  // at local midnight, shifting it into the previous UTC day for UTC+ zones.
+  const parsed = new Date(Date.UTC(year, month - 1, day))
 
-  return Number.isNaN(parsed.getTime()) ? null : parsed
+  // Date rolls overflow over (month 14 becomes February next year), which would turn a
+  // day/month-ordered file into silently wrong far-away dates — reject those rows instead
+  // so they surface in the import summary as skipped.
+  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) {
+    return null
+  }
+
+  return parsed
 }
 
 function parseOneMoneyType(raw: string): OneMoneyTransactionType | null {

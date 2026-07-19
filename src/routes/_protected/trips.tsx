@@ -131,8 +131,10 @@ function TripsPage() {
       await createTrip.mutateAsync({
         name: createForm.name.trim(),
         country: createForm.country || null,
-        startDate: new Date(`${createForm.startDate}T00:00:00`).toISOString(),
-        endDate: new Date(`${createForm.endDate}T00:00:00`).toISOString(),
+        // Calendar days go to the server as-is and are stored at UTC midnight; converting
+        // through toISOString() would shift them into the previous day for UTC+ zones.
+        startDate: createForm.startDate,
+        endDate: createForm.endDate,
         imageUrl: createForm.imageUrl.trim() || null,
       })
       setCreateOpen(false)
@@ -153,8 +155,8 @@ function TripsPage() {
         request: {
           name: editForm.name.trim(),
           country: editForm.country || null,
-          startDate: new Date(`${editForm.startDate}T00:00:00`).toISOString(),
-          endDate: new Date(`${editForm.endDate}T00:00:00`).toISOString(),
+          startDate: editForm.startDate,
+          endDate: editForm.endDate,
           imageUrl: editForm.imageUrl.trim() || null,
         },
       })
