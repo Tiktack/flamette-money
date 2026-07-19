@@ -479,6 +479,7 @@ function TransactionsPage() {
         <DataTable
           columns={columns}
           data={transactions}
+          paginationResetKey={JSON.stringify(query)}
           searchValue={searchText}
           onSearchChange={setSearchText}
           searchPlaceholder="Search merchant, note, or location"

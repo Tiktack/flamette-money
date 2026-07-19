@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardFooter } from "@/components/ui/card"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -415,24 +416,22 @@ function TripDialog({
           </Field>
           <Field>
             <FieldLabel>Start date</FieldLabel>
-            <Input
-              type="date"
+            <DatePicker
               value={value.startDate}
-              onChange={(event) =>
+              onValueChange={(startDate) =>
                 onChange((state) => ({
                   ...state,
-                  startDate: event.target.value,
+                  startDate,
                 }))
               }
             />
           </Field>
           <Field>
             <FieldLabel>End date</FieldLabel>
-            <Input
-              type="date"
+            <DatePicker
               min={value.startDate || undefined}
               value={value.endDate}
-              onChange={(event) => onChange((state) => ({ ...state, endDate: event.target.value }))}
+              onValueChange={(endDate) => onChange((state) => ({ ...state, endDate }))}
             />
           </Field>
           <Field className="md:col-span-2">

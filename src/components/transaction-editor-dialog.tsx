@@ -5,9 +5,11 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useAccounts } from "@/features/accounts/hooks"
@@ -54,8 +56,8 @@ export type TransactionEditorDialogProps = {
 type TransactionFormState = {
   date: string
   type: TransactionType
-  amount: number | ""
-  amount2: number | ""
+  amount: number | null
+  amount2: number | null
   currency: string
   currency2: string
   accountId: string
@@ -86,8 +88,8 @@ function buildDefaultState(type: TransactionType): TransactionFormState {
   return {
     date: formatDateInput(new Date()),
     type,
-    amount: "",
-    amount2: "",
+    amount: null,
+    amount2: null,
     currency: "USD",
     currency2: "USD",
     accountId: "",
@@ -107,7 +109,7 @@ function fillFromTransaction(transaction: TransactionDetail): TransactionFormSta
     date: transaction.date ? transaction.date.slice(0, 10) : formatDateInput(new Date()),
     type: transaction.type,
     amount: toNumber(transaction.amount),
-    amount2: transaction.amount2 == null ? "" : toNumber(transaction.amount2),
+    amount2: transaction.amount2 == null ? null : toNumber(transaction.amount2),
     currency: (transaction.currency ?? "USD").toUpperCase(),
     currency2: (transaction.currency2 ?? transaction.currency ?? "USD").toUpperCase(),
     accountId: transaction.accountId,
@@ -239,7 +241,7 @@ function TransactionFormFields({
                   subCategoryId: type === "Transfer" || !allowsExistingCategory ? null : state.subCategoryId,
                   targetAccountId: type === "Transfer" ? state.targetAccountId : null,
                   originalTransactionId: type === "Refund" ? state.originalTransactionId : "",
-                  amount2: type === "Transfer" ? state.amount2 : "",
+                  amount2: type === "Transfer" ? state.amount2 : null,
                 }
               })
             }
@@ -253,7 +255,7 @@ function TransactionFormFields({
       <FieldGroup className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Field>
           <FieldLabel>Date</FieldLabel>
-          <Input type="date" value={form.date} onChange={(event) => setForm((state) => ({ ...state, date: event.target.value }))} />
+          <DatePicker value={form.date} onValueChange={(date) => setForm((state) => ({ ...state, date }))} />
         </Field>
 
         <Field>
@@ -290,18 +292,12 @@ function TransactionFormFields({
 
         <Field>
           <FieldLabel>Amount</FieldLabel>
-          <Input
-            type="number"
+          <NumberInput
             min={0}
-            step="0.01"
+            decimalScale={2}
             placeholder="0.00"
             value={form.amount}
-            onChange={(event) =>
-              setForm((state) => ({
-                ...state,
-                amount: event.target.value === "" ? "" : Number(event.target.value),
-              }))
-            }
+            onValueChange={(amount) => setForm((state) => ({ ...state, amount }))}
           />
         </Field>
 
@@ -367,18 +363,12 @@ function TransactionFormFields({
           </Field>
           <Field>
             <FieldLabel>Target amount</FieldLabel>
-            <Input
-              type="number"
+            <NumberInput
               min={0}
-              step="0.01"
+              decimalScale={2}
               placeholder="Same as source"
               value={form.amount2}
-              onChange={(event) =>
-                setForm((state) => ({
-                  ...state,
-                  amount2: event.target.value === "" ? "" : Number(event.target.value),
-                }))
-              }
+              onValueChange={(amount2) => setForm((state) => ({ ...state, amount2 }))}
             />
           </Field>
           <Field>
@@ -723,7 +713,7 @@ export function TransactionEditorDialog({
       date: new Date(`${form.date}T00:00:00`).toISOString(),
       type: form.type,
       amount: toNumber(form.amount),
-      amount2: requiresTarget ? (form.amount2 === "" ? toNumber(form.amount) : toNumber(form.amount2)) : form.amount2 === "" ? null : toNumber(form.amount2),
+      amount2: requiresTarget ? (form.amount2 == null ? toNumber(form.amount) : toNumber(form.amount2)) : form.amount2 == null ? null : toNumber(form.amount2),
       currency: form.currency ? form.currency.toUpperCase() : null,
       currency2: requiresTarget ? (form.currency2 || form.currency).toUpperCase() : form.currency2 ? form.currency2.toUpperCase() : null,
       accountId: form.accountId,

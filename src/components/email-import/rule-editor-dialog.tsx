@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useAccounts } from "@/features/accounts/hooks"
@@ -57,6 +58,17 @@ type ConditionDraft = {
   operator: string
   value: string
   amountMax: string
+}
+
+// Condition drafts keep amounts as strings (the same field holds text for other operators);
+// NumberInput works with numbers, so convert at the boundary.
+function amountDraftToNumber(text: string): number | null {
+  if (!text.trim()) {
+    return null
+  }
+
+  const parsed = Number(text)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 function newConditionDraft(field: ConditionField = "merchant"): ConditionDraft {
@@ -381,24 +393,22 @@ export function RuleEditorDialog({
 
                   {condition.field === "amount" ? (
                     <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
+                      <NumberInput
                         min={0}
-                        step="0.01"
-                        value={condition.value}
-                        onChange={(event) => updateCondition(condition.key, { value: event.target.value })}
+                        decimalScale={2}
+                        value={amountDraftToNumber(condition.value)}
+                        onValueChange={(nextValue) => updateCondition(condition.key, { value: nextValue == null ? "" : String(nextValue) })}
                         placeholder="0.00"
                         className="h-8 w-28"
                       />
                       {condition.operator === "between" ? (
                         <>
                           <span className="text-sm text-muted-foreground">and</span>
-                          <Input
-                            type="number"
+                          <NumberInput
                             min={0}
-                            step="0.01"
-                            value={condition.amountMax}
-                            onChange={(event) => updateCondition(condition.key, { amountMax: event.target.value })}
+                            decimalScale={2}
+                            value={amountDraftToNumber(condition.amountMax)}
+                            onValueChange={(nextValue) => updateCondition(condition.key, { amountMax: nextValue == null ? "" : String(nextValue) })}
                             placeholder="0.00"
                             className="h-8 w-28"
                           />

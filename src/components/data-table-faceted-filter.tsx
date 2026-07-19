@@ -6,7 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command"
-import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
@@ -194,27 +194,6 @@ export function DataTableRangeFilter({
   const isFiltered = currentValue[0] > min || currentValue[1] < clampedMax
   const rangeLabel = `${formatValue(currentValue[0])} - ${formatValue(currentValue[1])}`
 
-  // The number inputs hold a free-form draft while typing and only clamp on commit —
-  // clamping in onChange makes values like "50" untypeable when min is 10.
-  const [draft, setDraft] = React.useState<{ min: string; max: string } | null>(null)
-
-  const commitDraft = () => {
-    if (!draft) {
-      return
-    }
-
-    const nextMin = Number(draft.min)
-    const nextMax = Number(draft.max)
-    updateRange(Number.isNaN(nextMin) ? currentValue[0] : nextMin, Number.isNaN(nextMax) ? currentValue[1] : nextMax)
-    setDraft(null)
-  }
-
-  const commitOnEnter = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      commitDraft()
-    }
-  }
-
   return (
     <Popover>
       <PopoverTrigger render={<Button variant="outline" size="sm" className="h-8 border-dashed bg-background" disabled={clampedMax <= min} />}>
@@ -246,34 +225,30 @@ export function DataTableRangeFilter({
             }}
             disabled={clampedMax <= min}
           />
+          {/* commitOnBlur keeps the free-form draft while typing and only clamps on blur/Enter —
+              committing every keystroke makes values like "50" untypeable when min is 10. */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-muted-foreground">Min</span>
-              <Input
-                type="number"
-                inputMode="decimal"
+              <NumberInput
                 min={min}
                 max={currentValue[1]}
-                step="0.01"
-                value={draft?.min ?? String(currentValue[0])}
-                onChange={(event) => setDraft({ min: event.target.value, max: draft?.max ?? String(currentValue[1]) })}
-                onBlur={commitDraft}
-                onKeyDown={commitOnEnter}
+                decimalScale={2}
+                commitOnBlur
+                value={currentValue[0]}
+                onValueChange={(nextMin) => updateRange(nextMin ?? min, currentValue[1])}
                 className="h-8"
               />
             </div>
             <div className="space-y-1.5">
               <span className="text-xs font-medium text-muted-foreground">Max</span>
-              <Input
-                type="number"
-                inputMode="decimal"
+              <NumberInput
                 min={currentValue[0]}
                 max={clampedMax}
-                step="0.01"
-                value={draft?.max ?? String(currentValue[1])}
-                onChange={(event) => setDraft({ min: draft?.min ?? String(currentValue[0]), max: event.target.value })}
-                onBlur={commitDraft}
-                onKeyDown={commitOnEnter}
+                decimalScale={2}
+                commitOnBlur
+                value={currentValue[1]}
+                onValueChange={(nextMax) => updateRange(currentValue[0], nextMax ?? clampedMax)}
                 className="h-8"
               />
             </div>
