@@ -73,6 +73,15 @@ This design system applies across all app pages. All pages share one system; the
 
 4pt base scale, Tailwind CSS 4 defaults.
 
+### App density
+
+- Page stacks and primary dashboard regions use a compact `1rem` (16px) gap.
+- Standard cards use `1rem` (16px) insets with `0.75rem` (12px) between card regions.
+- Compact cards use `0.75rem` (12px) insets with `0.5rem` (8px) between card regions.
+- Dense data grids use `0.75rem` (12px) gaps; broader layout changes may use `1rem` (16px).
+- Route-level card padding overrides are exceptional. Prefer the shared `Card` sizes so header, content, and footer insets stay aligned.
+- Form controls and touch targets retain their accessible sizes; compactness comes from surrounding layout, not smaller interaction targets.
+
 ---
 
 ## Motion

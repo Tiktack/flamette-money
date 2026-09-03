@@ -61,8 +61,8 @@ function ProtectedLayout() {
       />
       <SidebarInset className="bg-[radial-gradient(circle_at_top,oklch(0.56_0.20_50/5%),transparent_34%),linear-gradient(180deg,oklch(0.99_0.006_58/55%),transparent_28%)] dark:bg-[radial-gradient(circle_at_top,oklch(0.72_0.16_55/8%),transparent_32%)]">
         <SiteHeader />
-        <div className="min-h-[calc(100svh-3.5rem)] px-4 py-4 sm:px-6 sm:py-6">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <div className="min-h-[calc(100svh-3.5rem)] px-4 py-4 sm:px-5">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
             <Outlet />
           </div>
         </div>

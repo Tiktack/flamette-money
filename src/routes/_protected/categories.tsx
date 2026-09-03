@@ -101,7 +101,7 @@ function CategoriesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <ToggleGroup
           value={[typeFilter]}
@@ -210,7 +210,7 @@ function ParentCategoryCard({ category, onEdit, onDelete }: { category: Category
   const subcategoryCount = category.subcategories.length
 
   return (
-    <Card>
+    <Card size="sm" className="gap-0 py-0">
       <CardContent className="p-3">
         <div className="flex items-center justify-between gap-2">
           <button type="button" onClick={onEdit} className="flex min-w-0 flex-1 items-center gap-2.5 text-left">

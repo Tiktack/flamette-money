@@ -150,7 +150,7 @@ function AnalyticsComparePage() {
   const metricLabel = metric === "income" ? "Income" : metric === "spending" ? "Spending" : "Net"
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <ComparePeriodToolbar value={state} onChange={setState} aColor={A_COLOR} bColor={B_COLOR} />
 
       {reportQuery.isError && !report ? (

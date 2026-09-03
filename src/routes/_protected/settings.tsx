@@ -179,7 +179,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Preferences</CardTitle>
@@ -214,7 +214,7 @@ function SettingsPage() {
           <CardTitle>Data</CardTitle>
           <CardDescription>Backup, import and sample data.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-3">
           <ActionRow
             title="Export backup"
             description={exportError ?? "Full workspace .xlsx"}
@@ -522,13 +522,13 @@ function StatusIcon({ success = false }: { success?: boolean }) {
 
 function SettingsPageSkeleton() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <Card>
         <CardHeader className="gap-2">
           <Skeleton className="h-5 w-24" />
           <Skeleton className="h-4 w-28" />
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-9 w-20" />
         </CardContent>
@@ -539,7 +539,7 @@ function SettingsPageSkeleton() {
           <Skeleton className="h-5 w-14" />
           <Skeleton className="h-4 w-36" />
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-3">
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-px w-full" />
           <Skeleton className="h-14 w-full" />

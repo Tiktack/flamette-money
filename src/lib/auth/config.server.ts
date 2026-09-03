@@ -85,7 +85,9 @@ function createAuth() {
         verification: authVerifications,
       },
     }),
-    plugins: [tanstackStartCookies(), lastLoginMethod()],
+    // TanStack Start's cookie bridge must run after every plugin hook so that
+    // Set-Cookie headers from session-related plugins are forwarded correctly.
+    plugins: [lastLoginMethod(), tanstackStartCookies()],
   })
 }
 

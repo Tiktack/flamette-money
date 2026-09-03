@@ -120,7 +120,7 @@ function AnalyticsCategoriesPage() {
   )
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0 flex-1">
           <SharedDateRangeToolbar />
@@ -159,7 +159,7 @@ function AnalyticsCategoriesPage() {
           <AlertDescription>{getApiErrorMessage(reportQuery.error, "Try another date range.")}</AlertDescription>
         </Alert>
       ) : reportQuery.isPending ? (
-        <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
           <CardSkeleton className="h-[640px] xl:row-span-2" />
           <MetricCardsSkeleton count={3} className="sm:grid-cols-1 md:grid-cols-3" />
           <CardSkeleton className="h-[420px]" />
@@ -171,14 +171,14 @@ function AnalyticsCategoriesPage() {
           description="Once transactions land inside the selected period, category breakdowns will show up here."
         />
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.6fr)] xl:grid-rows-[auto_minmax(0,1fr)]">
           <Card size="sm" className="xl:row-span-2">
-            <CardHeader className="px-4 pt-4 pb-2">
+            <CardHeader>
               <CardTitle>Category mix</CardTitle>
               <CardDescription>{report.series.length} categories in active range</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 px-4 pt-0 pb-4">
-              <div className="flex justify-center py-2">
+            <CardContent className="grid gap-3">
+              <div className="flex justify-center py-1">
                 <PieChart data={pieData} size={216} innerRadius={66} cornerRadius={3} padAngle={0.025} hoverOffset={8}>
                   {pieData.map((slice, index) => (
                     <PieSlice key={donutData[index]!.key} index={index} color={slice.color} />
@@ -218,7 +218,7 @@ function AnalyticsCategoriesPage() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             {insightCards.map((item) => (
               <CategoryInsightCard
                 key={item.label}
@@ -233,8 +233,8 @@ function AnalyticsCategoriesPage() {
           </div>
 
           <Card>
-            <CardHeader className="px-4 pt-4 pb-2">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <CardHeader>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
                   <CardTitle>{mode === "Expense" ? "Expenses" : "Income"} by category</CardTitle>
                   <CardDescription>Stacked over the selected aggregation interval.</CardDescription>
@@ -244,7 +244,7 @@ function AnalyticsCategoriesPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="px-4 pt-0 pb-4">
+            <CardContent>
               <ComposedChart
                 data={report.data}
                 xDataKey="date"

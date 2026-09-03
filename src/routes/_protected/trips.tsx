@@ -167,11 +167,11 @@ function TripsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {tripsQuery.isPending ? (
         <MetricCardsSkeleton className="md:grid-cols-3" />
       ) : (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           <MetricCard
             label="Trips"
             value={String(trips.length)}
@@ -197,7 +197,7 @@ function TripsPage() {
       )}
 
       {tripsQuery.isPending ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }, (_, index) => (
             <CardSkeleton key={index} className="h-72" />
           ))}
@@ -239,7 +239,7 @@ function TripsPage() {
           {view === "map" ? (
             <TripWorldMap trips={mapTrips} baseCurrency={baseCurrency} />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {trips.map((trip) => (
                 <TripCard
                   key={trip.id}

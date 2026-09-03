@@ -21,6 +21,10 @@ const config = defineConfig(({ mode }) => {
       // imapflow and mailparser are server-only mail libraries; externalizing keeps their
       // CJS/stream internals out of the SSR bundle.
       external: ["better-sqlite3", "imapflow", "mailparser"],
+      // The 4.0.1-alpha visx ESM entrypoints use extensionless relative imports
+      // (for example ./components/ParentSize). Bundle them through Vite so Node's
+      // strict ESM resolver does not try to load those paths directly during SSR.
+      noExternal: [/^@visx\//],
     },
   }
 })

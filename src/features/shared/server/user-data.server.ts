@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull } from "drizzle-orm"
+import { and, eq, isNotNull, isNull, or } from "drizzle-orm"
 
 import type { AppTransaction } from "@/lib/db/client.server"
 import { accounts, categories, emailConnections, emailImportItems, emailImportRules, transactions, trips } from "@/lib/db/schema"
@@ -22,7 +22,7 @@ export function clearUserScopedData(tx: AppTransaction, userId: string) {
       originalTransactionId: null,
       relatedTransactionId: null,
     })
-    .where(eq(transactions.userId, userId))
+    .where(and(eq(transactions.userId, userId), or(isNotNull(transactions.originalTransactionId), isNotNull(transactions.relatedTransactionId))))
     .run()
 
   tx.delete(transactions).where(eq(transactions.userId, userId)).run()

@@ -114,7 +114,7 @@ export function ConnectionCard({
         <Switch checked={connection.enabled} onCheckedChange={handleToggleEnabled} disabled={updateConnection.isPending} aria-label="Enable connection" />
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {hasFailure ? (
             <Tooltip>

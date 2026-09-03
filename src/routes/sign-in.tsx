@@ -214,12 +214,12 @@ function SignInPage() {
       </div>
 
       <Card className="w-full max-w-sm gap-0 overflow-hidden py-0 shadow-none">
-        <CardHeader className="pt-6 pb-4">
+        <CardHeader className="pt-5 pb-3">
           <CardTitle className="text-xl font-semibold tracking-tight">{mode === "sign-in" ? "Sign in" : "Create your account"}</CardTitle>
           <CardDescription>{mode === "sign-in" ? "Welcome back — enter your details to continue" : "Fill in the details below to get started"}</CardDescription>
         </CardHeader>
 
-        <CardContent className="flex flex-col gap-4 pb-6">
+        <CardContent className="flex flex-col gap-3 pb-5">
           {search.error ? (
             <Alert variant="destructive">
               <AlertTitle>Sign-in failed</AlertTitle>

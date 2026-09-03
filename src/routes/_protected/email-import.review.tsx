@@ -211,7 +211,7 @@ function EmailImportReviewPage() {
   const isFirstTimeEmpty = items.length === 0 && !hasCustomFilters && !itemsQuery.isPending
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Review inbox</h1>

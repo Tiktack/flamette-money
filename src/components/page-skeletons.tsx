@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils"
 
 export function MetricCardsSkeleton({ count = 3, className }: { count?: number; className?: string }) {
   return (
-    <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-3", className)}>
+    <div className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-3", className)}>
       {Array.from({ length: count }, (_, index) => (
-        <Skeleton key={index} className="h-[118px] rounded-[1.25rem]" />
+        <Skeleton key={index} className="h-[108px] rounded-[1.25rem]" />
       ))}
     </div>
   )

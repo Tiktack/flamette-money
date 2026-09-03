@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({
   const showSearch = Boolean(searchColumn || isControlledSearch || searchValue !== undefined)
 
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
+    <div className={cn("flex flex-col gap-3", className)}>
       {showSearch || filters || action ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">

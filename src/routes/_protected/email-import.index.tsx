@@ -58,7 +58,7 @@ function EmailImportConnectionsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Mailbox connections</h1>
@@ -92,7 +92,7 @@ function EmailImportConnectionsPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           {connections.map((connection) => (
             <ConnectionCard
               key={connection.id}

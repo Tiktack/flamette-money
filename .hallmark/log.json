@@ -1,5 +1,13 @@
 [
   {
+    "date": "2026-08-30",
+    "scope": "app",
+    "macrostructure": "Workbench",
+    "theme": "custom",
+    "enrichment": "none",
+    "brief": "Flamette Money · compact card and page density unification"
+  },
+  {
     "date": "2025-01-01",
     "macrostructure": "Workbench",
     "theme": "custom",

@@ -194,6 +194,8 @@ export const transactions = sqliteTable(
     index("transactions_user_id_account_id_date_idx").on(table.userId, table.accountId, table.date),
     index("transactions_user_id_category_id_date_idx").on(table.userId, table.categoryId, table.date),
     index("transactions_user_id_trip_id_date_idx").on(table.userId, table.tripId, table.date),
+    index("transactions_related_transaction_id_idx").on(table.relatedTransactionId),
+    index("transactions_original_transaction_id_idx").on(table.originalTransactionId),
   ]
 )
 

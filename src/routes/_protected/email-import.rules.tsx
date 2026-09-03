@@ -151,7 +151,7 @@ function EmailImportRulesPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Import rules</h1>
@@ -186,8 +186,8 @@ function EmailImportRulesPage() {
           }
         />
       ) : (
-        <Card className="border-border/60 py-2">
-          <CardContent className="flex flex-col px-4">
+        <Card size="sm" className="border-border/60">
+          <CardContent className="flex flex-col">
             {rules.map((rule, index) => (
               <React.Fragment key={rule.id}>
                 {index > 0 ? <Separator /> : null}

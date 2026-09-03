@@ -418,7 +418,7 @@ function TransactionsPage() {
   const isFirstTimeEmpty = transactions.length === 0 && !hasActiveFilters
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <SharedDateRangeToolbar />
 
       {transactionsQuery.isPending || transactionsSummaryQuery.isPending ? (
@@ -429,7 +429,7 @@ function TransactionsPage() {
           <AlertDescription>{getApiErrorMessage(transactionsSummaryQuery.error, "Try again in a moment.")}</AlertDescription>
         </Alert>
       ) : (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           <MetricCard
             label="Transactions"
             icon={TransactionIcon}

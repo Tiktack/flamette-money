@@ -79,7 +79,7 @@ function AnalyticsCashflowPage() {
   )
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <SharedDateRangeToolbar />
 
       {reportQuery.isError && !report ? (
@@ -187,7 +187,7 @@ function SavingsRadialCard({ savingsRate, income, spending, net }: { savingsRate
       size="sm"
       className="relative min-w-0 overflow-hidden border-border bg-card/95 shadow-none before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-primary/28 before:to-transparent"
     >
-      <CardContent className="flex items-center justify-center px-3 py-2">
+      <CardContent className="flex items-center justify-center">
         <div className="size-[108px]">
           <RingChart data={ringData} strokeWidth={11} baseInnerRadius={38} ringGap={0}>
             <Ring index={0} lineCap="round" />
