@@ -9,72 +9,47 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
-import { Route as ProtectedTripsRouteImport } from './routes/_protected/trips'
-import { Route as ProtectedTransactionsRouteImport } from './routes/_protected/transactions'
-import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
-import { Route as ProtectedEmailImportRouteImport } from './routes/_protected/email-import'
-import { Route as ProtectedCategoriesRouteImport } from './routes/_protected/categories'
-import { Route as ProtectedAnalyticsRouteImport } from './routes/_protected/analytics'
+import { Route as ProtectedRouteImport } from './routes/_protected'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as ProtectedAccountsRouteImport } from './routes/_protected/accounts'
-import { Route as ProtectedEmailImportIndexRouteImport } from './routes/_protected/email-import.index'
+import { Route as ProtectedAnalyticsRouteImport } from './routes/_protected/analytics'
+import { Route as ProtectedCategoriesRouteImport } from './routes/_protected/categories'
+import { Route as ProtectedEmailImportRouteImport } from './routes/_protected/email-import'
+import { Route as ProtectedSettingsRouteImport } from './routes/_protected/settings'
+import { Route as ProtectedTransactionsRouteImport } from './routes/_protected/transactions'
+import { Route as ProtectedTripsRouteImport } from './routes/_protected/trips'
+import { Route as ApiHealthzRouteImport } from './routes/api/healthz'
 import { Route as ProtectedAnalyticsIndexRouteImport } from './routes/_protected/analytics.index'
-import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
-import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
-import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ProtectedEmailImportRulesRouteImport } from './routes/_protected/email-import.rules'
-import { Route as ProtectedEmailImportReviewRouteImport } from './routes/_protected/email-import.review'
-import { Route as ProtectedAnalyticsPortfolioRouteImport } from './routes/_protected/analytics.portfolio'
-import { Route as ProtectedAnalyticsCompareRouteImport } from './routes/_protected/analytics.compare'
-import { Route as ProtectedAnalyticsCategoriesRouteImport } from './routes/_protected/analytics.categories'
 import { Route as ProtectedAnalyticsCashflowRouteImport } from './routes/_protected/analytics.cashflow'
+import { Route as ProtectedAnalyticsCategoriesRouteImport } from './routes/_protected/analytics.categories'
+import { Route as ProtectedAnalyticsCompareRouteImport } from './routes/_protected/analytics.compare'
+import { Route as ProtectedAnalyticsPortfolioRouteImport } from './routes/_protected/analytics.portfolio'
+import { Route as ProtectedEmailImportIndexRouteImport } from './routes/_protected/email-import.index'
+import { Route as ProtectedEmailImportReviewRouteImport } from './routes/_protected/email-import.review'
+import { Route as ProtectedEmailImportRulesRouteImport } from './routes/_protected/email-import.rules'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiProfileExportBackupRouteImport } from './routes/api/profile/export-backup'
+import { Route as ApiProfileImportBackupRouteImport } from './routes/api/profile/import-backup'
+import { Route as ApiSeedDemoRouteImport } from './routes/api/seed/demo'
 
-const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiHealthzRoute = ApiHealthzRouteImport.update({
-  id: '/api/healthz',
-  path: '/api/healthz',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedTripsRoute = ProtectedTripsRouteImport.update({
-  id: '/trips',
-  path: '/trips',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedTransactionsRoute = ProtectedTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedEmailImportRoute = ProtectedEmailImportRouteImport.update({
-  id: '/email-import',
-  path: '/email-import',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-const ProtectedCategoriesRoute = ProtectedCategoriesRouteImport.update({
-  id: '/categories',
-  path: '/categories',
+const ProtectedAccountsRoute = ProtectedAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedAnalyticsRoute = ProtectedAnalyticsRouteImport.update({
@@ -82,64 +57,45 @@ const ProtectedAnalyticsRoute = ProtectedAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const ProtectedAccountsRoute = ProtectedAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
+const ProtectedCategoriesRoute = ProtectedCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => ProtectedRoute,
 } as any)
-const ProtectedEmailImportIndexRoute =
-  ProtectedEmailImportIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => ProtectedEmailImportRoute,
-  } as any)
+const ProtectedEmailImportRoute = ProtectedEmailImportRouteImport.update({
+  id: '/email-import',
+  path: '/email-import',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedSettingsRoute = ProtectedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTransactionsRoute = ProtectedTransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedTripsRoute = ProtectedTripsRouteImport.update({
+  id: '/trips',
+  path: '/trips',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ApiHealthzRoute = ApiHealthzRouteImport.update({
+  id: '/api/healthz',
+  path: '/api/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProtectedAnalyticsIndexRoute = ProtectedAnalyticsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ProtectedAnalyticsRoute,
 } as any)
-const ApiSeedDemoRoute = ApiSeedDemoRouteImport.update({
-  id: '/api/seed/demo',
-  path: '/api/seed/demo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiProfileImportBackupRoute = ApiProfileImportBackupRouteImport.update({
-  id: '/api/profile/import-backup',
-  path: '/api/profile/import-backup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiProfileExportBackupRoute = ApiProfileExportBackupRouteImport.update({
-  id: '/api/profile/export-backup',
-  path: '/api/profile/export-backup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedEmailImportRulesRoute =
-  ProtectedEmailImportRulesRouteImport.update({
-    id: '/rules',
-    path: '/rules',
-    getParentRoute: () => ProtectedEmailImportRoute,
-  } as any)
-const ProtectedEmailImportReviewRoute =
-  ProtectedEmailImportReviewRouteImport.update({
-    id: '/review',
-    path: '/review',
-    getParentRoute: () => ProtectedEmailImportRoute,
-  } as any)
-const ProtectedAnalyticsPortfolioRoute =
-  ProtectedAnalyticsPortfolioRouteImport.update({
-    id: '/portfolio',
-    path: '/portfolio',
-    getParentRoute: () => ProtectedAnalyticsRoute,
-  } as any)
-const ProtectedAnalyticsCompareRoute =
-  ProtectedAnalyticsCompareRouteImport.update({
-    id: '/compare',
-    path: '/compare',
+const ProtectedAnalyticsCashflowRoute =
+  ProtectedAnalyticsCashflowRouteImport.update({
+    id: '/cashflow',
+    path: '/cashflow',
     getParentRoute: () => ProtectedAnalyticsRoute,
   } as any)
 const ProtectedAnalyticsCategoriesRoute =
@@ -148,12 +104,56 @@ const ProtectedAnalyticsCategoriesRoute =
     path: '/categories',
     getParentRoute: () => ProtectedAnalyticsRoute,
   } as any)
-const ProtectedAnalyticsCashflowRoute =
-  ProtectedAnalyticsCashflowRouteImport.update({
-    id: '/cashflow',
-    path: '/cashflow',
+const ProtectedAnalyticsCompareRoute =
+  ProtectedAnalyticsCompareRouteImport.update({
+    id: '/compare',
+    path: '/compare',
     getParentRoute: () => ProtectedAnalyticsRoute,
   } as any)
+const ProtectedAnalyticsPortfolioRoute =
+  ProtectedAnalyticsPortfolioRouteImport.update({
+    id: '/portfolio',
+    path: '/portfolio',
+    getParentRoute: () => ProtectedAnalyticsRoute,
+  } as any)
+const ProtectedEmailImportIndexRoute =
+  ProtectedEmailImportIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ProtectedEmailImportRoute,
+  } as any)
+const ProtectedEmailImportReviewRoute =
+  ProtectedEmailImportReviewRouteImport.update({
+    id: '/review',
+    path: '/review',
+    getParentRoute: () => ProtectedEmailImportRoute,
+  } as any)
+const ProtectedEmailImportRulesRoute =
+  ProtectedEmailImportRulesRouteImport.update({
+    id: '/rules',
+    path: '/rules',
+    getParentRoute: () => ProtectedEmailImportRoute,
+  } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileExportBackupRoute = ApiProfileExportBackupRouteImport.update({
+  id: '/api/profile/export-backup',
+  path: '/api/profile/export-backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileImportBackupRoute = ApiProfileImportBackupRouteImport.update({
+  id: '/api/profile/import-backup',
+  path: '/api/profile/import-backup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSeedDemoRoute = ApiSeedDemoRouteImport.update({
+  id: '/api/seed/demo',
+  path: '/api/seed/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -314,11 +314,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_protected': {
@@ -328,53 +328,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/healthz': {
-      id: '/api/healthz'
-      path: '/api/healthz'
-      fullPath: '/api/healthz'
-      preLoaderRoute: typeof ApiHealthzRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_protected/trips': {
-      id: '/_protected/trips'
-      path: '/trips'
-      fullPath: '/trips'
-      preLoaderRoute: typeof ProtectedTripsRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/transactions': {
-      id: '/_protected/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof ProtectedTransactionsRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/settings': {
-      id: '/_protected/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof ProtectedSettingsRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/email-import': {
-      id: '/_protected/email-import'
-      path: '/email-import'
-      fullPath: '/email-import'
-      preLoaderRoute: typeof ProtectedEmailImportRouteImport
-      parentRoute: typeof ProtectedRoute
-    }
-    '/_protected/categories': {
-      id: '/_protected/categories'
-      path: '/categories'
-      fullPath: '/categories'
-      preLoaderRoute: typeof ProtectedCategoriesRouteImport
+    '/_protected/accounts': {
+      id: '/_protected/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof ProtectedAccountsRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/analytics': {
@@ -384,19 +349,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAnalyticsRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/accounts': {
-      id: '/_protected/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
-      preLoaderRoute: typeof ProtectedAccountsRouteImport
+    '/_protected/categories': {
+      id: '/_protected/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof ProtectedCategoriesRouteImport
       parentRoute: typeof ProtectedRoute
     }
-    '/_protected/email-import/': {
-      id: '/_protected/email-import/'
-      path: '/'
-      fullPath: '/email-import/'
-      preLoaderRoute: typeof ProtectedEmailImportIndexRouteImport
-      parentRoute: typeof ProtectedEmailImportRoute
+    '/_protected/email-import': {
+      id: '/_protected/email-import'
+      path: '/email-import'
+      fullPath: '/email-import'
+      preLoaderRoute: typeof ProtectedEmailImportRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/settings': {
+      id: '/_protected/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof ProtectedSettingsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/transactions': {
+      id: '/_protected/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof ProtectedTransactionsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/trips': {
+      id: '/_protected/trips'
+      path: '/trips'
+      fullPath: '/trips'
+      preLoaderRoute: typeof ProtectedTripsRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/api/healthz': {
+      id: '/api/healthz'
+      path: '/api/healthz'
+      fullPath: '/api/healthz'
+      preLoaderRoute: typeof ApiHealthzRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_protected/analytics/': {
       id: '/_protected/analytics/'
@@ -405,60 +398,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAnalyticsIndexRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
-    '/api/seed/demo': {
-      id: '/api/seed/demo'
-      path: '/api/seed/demo'
-      fullPath: '/api/seed/demo'
-      preLoaderRoute: typeof ApiSeedDemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/profile/import-backup': {
-      id: '/api/profile/import-backup'
-      path: '/api/profile/import-backup'
-      fullPath: '/api/profile/import-backup'
-      preLoaderRoute: typeof ApiProfileImportBackupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/profile/export-backup': {
-      id: '/api/profile/export-backup'
-      path: '/api/profile/export-backup'
-      fullPath: '/api/profile/export-backup'
-      preLoaderRoute: typeof ApiProfileExportBackupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_protected/email-import/rules': {
-      id: '/_protected/email-import/rules'
-      path: '/rules'
-      fullPath: '/email-import/rules'
-      preLoaderRoute: typeof ProtectedEmailImportRulesRouteImport
-      parentRoute: typeof ProtectedEmailImportRoute
-    }
-    '/_protected/email-import/review': {
-      id: '/_protected/email-import/review'
-      path: '/review'
-      fullPath: '/email-import/review'
-      preLoaderRoute: typeof ProtectedEmailImportReviewRouteImport
-      parentRoute: typeof ProtectedEmailImportRoute
-    }
-    '/_protected/analytics/portfolio': {
-      id: '/_protected/analytics/portfolio'
-      path: '/portfolio'
-      fullPath: '/analytics/portfolio'
-      preLoaderRoute: typeof ProtectedAnalyticsPortfolioRouteImport
-      parentRoute: typeof ProtectedAnalyticsRoute
-    }
-    '/_protected/analytics/compare': {
-      id: '/_protected/analytics/compare'
-      path: '/compare'
-      fullPath: '/analytics/compare'
-      preLoaderRoute: typeof ProtectedAnalyticsCompareRouteImport
+    '/_protected/analytics/cashflow': {
+      id: '/_protected/analytics/cashflow'
+      path: '/cashflow'
+      fullPath: '/analytics/cashflow'
+      preLoaderRoute: typeof ProtectedAnalyticsCashflowRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
     '/_protected/analytics/categories': {
@@ -468,12 +412,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAnalyticsCategoriesRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
     }
-    '/_protected/analytics/cashflow': {
-      id: '/_protected/analytics/cashflow'
-      path: '/cashflow'
-      fullPath: '/analytics/cashflow'
-      preLoaderRoute: typeof ProtectedAnalyticsCashflowRouteImport
+    '/_protected/analytics/compare': {
+      id: '/_protected/analytics/compare'
+      path: '/compare'
+      fullPath: '/analytics/compare'
+      preLoaderRoute: typeof ProtectedAnalyticsCompareRouteImport
       parentRoute: typeof ProtectedAnalyticsRoute
+    }
+    '/_protected/analytics/portfolio': {
+      id: '/_protected/analytics/portfolio'
+      path: '/portfolio'
+      fullPath: '/analytics/portfolio'
+      preLoaderRoute: typeof ProtectedAnalyticsPortfolioRouteImport
+      parentRoute: typeof ProtectedAnalyticsRoute
+    }
+    '/_protected/email-import/': {
+      id: '/_protected/email-import/'
+      path: '/'
+      fullPath: '/email-import/'
+      preLoaderRoute: typeof ProtectedEmailImportIndexRouteImport
+      parentRoute: typeof ProtectedEmailImportRoute
+    }
+    '/_protected/email-import/review': {
+      id: '/_protected/email-import/review'
+      path: '/review'
+      fullPath: '/email-import/review'
+      preLoaderRoute: typeof ProtectedEmailImportReviewRouteImport
+      parentRoute: typeof ProtectedEmailImportRoute
+    }
+    '/_protected/email-import/rules': {
+      id: '/_protected/email-import/rules'
+      path: '/rules'
+      fullPath: '/email-import/rules'
+      preLoaderRoute: typeof ProtectedEmailImportRulesRouteImport
+      parentRoute: typeof ProtectedEmailImportRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/export-backup': {
+      id: '/api/profile/export-backup'
+      path: '/api/profile/export-backup'
+      fullPath: '/api/profile/export-backup'
+      preLoaderRoute: typeof ApiProfileExportBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/import-backup': {
+      id: '/api/profile/import-backup'
+      path: '/api/profile/import-backup'
+      fullPath: '/api/profile/import-backup'
+      preLoaderRoute: typeof ApiProfileImportBackupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/seed/demo': {
+      id: '/api/seed/demo'
+      path: '/api/seed/demo'
+      fullPath: '/api/seed/demo'
+      preLoaderRoute: typeof ApiSeedDemoRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
