@@ -118,9 +118,10 @@ Use `.env.example` as the current environment reference.
 - `pnpm lint:fix`
 - `pnpm format`
 - `pnpm format:check`
+- `pnpm test`
 - `pnpm typecheck`
 
-Do **not** use `pnpm test` as part of normal workflow in this repo. There are currently no committed tests, and the command only fails because no test files exist.
+The committed test suite is currently small and focused on server parsing utilities. Run `pnpm test` when changing covered code, and continue to rely on lint, formatting, type checking, and builds for broader verification.
 
 ## Generated files
 

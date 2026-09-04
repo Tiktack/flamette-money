@@ -1,11 +1,10 @@
 import type { AccountType } from "@/features/shared/types"
 
 export type {
-  AccountListItemResponse as AccountListItem,
+  AccountResponse as Account,
+  AccountResponse as AccountListItem,
   AccountType,
   CreateAccountRequest as AccountCreateRequest,
-  CreateAccountResponse as Account,
-  GetAccountResponse as AccountDetail,
   UpdateAccountRequest as AccountUpdateRequest,
 } from "@/features/shared/types"
 

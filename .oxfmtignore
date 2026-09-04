@@ -3,3 +3,4 @@
 .github
 src/components/charts
 src/components/shimmering-text.tsx
+src/routeTree.gen.ts

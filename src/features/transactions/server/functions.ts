@@ -14,31 +14,29 @@ import {
 } from "./service.server"
 
 export const getTransaction = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
-  .handler(async ({ data }) => getTransactionData(data.id))
+  .validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+  .handler(({ data }) => getTransactionData(data.id))
 
 export const searchTransactions = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
-  .handler(async ({ data }) => searchTransactionsData(data))
+  .validator((data: unknown) => searchTransactionsSchema.parse(data))
+  .handler(({ data }) => searchTransactionsData(data))
 
 export const searchTransactionsSummary = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
-  .handler(async ({ data }) => searchTransactionsSummaryData(data))
+  .validator((data: unknown) => searchTransactionsSchema.parse(data))
+  .handler(({ data }) => searchTransactionsSummaryData(data))
 
 export const searchTransactionsFacets = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => searchTransactionsSchema.parse(data))
-  .handler(async ({ data }) => searchTransactionsFacetsData(data))
+  .validator((data: unknown) => searchTransactionsSchema.parse(data))
+  .handler(({ data }) => searchTransactionsFacetsData(data))
 
 export const createTransaction = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => transactionRequestSchema.parse(data))
-  .handler(async ({ data }) => createTransactionData(data))
+  .validator((data: unknown) => transactionRequestSchema.parse(data))
+  .handler(({ data }) => createTransactionData(data))
 
 export const updateTransaction = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => transactionUpdateSchema.parse(data))
-  .handler(async ({ data }) => updateTransactionData(data.id, data.request))
+  .validator((data: unknown) => transactionUpdateSchema.parse(data))
+  .handler(({ data }) => updateTransactionData(data.id, data.request))
 
 export const deleteTransaction = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
-  .handler(async ({ data }) => {
-    await deleteTransactionData(data.id)
-  })
+  .validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+  .handler(({ data }) => deleteTransactionData(data.id))

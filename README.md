@@ -1,6 +1,7 @@
 # Flamette Money
 
 Flamette Money is a sophisticated personal finance application designed to help users track their multi-currency accounts, categorize transactions with precision, and gain insights through detailed reports.
+
 ## Features
 
 - **Account Management**: Manage multi-currency accounts with accurate balances and visual customization (colors).
@@ -34,7 +35,7 @@ Flamette Money is a sophisticated personal finance application designed to help 
 
 ## Configuration
 
-To run `frontend-new` with the full local TanStack Start stack, configure these environment variables:
+To run Flamette Money with the full local TanStack Start stack, configure these environment variables:
 
 - `BETTER_AUTH_SECRET`: Better Auth signing secret.
 - `BETTER_AUTH_URL`: Optional explicit app origin for auth callbacks/cookies.

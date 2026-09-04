@@ -1,4 +1,4 @@
-export type AccountListItemResponse = {
+export type AccountResponse = {
   id: string
   name: string
   description: null | string
@@ -73,13 +73,16 @@ export type CashflowSummaryResponse = {
   bucketCount: number
 }
 
-export type CategoryHierarchyResponse = {
+export type CategoryResponse = {
   id: string
   name: string
   color: string
   icon: string
   type: CategoryType
   parentId: null | string
+}
+
+export type CategoryHierarchyResponse = CategoryResponse & {
   subcategories: Array<CategoryHierarchyResponse>
 }
 
@@ -171,18 +174,6 @@ export type CreateAccountRequest = {
   bankAccountHint?: null | string
 }
 
-export type CreateAccountResponse = {
-  id: string
-  name: string
-  description: null | string
-  currency: string
-  color: string
-  icon: string
-  type: AccountType
-  currentBalance: number
-  bankAccountHint: null | string
-}
-
 export type CreateCategoryRequest = {
   name: string
   color: string
@@ -191,16 +182,7 @@ export type CreateCategoryRequest = {
   type: CategoryType
 }
 
-export type CreateCategoryResponse = {
-  id: string
-  name: string
-  color: string
-  icon: string
-  type: CategoryType
-  parentId: null | string
-}
-
-export type CreateTransactionRequest = {
+export type TransactionWriteRequest = {
   date: string
   type: TransactionType
   amount: number
@@ -218,7 +200,7 @@ export type CreateTransactionRequest = {
   currency2?: null | string
 }
 
-export type CreateTransactionResponse = {
+export type TransactionResponse = {
   id: string
   date: string
   type: TransactionType
@@ -238,7 +220,7 @@ export type CreateTransactionResponse = {
   location: null | string
 }
 
-export type CreateTripRequest = {
+export type TripWriteRequest = {
   name: string
   country: null | string
   startDate: string
@@ -246,7 +228,7 @@ export type CreateTripRequest = {
   imageUrl: null | string
 }
 
-export type CreateTripResponse = {
+export type TripResponse = {
   id: string
   name: string
   country: null | string
@@ -261,38 +243,6 @@ export type CurrentUserResponse = {
   email: string
   baseCurrency: string
   subscriptionType: SubscriptionType
-}
-
-export type GetAccountResponse = {
-  id: string
-  name: string
-  description: null | string
-  currency: string
-  color: string
-  icon: string
-  type: AccountType
-  currentBalance: number
-  bankAccountHint: null | string
-}
-
-export type GetTransactionResponse = {
-  id: string
-  date: string
-  type: TransactionType
-  amount: number
-  amount2: null | number
-  currency: null | string
-  currency2: null | string
-  accountId: string
-  tripId: null | string
-  categoryId: null | string
-  subCategoryId: null | string
-  targetAccountId: null | string
-  originalTransactionId: null | string
-  isRefund: boolean
-  note: null | string
-  merchantName: null | string
-  location: null | string
 }
 
 export type ImportBackupResponse = {
@@ -408,26 +358,6 @@ export type SeedDemoResponse = {
 
 export type SubscriptionType = "Free" | "Premium"
 
-export type TransactionListItemResponse = {
-  id: string
-  date: string
-  type: TransactionType
-  amount: number
-  amount2: null | number
-  currency: null | string
-  currency2: null | string
-  accountId: string
-  tripId: null | string
-  categoryId: null | string
-  subCategoryId: null | string
-  targetAccountId: null | string
-  originalTransactionId: null | string
-  isRefund: boolean
-  note: null | string
-  merchantName: null | string
-  location: null | string
-}
-
 export type TransactionSearchQuery = {
   StartDate?: string
   EndDate?: string
@@ -444,13 +374,7 @@ export type TransactionSearchQuery = {
 
 export type TransactionType = "Income" | "Expense" | "Transfer" | "Refund"
 
-export type TripListItemResponse = {
-  id: string
-  name: string
-  country: null | string
-  startDate: null | string
-  endDate: null | string
-  imageUrl: null | string
+export type TripListItemResponse = TripResponse & {
   transactionCount: number
   totalExpenseAmount: number
 }
@@ -465,87 +389,11 @@ export type UpdateAccountRequest = {
   bankAccountHint?: null | string
 }
 
-export type UpdateAccountResponse = {
-  id: string
-  name: string
-  description: null | string
-  currency: string
-  color: string
-  icon: string
-  type: AccountType
-  currentBalance: number
-  bankAccountHint: null | string
-}
-
 export type UpdateCategoryRequest = {
   name: string
   color: string
   icon: string
   parentId: null | string
-}
-
-export type UpdateCategoryResponse = {
-  id: string
-  name: string
-  color: string
-  icon: string
-  type: CategoryType
-  parentId: null | string
-}
-
-export type UpdateTransactionRequest = {
-  date: string
-  type: TransactionType
-  amount: number
-  accountId: string
-  tripId: null | string
-  categoryId: null | string
-  subCategoryId: null | string
-  targetAccountId: null | string
-  originalTransactionId: null | string
-  note: null | string
-  merchantName: null | string
-  location: null | string
-  amount2?: null | number
-  currency?: null | string
-  currency2?: null | string
-}
-
-export type UpdateTransactionResponse = {
-  id: string
-  date: string
-  type: TransactionType
-  amount: number
-  amount2: null | number
-  currency: null | string
-  currency2: null | string
-  accountId: string
-  tripId: null | string
-  categoryId: null | string
-  subCategoryId: null | string
-  targetAccountId: null | string
-  originalTransactionId: null | string
-  isRefund: boolean
-  note: null | string
-  merchantName: null | string
-  location: null | string
-}
-
-export type UpdateTripRequest = {
-  name: string
-  country: null | string
-  startDate: string
-  endDate: string
-  imageUrl: null | string
-}
-
-export type UpdateTripResponse = {
-  id: string
-  name: string
-  country: null | string
-  startDate: null | string
-  endDate: null | string
-  imageUrl: null | string
 }
 
 export type UpdateUserSettingsRequest = {

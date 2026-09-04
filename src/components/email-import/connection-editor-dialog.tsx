@@ -187,12 +187,7 @@ export function ConnectionEditorDialog({
             />
             <p className="text-xs text-muted-foreground">
               Requires 2-Step Verification on the Google account. Create one at{" "}
-              <a
-                className="text-primary underline-offset-2 hover:underline"
-                href="https://myaccount.google.com/apppasswords"
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a className="text-primary underline-offset-2 hover:underline" href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">
                 myaccount.google.com/apppasswords
               </a>
               . It is stored encrypted on your server.
@@ -201,11 +196,7 @@ export function ConnectionEditorDialog({
 
           <Field>
             <FieldLabel>Gmail folder (label)</FieldLabel>
-            <Input
-              value={form.folder}
-              onChange={(event) => setForm((state) => ({ ...state, folder: event.target.value }))}
-              placeholder="e.g. Bank/PKO"
-            />
+            <Input value={form.folder} onChange={(event) => setForm((state) => ({ ...state, folder: event.target.value }))} placeholder="e.g. Bank/PKO" />
             <p className="text-xs text-muted-foreground">Create a Gmail filter that applies this label to the bank's notification emails.</p>
           </Field>
 
@@ -259,10 +250,7 @@ export function ConnectionEditorDialog({
             <FieldLabel>Default account</FieldLabel>
             <Select
               value={form.defaultAccountId ?? NO_ACCOUNT_VALUE}
-              items={[
-                { value: NO_ACCOUNT_VALUE, label: "No default account" },
-                ...accounts.map((account) => ({ value: account.id, label: account.name })),
-              ]}
+              items={[{ value: NO_ACCOUNT_VALUE, label: "No default account" }, ...accounts.map((account) => ({ value: account.id, label: account.name }))]}
               onValueChange={(value) => setForm((state) => ({ ...state, defaultAccountId: value && value !== NO_ACCOUNT_VALUE ? value : null }))}
             >
               <SelectTrigger>

@@ -2,7 +2,7 @@ import { keepPreviousData, queryOptions } from "@tanstack/react-query"
 
 import { queryKeys } from "@/features/shared/query-keys"
 
-import { getEmailImportItem, getEmailImportStatus, listEmailConnections, listEmailImportItems, listEmailImportRules } from "./server/functions"
+import { getEmailImportItem, listEmailConnections, listEmailImportItems, listEmailImportRules } from "./server/functions"
 import type { EmailImportItemsQuery } from "./types"
 
 // Background syncs create data without any client mutation, so the always-visible
@@ -34,11 +34,4 @@ export const emailImportItemQueryOptions = (id: string) =>
   queryOptions({
     queryKey: [...queryKeys.emailImportItemsAll(), "detail", id] as const,
     queryFn: () => getEmailImportItem({ data: { id } }),
-  })
-
-export const emailImportStatusQueryOptions = () =>
-  queryOptions({
-    queryKey: queryKeys.emailImportStatus(),
-    queryFn: () => getEmailImportStatus(),
-    refetchInterval: BACKGROUND_REFRESH_INTERVAL_MS,
   })

@@ -49,11 +49,7 @@ function DatePicker({ value, onValueChange, id, placeholder = "Pick a date", dis
             type="button"
             variant="outline"
             disabled={disabled}
-            className={cn(
-              "w-full justify-start px-2.5 font-mono text-sm font-normal tracking-[0.02em]",
-              !selected && "text-muted-foreground/80",
-              className
-            )}
+            className={cn("w-full justify-start px-2.5 font-mono text-sm font-normal tracking-[0.02em]", !selected && "text-muted-foreground/80", className)}
           />
         }
       >

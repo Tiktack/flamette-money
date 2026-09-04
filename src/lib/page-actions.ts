@@ -21,13 +21,12 @@ export function dispatchPageAction(action: PageActionType) {
 
 /** Subscribes to header/sidebar page actions (e.g. the "Add account" button). */
 export function usePageAction(action: PageActionType, handler: () => void) {
-  const handlerRef = React.useRef(handler)
-  handlerRef.current = handler
+  const handleAction = React.useEffectEvent(handler)
 
   React.useEffect(() => {
     const listener = (event: Event) => {
       if ((event as CustomEvent<PageActionType>).detail === action) {
-        handlerRef.current()
+        handleAction()
       }
     }
 

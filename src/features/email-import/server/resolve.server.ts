@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import { matchAccountIdByBankHint } from "@/features/email-import/account-hint"
 import { evaluateEmailImportRules, type EmailImportRuleDefinition, type EmailRuleAction } from "@/features/email-import/rules"
 import { emailRuleActionSchema, emailRuleConditionSchema } from "@/features/shared/server/validators"
-import type { CreateTransactionRequest } from "@/features/shared/types"
+import type { TransactionWriteRequest } from "@/features/shared/types"
 import { createTransactionForUser, TransactionCommittedButNotReadError } from "@/features/transactions/server/service.server"
 import { normalizeCurrencyOrNull } from "@/lib/currency"
 import { db } from "@/lib/db/client.server"
@@ -146,7 +146,7 @@ function buildTransactionRequest(
   parsed: ParsedEmailTransaction,
   assignment: { accountId: string; categoryId: string; subCategoryId: string | null; note: string | null },
   emailDate: Date | null
-): CreateTransactionRequest {
+): TransactionWriteRequest {
   const date = parsed.bookedAt ?? format(emailDate ?? new Date(), "yyyy-MM-dd")
 
   return {

@@ -3,6 +3,10 @@ dist
 data
 .git
 .github
+.agents
+.claude
+.hallmark
+.vscode
 .wrangler
 .output
 .tanstack

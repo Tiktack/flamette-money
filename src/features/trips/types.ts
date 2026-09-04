@@ -1,6 +1,6 @@
 export type {
-  CreateTripRequest as TripCreateRequest,
-  CreateTripResponse as Trip,
+  TripResponse as Trip,
   TripListItemResponse as TripListItem,
-  UpdateTripRequest as TripUpdateRequest,
+  TripWriteRequest as TripCreateRequest,
+  TripWriteRequest as TripUpdateRequest,
 } from "@/features/shared/types"

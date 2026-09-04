@@ -17,12 +17,27 @@ import { Button } from "@/components/ui/button"
 import type { TransactionEditorDraft } from "@/components/transaction-editor-dialog"
 import { useAccounts } from "@/features/accounts/hooks"
 import { matchAccountIdByBankHint } from "@/features/email-import/account-hint"
-import { useApproveEmailImportItem, useEmailConnections, useEmailImportItems, useEmailImportRules, useReparseEmailImportItems } from "@/features/email-import/hooks"
-import { emailImportItemStatusOptions, type EmailImportItemDetail, type EmailImportItemListItem, type EmailImportItemStatus } from "@/features/email-import/types"
+import {
+  useApproveEmailImportItem,
+  useEmailConnections,
+  useEmailImportItems,
+  useEmailImportRules,
+  useReparseEmailImportItems,
+} from "@/features/email-import/hooks"
+import {
+  emailImportItemStatusOptions,
+  type EmailImportItemDetail,
+  type EmailImportItemListItem,
+  type EmailImportItemStatus,
+} from "@/features/email-import/types"
 import { getApiErrorMessage } from "@/features/shared/errors"
 import { formatCurrency, formatDateInput, formatDateLabel } from "@/lib/finance"
 
 const DEFAULT_STATUSES: EmailImportItemStatus[] = ["pending", "unparsed", "error"]
+const STATUS_FACET_OPTIONS: FacetedFilterOption[] = emailImportItemStatusOptions.map((status) => ({
+  label: statusLabels[status],
+  value: status,
+}))
 
 export const Route = createFileRoute("/_protected/email-import/review")({
   head: () => ({ meta: [{ title: "Review inbox — Flamette Money" }] }),
@@ -40,16 +55,21 @@ function EmailImportReviewPage() {
   const approveItem = useApproveEmailImportItem()
   const reparseItems = useReparseEmailImportItems()
   const [statuses, setStatuses] = React.useState<string[]>(DEFAULT_STATUSES)
-  const [connectionIds, setConnectionIds] = React.useState<string[]>(search.connection ? [search.connection] : [])
+  const [connectionFilter, setConnectionFilter] = React.useState(() => ({
+    sourceConnection: search.connection,
+    values: search.connection ? [search.connection] : [],
+  }))
   const [detailItemId, setDetailItemId] = React.useState<string | null>(null)
   const [approveTarget, setApproveTarget] = React.useState<{ itemId: string; draft: TransactionEditorDraft } | null>(null)
   const [reparseMessage, setReparseMessage] = React.useState<string | null>(null)
 
-  React.useEffect(() => {
-    if (search.connection) {
-      setConnectionIds([search.connection])
-    }
-  }, [search.connection])
+  const connectionIds = React.useMemo(
+    () => (connectionFilter.sourceConnection === search.connection || !search.connection ? connectionFilter.values : [search.connection]),
+    [connectionFilter, search.connection]
+  )
+  const setConnectionIds = (values: string[]) => {
+    setConnectionFilter({ sourceConnection: search.connection, values })
+  }
 
   const itemsQuery = useEmailImportItems({
     statuses: statuses.length > 0 ? (statuses as EmailImportItemStatus[]) : undefined,
@@ -67,11 +87,6 @@ function EmailImportReviewPage() {
     }
     return loaded.filter((item) => connectionIds.includes(item.connectionId))
   }, [connectionIds, itemsQuery.data?.items])
-
-  const statusFacetOptions = React.useMemo<FacetedFilterOption[]>(
-    () => emailImportItemStatusOptions.map((status) => ({ label: statusLabels[status], value: status })),
-    []
-  )
 
   const connectionFacetOptions = React.useMemo<FacetedFilterOption[]>(
     () => connections.map((connection) => ({ label: connection.name, value: connection.id, icon: Mail01Icon })),
@@ -216,8 +231,8 @@ function EmailImportReviewPage() {
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Review inbox</h1>
           <p className="text-sm text-muted-foreground">
-            Emails that couldn't be imported automatically wait here — approve them into transactions, dismiss them, or re-parse after improving the
-            parser or rules.
+            Emails that couldn't be imported automatically wait here — approve them into transactions, dismiss them, or re-parse after improving the parser or
+            rules.
           </p>
         </div>
         {reparseMessage ? <p className="text-sm text-muted-foreground">{reparseMessage}</p> : null}
@@ -246,7 +261,7 @@ function EmailImportReviewPage() {
               <DataTableFacetedFilter
                 title="Status"
                 icon={FilterIcon}
-                options={statusFacetOptions}
+                options={STATUS_FACET_OPTIONS}
                 selectedValues={statuses}
                 onSelectedValuesChange={setStatuses}
                 emptyMessage="No statuses."

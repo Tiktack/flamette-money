@@ -5,19 +5,19 @@ import { cashflowReportSchema, categoryReportSchema, comparisonReportSchema, por
 import { getCashflowSeriesReportData, getCategorySeriesReportData, getComparisonReportData, getPortfolioBalanceSeriesReportData } from "./service.server"
 
 export const getCashflowSeriesReport = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => cashflowReportSchema.parse(data))
-  .handler(async ({ data }) => getCashflowSeriesReportData(data))
+  .validator((data: unknown) => cashflowReportSchema.parse(data))
+  .handler(({ data }) => getCashflowSeriesReportData(data))
 
 export const getCategorySeriesReport = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => categoryReportSchema.parse(data))
-  .handler(async ({ data }) => getCategorySeriesReportData(data))
+  .validator((data: unknown) => categoryReportSchema.parse(data))
+  .handler(({ data }) => getCategorySeriesReportData(data))
 
 export const getPortfolioBalanceSeriesReport = createServerFn({
   method: "GET",
 })
-  .inputValidator((data: unknown) => portfolioReportSchema.parse(data))
-  .handler(async ({ data }) => getPortfolioBalanceSeriesReportData(data))
+  .validator((data: unknown) => portfolioReportSchema.parse(data))
+  .handler(({ data }) => getPortfolioBalanceSeriesReportData(data))
 
 export const getComparisonReport = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => comparisonReportSchema.parse(data))
-  .handler(async ({ data }) => getComparisonReportData(data))
+  .validator((data: unknown) => comparisonReportSchema.parse(data))
+  .handler(({ data }) => getComparisonReportData(data))

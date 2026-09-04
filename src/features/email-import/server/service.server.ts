@@ -3,7 +3,7 @@ import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm"
 import { evaluateEmailRule, type EmailRuleAction, type EmailRuleCondition } from "@/features/email-import/rules"
 import { requireAccount, requireCategory, requireUser } from "@/features/shared/server/lookups.server"
 import { emailRuleActionSchema, emailRuleConditionSchema, parsedEmailTransactionSchema } from "@/features/shared/server/validators"
-import type { CreateTransactionRequest } from "@/features/shared/types"
+import type { TransactionWriteRequest } from "@/features/shared/types"
 import { createTransactionForUser, TransactionCommittedButNotReadError } from "@/features/transactions/server/service.server"
 import { decryptSecret, encryptSecret, SecretDecryptError } from "@/lib/crypto.server"
 import { db, runDbTransaction, type AppTransaction } from "@/lib/db/client.server"
@@ -24,7 +24,6 @@ import type {
   EmailImportItemsResponse,
   EmailImportRuleRequest,
   EmailImportRuleResponse,
-  EmailImportStatusSummary,
   EmailImportSyncResult,
   EmailRulePreviewEntry,
   ParsedEmailTransaction,
@@ -607,7 +606,10 @@ export async function listEmailImportItemsData(query?: EmailImportItemsQuery): P
         matchedRule: { columns: { name: true } },
       },
     }),
-    db.select({ totalCount: sql<number>`count(*)` }).from(emailImportItems).where(where),
+    db
+      .select({ totalCount: sql<number>`count(*)` })
+      .from(emailImportItems)
+      .where(where),
   ])
 
   return {
@@ -641,7 +643,7 @@ export async function getEmailImportItemData(itemId: string): Promise<EmailImpor
 // Approve a reviewed email into a transaction. Creating the transaction and marking the
 // item imported happen in ONE DB transaction, so a failure can never leave a created
 // transaction with a still-pending item (which a re-approve would then duplicate).
-export async function approveEmailImportItemData(itemId: string, request: CreateTransactionRequest): Promise<{ transactionId: string }> {
+export async function approveEmailImportItemData(itemId: string, request: TransactionWriteRequest): Promise<{ transactionId: string }> {
   const user = await requireUser()
   const item = await requireEmailImportItem(user.id, itemId)
   if (item.status === "imported") {
@@ -751,35 +753,4 @@ export async function reparseEmailImportItemsData(request: { ids?: string[]; con
   }
 
   return result
-}
-
-export async function getEmailImportStatusData(): Promise<EmailImportStatusSummary> {
-  const user = await requireUser()
-
-  const [connections, statusCounts] = await Promise.all([
-    db.query.emailConnections.findMany({
-      where: eq(emailConnections.userId, user.id),
-      columns: { enabled: true, lastSyncAt: true },
-    }),
-    db
-      .select({ status: emailImportItems.status, count: sql<number>`count(*)` })
-      .from(emailImportItems)
-      .where(eq(emailImportItems.userId, user.id))
-      .groupBy(emailImportItems.status),
-  ])
-
-  const countByStatus = new Map(statusCounts.map((row) => [row.status, row.count]))
-  const lastSyncAt = connections.reduce<Date | null>((latest, connection) => {
-    if (!connection.lastSyncAt) return latest
-    return !latest || connection.lastSyncAt > latest ? connection.lastSyncAt : latest
-  }, null)
-
-  return {
-    connectionCount: connections.length,
-    enabledConnectionCount: connections.filter((connection) => connection.enabled).length,
-    pendingCount: countByStatus.get("pending") ?? 0,
-    unparsedCount: countByStatus.get("unparsed") ?? 0,
-    errorCount: countByStatus.get("error") ?? 0,
-    lastSyncAt: toIsoString(lastSyncAt),
-  }
 }

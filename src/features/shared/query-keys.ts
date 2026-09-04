@@ -27,5 +27,4 @@ export const queryKeys = {
   emailImportRules: () => ["email-import-rules"] as const,
   emailImportItemsAll: () => ["email-import-items"] as const,
   emailImportItems: (query?: Record<string, unknown>) => ["email-import-items", query ?? {}] as const,
-  emailImportStatus: () => ["email-import-status"] as const,
 }

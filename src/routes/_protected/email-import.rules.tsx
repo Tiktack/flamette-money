@@ -156,8 +156,8 @@ function EmailImportRulesPage() {
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">Import rules</h1>
           <p className="text-sm text-muted-foreground">
-            Rules run top to bottom on every parsed email — the first match decides the account, category, and note. Emails that resolve to an account
-            and category become transactions automatically.
+            Rules run top to bottom on every parsed email — the first match decides the account, category, and note. Emails that resolve to an account and
+            category become transactions automatically.
           </p>
         </div>
         <Button onClick={() => setEditor({ rule: null })}>
@@ -233,7 +233,7 @@ function EmailImportRulesPage() {
                         </Badge>
                       ) : (
                         rule.conditions.map((condition, conditionIndex) => (
-                          <Badge key={conditionIndex} variant="secondary" className="font-normal normal-case tracking-normal">
+                          <Badge key={conditionIndex} variant="secondary" className="font-normal tracking-normal normal-case">
                             {conditionLabel(condition, connectionNameById)}
                           </Badge>
                         ))

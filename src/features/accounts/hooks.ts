@@ -33,7 +33,7 @@ export function useDeleteAccount() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => deleteAccount({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => deleteAccount({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, accountMutationInvalidations),
   })
 }

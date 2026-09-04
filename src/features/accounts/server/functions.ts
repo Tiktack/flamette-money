@@ -5,18 +5,16 @@ import { accountRequestSchema, accountUpdateSchema } from "@/features/shared/ser
 
 import { createAccountData, deleteAccountData, listAccountsData, updateAccountData } from "./service.server"
 
-export const getAccounts = createServerFn({ method: "GET" }).handler(async () => listAccountsData())
+export const getAccounts = createServerFn({ method: "GET" }).handler(() => listAccountsData())
 
 export const createAccount = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => accountRequestSchema.parse(data))
-  .handler(async ({ data }) => createAccountData(data))
+  .validator((data: unknown) => accountRequestSchema.parse(data))
+  .handler(({ data }) => createAccountData(data))
 
 export const updateAccount = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => accountUpdateSchema.parse(data))
-  .handler(async ({ data }) => updateAccountData(data.id, data.request))
+  .validator((data: unknown) => accountUpdateSchema.parse(data))
+  .handler(({ data }) => updateAccountData(data.id, data.request))
 
 export const deleteAccount = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ id: z.string() }).parse(data))
-  .handler(async ({ data }) => {
-    await deleteAccountData(data.id)
-  })
+  .validator((data: unknown) => z.object({ id: z.string() }).parse(data))
+  .handler(({ data }) => deleteAccountData(data.id))

@@ -10,6 +10,20 @@
     "node": true
   },
   "ignorePatterns": [".agents/**", ".claude/**", ".github/**", "dist/**", "src/components/charts/**", "src/lib/api/generated/**", "src/routeTree.gen.ts"],
+  "overrides": [
+    {
+      "files": ["src/components/data-table.tsx"],
+      "rules": {
+        "react/incompatible-library": "off"
+      }
+    },
+    {
+      "files": ["src/routes/_protected/accounts.tsx", "src/routes/_protected/email-import.review.tsx", "src/routes/_protected/transactions.tsx"],
+      "rules": {
+        "react/no-unstable-nested-components": ["warn", { "allowAsProps": true }]
+      }
+    }
+  ],
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "import"],
   "rules": {
     "unicorn/no-array-sort": "off",

@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_protected/analytics/portfolio")({
 
 function AnalyticsPortfolioPage() {
   const [reportInterval, setReportInterval] = React.useState<"Auto" | "Day" | "Week" | "Month">("Auto")
+  const [mountedAt] = React.useState(() => Date.now())
   const settingsQuery = useSettings()
   const baseCurrency = settingsQuery.data?.baseCurrency ?? "USD"
   const dateRangeQuery = useSharedDateRangeQuery()
@@ -55,10 +56,9 @@ function AnalyticsPortfolioPage() {
   // flat and render as a dashed projection tail.
   const chartPresentation = React.useMemo(() => {
     const series = points ?? []
-    const today = Date.now()
     let lastActualIndex = -1
     series.forEach((point, index) => {
-      if (new Date(point.bucketDate).getTime() <= today) {
+      if (new Date(point.bucketDate).getTime() <= mountedAt) {
         lastActualIndex = index
       }
     })
@@ -85,7 +85,7 @@ function AnalyticsPortfolioPage() {
     }
 
     return { data, projection }
-  }, [points])
+  }, [mountedAt, points])
 
   const chartData = chartPresentation.data
   const tripsQuery = useTrips()

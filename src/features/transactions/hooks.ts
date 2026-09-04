@@ -51,7 +51,7 @@ export function useDeleteTransaction() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => deleteTransaction({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => deleteTransaction({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, transactionMutationInvalidations),
   })
 }

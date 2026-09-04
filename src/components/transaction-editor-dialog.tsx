@@ -292,13 +292,7 @@ function TransactionFormFields({
 
         <Field>
           <FieldLabel>Amount</FieldLabel>
-          <NumberInput
-            min={0}
-            decimalScale={2}
-            placeholder="0.00"
-            value={form.amount}
-            onValueChange={(amount) => setForm((state) => ({ ...state, amount }))}
-          />
+          <NumberInput min={0} decimalScale={2} placeholder="0.00" value={form.amount} onValueChange={(amount) => setForm((state) => ({ ...state, amount }))} />
         </Field>
 
         <Field>
@@ -576,39 +570,41 @@ export function TransactionEditorDialog({
   initialDraft,
   submitNewOverride,
 }: TransactionEditorDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-4xl">
+        <TransactionEditorContent
+          open={open}
+          mode={mode}
+          transactionId={transactionId}
+          onClose={() => onOpenChange(false)}
+          presetCategoryId={presetCategoryId}
+          presetTripId={presetTripId}
+          presetType={presetType}
+          initialDraft={initialDraft}
+          submitNewOverride={submitNewOverride}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function TransactionEditorContent({
+  open,
+  mode,
+  transactionId,
+  onClose,
+  presetCategoryId,
+  presetTripId,
+  presetType,
+  initialDraft,
+  submitNewOverride,
+}: Omit<TransactionEditorDialogProps, "onOpenChange"> & { onClose: () => void }) {
   const accountsQuery = useAccounts()
   const appInfoQuery = useAppInfo()
   const categoriesQuery = useCategories()
   const tripsQuery = useTrips()
-  const [form, setForm] = React.useState<TransactionFormState>(() => buildDefaultState(presetType ?? defaultType))
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
-  const recentTransactionsQuery = useTransactionsSearch(
-    form.type === "Refund" && form.accountId
-      ? {
-          Types: ["Expense"],
-          AccountIds: [form.accountId],
-        }
-      : undefined,
-    {
-      enabled: open && form.type === "Refund" && Boolean(form.accountId),
-    }
-  )
   const transactionQuery = useTransaction(mode === "edit" ? transactionId : undefined)
-  const createTransaction = useCreateTransaction()
-  const updateTransaction = useUpdateTransaction()
-
-  const categories = React.useMemo(() => categoriesQuery.data ?? [], [categoriesQuery.data])
-  const categoryMap = React.useMemo(() => buildCategoryMap(categories), [categories])
-  const accountMap = React.useMemo(() => {
-    const map = new Map<string, { name: string; currency: string }>()
-    for (const account of accountsQuery.data ?? []) {
-      map.set(account.id, {
-        name: account.name,
-        currency: account.currency.toUpperCase(),
-      })
-    }
-    return map
-  }, [accountsQuery.data])
 
   const currencyOptions = React.useMemo(() => {
     const values = new Set<string>()
@@ -621,47 +617,97 @@ export function TransactionEditorDialog({
     return Array.from(values)
   }, [accountsQuery.data, appInfoQuery.data?.supportedCurrencies])
 
-  const allowedParents = React.useMemo(() => {
-    if (form.type === "Transfer") return []
-    const allowedType = form.type === "Income" ? "Income" : "Expense"
-    return categories.filter((category) => category.type === allowedType && category.parentId === null)
-  }, [categories, form.type])
+  const accountsData = (accountsQuery.data ?? []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    currency: a.currency.toUpperCase(),
+  }))
 
-  // Hydrate the form once per open. Guarding with a ref (instead of depending on query data
-  // identities alone) keeps background refetches from silently wiping unsaved edits while
-  // the dialog is open.
-  const hydratedRef = React.useRef(false)
+  const tripsData = (tripsQuery.data ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+  }))
 
-  React.useEffect(() => {
-    if (!open) {
-      hydratedRef.current = false
-      return
-    }
+  const isLoading = mode === "edit" ? transactionQuery.isLoading : accountsQuery.isPending || categoriesQuery.isPending
 
-    if (hydratedRef.current) {
-      return
-    }
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-2">
+          {mode === "edit" ? (
+            <>
+              <HugeiconsIcon icon={Edit01Icon} className="size-5" />
+              Edit transaction
+            </>
+          ) : (
+            "New transaction"
+          )}
+        </DialogTitle>
+        <DialogDescription>{mode === "edit" ? "Update the transaction details below." : "Add a new transaction to your records."}</DialogDescription>
+      </DialogHeader>
 
-    if (mode === "edit" && !transactionQuery.data) {
-      return
-    }
+      {isLoading ? (
+        <div className="h-32 animate-pulse rounded-2xl bg-muted" />
+      ) : transactionQuery.isError && mode === "edit" ? (
+        <Alert variant="destructive">
+          <AlertTitle>Unable to load transaction</AlertTitle>
+          <AlertDescription>{getApiErrorMessage(transactionQuery.error, "Try reopening the editor.")}</AlertDescription>
+        </Alert>
+      ) : (
+        <TransactionEditorForm
+          key={mode === "edit" ? transactionId : "new"}
+          open={open}
+          mode={mode}
+          transactionId={transactionId}
+          onClose={onClose}
+          presetCategoryId={presetCategoryId}
+          presetTripId={presetTripId}
+          presetType={presetType}
+          initialDraft={initialDraft}
+          submitNewOverride={submitNewOverride}
+          transaction={transactionQuery.data}
+          categories={categoriesQuery.data ?? []}
+          accountsData={accountsData}
+          currencyOptions={currencyOptions}
+          tripsData={tripsData}
+        />
+      )}
+    </>
+  )
+}
 
-    if (mode === "new" && accountsQuery.isPending) {
-      return
-    }
-
-    hydratedRef.current = true
-    setErrorMessage(null)
-
-    if (mode === "edit" && transactionQuery.data) {
-      setForm(fillFromTransaction(transactionQuery.data))
-      return
+function TransactionEditorForm({
+  open,
+  mode,
+  transactionId,
+  onClose,
+  presetCategoryId,
+  presetTripId,
+  presetType,
+  initialDraft,
+  submitNewOverride,
+  transaction,
+  categories,
+  accountsData,
+  currencyOptions,
+  tripsData,
+}: Omit<TransactionEditorDialogProps, "onOpenChange"> & {
+  onClose: () => void
+  transaction?: TransactionDetail
+  categories: CategoryHierarchy[]
+  accountsData: { id: string; name: string; currency: string }[]
+  currencyOptions: string[]
+  tripsData: { id: string; name: string }[]
+}) {
+  const [form, setForm] = React.useState<TransactionFormState>(() => {
+    if (mode === "edit" && transaction) {
+      return fillFromTransaction(transaction)
     }
 
     const baseState = buildDefaultState(presetType ?? defaultType)
-    const withPreset: TransactionFormState = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
-    const defaultAccount = accountsQuery.data?.[0]
-    const defaultCurrency = defaultAccount?.currency?.toUpperCase() ?? withPreset.currency
+    const withPreset = presetCategoryId ? applyPresetCategory(baseState, presetCategoryId, categories) : baseState
+    const defaultAccount = accountsData[0]
+    const defaultCurrency = defaultAccount?.currency ?? withPreset.currency
     const withDefaults: TransactionFormState = {
       ...withPreset,
       accountId: defaultAccount?.id ?? "",
@@ -669,8 +715,51 @@ export function TransactionEditorDialog({
       currency2: defaultCurrency,
       tripId: presetTripId ?? withPreset.tripId,
     }
-    setForm(initialDraft ? applyEditorDraft(withDefaults, initialDraft) : withDefaults)
-  }, [accountsQuery.data, accountsQuery.isPending, categories, initialDraft, mode, open, presetCategoryId, presetTripId, presetType, transactionQuery.data])
+    return initialDraft ? applyEditorDraft(withDefaults, initialDraft) : withDefaults
+  })
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+  const recentTransactionsQuery = useTransactionsSearch(
+    form.type === "Refund" && form.accountId
+      ? {
+          Types: ["Expense"],
+          AccountIds: [form.accountId],
+        }
+      : undefined,
+    {
+      enabled: open && form.type === "Refund" && Boolean(form.accountId),
+    }
+  )
+  const createTransaction = useCreateTransaction()
+  const updateTransaction = useUpdateTransaction()
+
+  const categoryMap = React.useMemo(() => buildCategoryMap(categories), [categories])
+  const accountMap = React.useMemo(() => {
+    const map = new Map<string, { name: string; currency: string }>()
+    for (const account of accountsData) {
+      map.set(account.id, {
+        name: account.name,
+        currency: account.currency,
+      })
+    }
+    return map
+  }, [accountsData])
+
+  const allowedParents = React.useMemo(() => {
+    if (form.type === "Transfer") return []
+    const allowedType = form.type === "Income" ? "Income" : "Expense"
+    return categories.filter((category) => category.type === allowedType && category.parentId === null)
+  }, [categories, form.type])
+
+  const recentTransactions =
+    open && form.type === "Refund"
+      ? (recentTransactionsQuery.data ?? []).map((t) => ({
+          id: t.id,
+          date: t.date,
+          accountId: t.accountId,
+          amount: t.amount,
+          type: t.type,
+        }))
+      : []
 
   const handleSubmit = async () => {
     setErrorMessage(null)
@@ -738,95 +827,44 @@ export function TransactionEditorDialog({
       } else {
         await createTransaction.mutateAsync(request)
       }
-      onOpenChange(false)
+      onClose()
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, "Unable to save transaction."))
     }
   }
 
-  const accountsData = (accountsQuery.data ?? []).map((a) => ({
-    id: a.id,
-    name: a.name,
-    currency: a.currency.toUpperCase(),
-  }))
-
-  const tripsData = (tripsQuery.data ?? []).map((t) => ({
-    id: t.id,
-    name: t.name,
-  }))
-
-  const recentTransactions =
-    open && form.type === "Refund"
-      ? (recentTransactionsQuery.data ?? []).map((t) => ({
-          id: t.id,
-          date: t.date,
-          accountId: t.accountId,
-          amount: t.amount,
-          type: t.type,
-        }))
-      : []
-
-  const formFields = (
-    <TransactionFormFields
-      form={form}
-      setForm={setForm}
-      categories={categories}
-      categoryMap={categoryMap}
-      accountMap={accountMap}
-      accountsData={accountsData}
-      currencyOptions={currencyOptions}
-      tripsData={tripsData}
-      recentTransactions={recentTransactions}
-      allowedParents={allowedParents}
-    />
-  )
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {mode === "edit" ? (
-              <>
-                <HugeiconsIcon icon={Edit01Icon} className="size-5" />
-                Edit transaction
-              </>
-            ) : (
-              "New transaction"
-            )}
-          </DialogTitle>
-          <DialogDescription>{mode === "edit" ? "Update the transaction details below." : "Add a new transaction to your records."}</DialogDescription>
-        </DialogHeader>
+    <>
+      <div className="max-h-[72vh] overflow-y-auto pr-1">
+        <TransactionFormFields
+          form={form}
+          setForm={setForm}
+          categories={categories}
+          categoryMap={categoryMap}
+          accountMap={accountMap}
+          accountsData={accountsData}
+          currencyOptions={currencyOptions}
+          tripsData={tripsData}
+          recentTransactions={recentTransactions}
+          allowedParents={allowedParents}
+        />
 
-        <div className="max-h-[72vh] overflow-y-auto pr-1">
-          {transactionQuery.isLoading && mode === "edit" ? (
-            <div className="h-32 animate-pulse rounded-2xl bg-muted" />
-          ) : transactionQuery.isError && mode === "edit" ? (
-            <Alert variant="destructive">
-              <AlertTitle>Unable to load transaction</AlertTitle>
-              <AlertDescription>{getApiErrorMessage(transactionQuery.error, "Try reopening the editor.")}</AlertDescription>
-            </Alert>
-          ) : (
-            formFields
-          )}
+        {errorMessage ? (
+          <Alert variant="destructive" className="mt-4">
+            <AlertTitle>Save failed</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        ) : null}
+      </div>
 
-          {errorMessage ? (
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Save failed</AlertTitle>
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          ) : null}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={createTransaction.isPending || updateTransaction.isPending}>
-            {createTransaction.isPending || updateTransaction.isPending ? "Saving..." : mode === "edit" ? "Save changes" : "Create transaction"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={createTransaction.isPending || updateTransaction.isPending}>
+          {createTransaction.isPending || updateTransaction.isPending ? "Saving..." : mode === "edit" ? "Save changes" : "Create transaction"}
+        </Button>
+      </DialogFooter>
+    </>
   )
 }

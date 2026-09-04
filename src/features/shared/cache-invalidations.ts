@@ -47,7 +47,6 @@ export const emailImportInvalidations = [
   { queryKey: queryKeys.emailConnections() },
   { queryKey: queryKeys.emailImportRules() },
   { queryKey: queryKeys.emailImportItemsAll() },
-  { queryKey: queryKeys.emailImportStatus() },
 ] as const satisfies readonly QueryInvalidation[]
 
 export const fullDataRefreshInvalidations = [

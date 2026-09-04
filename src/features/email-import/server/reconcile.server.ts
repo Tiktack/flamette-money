@@ -2,7 +2,7 @@ import { format } from "date-fns"
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm"
 
 import { normalizeLocation, normalizeMerchantName } from "@/features/shared/server/normalizers.server"
-import type { CreateTransactionRequest } from "@/features/shared/types"
+import type { TransactionWriteRequest } from "@/features/shared/types"
 import { normalizeCurrencyOrNull } from "@/lib/currency"
 import { db, runDbTransaction, type AppTransaction } from "@/lib/db/client.server"
 import { emailImportItems, transactions } from "@/lib/db/schema"
@@ -51,7 +51,7 @@ export type ReconcileTransactionOptions = {
 // typed themselves are never overwritten.
 export async function reconcileTransactionForUser(
   user: { id: string },
-  request: CreateTransactionRequest,
+  request: TransactionWriteRequest,
   options?: ReconcileTransactionOptions
 ): Promise<{ id: string } | null> {
   // Emails only produce Income/Expense; transfers and refunds have pairing semantics of

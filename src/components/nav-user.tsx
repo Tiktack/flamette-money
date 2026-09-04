@@ -32,6 +32,8 @@ const themeIcons: Record<ThemeMode, typeof Sun03Icon> = {
   system: ComputerIcon,
 }
 
+const subscribeToHydration = () => () => {}
+
 export function NavUser({
   user,
   isLoggingOut,
@@ -47,12 +49,12 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
+  const mounted = React.useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  )
   const selectedTheme: ThemeMode = mounted && isThemeMode(theme) ? theme : "system"
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
 
   return (
     <SidebarMenu>
