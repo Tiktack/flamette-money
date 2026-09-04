@@ -22,7 +22,6 @@ import {
   deleteEmailImportRuleData,
   dismissEmailImportItemData,
   getEmailImportItemData,
-  getEmailImportStatusData,
   listEmailConnectionsData,
   listEmailImportItemsData,
   listEmailImportRulesData,
@@ -39,88 +38,74 @@ import {
 
 const idSchema = z.object({ id: z.string() })
 
-export const listEmailConnections = createServerFn({ method: "GET" }).handler(async () => listEmailConnectionsData())
+export const listEmailConnections = createServerFn({ method: "GET" }).handler(() => listEmailConnectionsData())
 
 export const createEmailConnection = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailConnectionRequestSchema.parse(data))
-  .handler(async ({ data }) => createEmailConnectionData(data))
+  .validator((data: unknown) => emailConnectionRequestSchema.parse(data))
+  .handler(({ data }) => createEmailConnectionData(data))
 
 export const updateEmailConnection = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailConnectionUpdateSchema.parse(data))
-  .handler(async ({ data }) => updateEmailConnectionData(data.id, data.request))
+  .validator((data: unknown) => emailConnectionUpdateSchema.parse(data))
+  .handler(({ data }) => updateEmailConnectionData(data.id, data.request))
 
 export const deleteEmailConnection = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => {
-    await deleteEmailConnectionData(data.id)
-  })
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => deleteEmailConnectionData(data.id))
 
 export const testEmailConnection = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailConnectionTestSchema.parse(data))
-  .handler(async ({ data }) => testEmailConnectionData(data))
+  .validator((data: unknown) => emailConnectionTestSchema.parse(data))
+  .handler(({ data }) => testEmailConnectionData(data))
 
 export const syncEmailConnectionNow = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => syncEmailConnectionNowData(data.id))
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => syncEmailConnectionNowData(data.id))
 
 export const resetEmailConnection = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => {
-    await resetEmailConnectionData(data.id)
-  })
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => resetEmailConnectionData(data.id))
 
-export const listEmailImportRules = createServerFn({ method: "GET" }).handler(async () => listEmailImportRulesData())
+export const listEmailImportRules = createServerFn({ method: "GET" }).handler(() => listEmailImportRulesData())
 
 export const createEmailImportRule = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailImportRuleRequestSchema.parse(data))
-  .handler(async ({ data }) => createEmailImportRuleData(data))
+  .validator((data: unknown) => emailImportRuleRequestSchema.parse(data))
+  .handler(({ data }) => createEmailImportRuleData(data))
 
 export const updateEmailImportRule = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailImportRuleUpdateSchema.parse(data))
-  .handler(async ({ data }) => updateEmailImportRuleData(data.id, data.request))
+  .validator((data: unknown) => emailImportRuleUpdateSchema.parse(data))
+  .handler(({ data }) => updateEmailImportRuleData(data.id, data.request))
 
 export const deleteEmailImportRule = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => {
-    await deleteEmailImportRuleData(data.id)
-  })
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => deleteEmailImportRuleData(data.id))
 
 export const reorderEmailImportRules = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailImportRulesReorderSchema.parse(data))
-  .handler(async ({ data }) => {
-    await reorderEmailImportRulesData(data.orderedIds)
-  })
+  .validator((data: unknown) => emailImportRulesReorderSchema.parse(data))
+  .handler(({ data }) => reorderEmailImportRulesData(data.orderedIds))
 
 export const previewEmailImportRule = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailRulePreviewSchema.parse(data))
-  .handler(async ({ data }) => previewEmailImportRuleData(data))
+  .validator((data: unknown) => emailRulePreviewSchema.parse(data))
+  .handler(({ data }) => previewEmailImportRuleData(data))
 
 export const listEmailImportItems = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => emailImportItemsQuerySchema.parse(data))
-  .handler(async ({ data }) => listEmailImportItemsData(data))
+  .validator((data: unknown) => emailImportItemsQuerySchema.parse(data))
+  .handler(({ data }) => listEmailImportItemsData(data))
 
 export const getEmailImportItem = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => getEmailImportItemData(data.id))
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => getEmailImportItemData(data.id))
 
 export const approveEmailImportItem = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailImportItemApproveSchema.parse(data))
-  .handler(async ({ data }) => approveEmailImportItemData(data.id, data.request))
+  .validator((data: unknown) => emailImportItemApproveSchema.parse(data))
+  .handler(({ data }) => approveEmailImportItemData(data.id, data.request))
 
 export const dismissEmailImportItem = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => {
-    await dismissEmailImportItemData(data.id)
-  })
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => dismissEmailImportItemData(data.id))
 
 export const restoreEmailImportItem = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => idSchema.parse(data))
-  .handler(async ({ data }) => {
-    await restoreEmailImportItemData(data.id)
-  })
+  .validator((data: unknown) => idSchema.parse(data))
+  .handler(({ data }) => restoreEmailImportItemData(data.id))
 
 export const reparseEmailImportItems = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => emailImportReparseSchema.parse(data))
-  .handler(async ({ data }) => reparseEmailImportItemsData(data))
-
-export const getEmailImportStatus = createServerFn({ method: "GET" }).handler(async () => getEmailImportStatusData())
+  .validator((data: unknown) => emailImportReparseSchema.parse(data))
+  .handler(({ data }) => reparseEmailImportItemsData(data))

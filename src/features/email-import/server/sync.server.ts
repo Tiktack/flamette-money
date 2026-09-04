@@ -210,7 +210,8 @@ export async function syncEmailConnection(connectionId: string): Promise<EmailIm
 
     return result
   } catch (error) {
-    const syncError = error instanceof EmailSyncError ? error : new EmailSyncError("error", error instanceof Error ? error.message : "Sync failed unexpectedly.")
+    const syncError =
+      error instanceof EmailSyncError ? error : new EmailSyncError("error", error instanceof Error ? error.message : "Sync failed unexpectedly.")
     await recordSyncFailure(connection, syncError).catch((recordError) => {
       console.error(`[email-import] failed to record sync failure for connection ${connectionId}`, recordError)
     })

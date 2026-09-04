@@ -9,6 +9,18 @@ import { accounts, categories, transactions, trips } from "@/lib/db/schema"
 import { getRatesToBase } from "@/lib/exchange-rate.server"
 import { endOfDay, parseCalendarDateUtc, startOfDay } from "@/lib/server/parsing.server"
 
+import {
+  addUtcDays,
+  asDateOnly,
+  buildBuckets,
+  buildPortfolioBuckets,
+  endOfDate,
+  resolveBucketKey,
+  resolvePortfolioInterval,
+  resolveReportInterval,
+  utcMonthStart,
+} from "./buckets.server"
+
 import type {
   CashflowSeriesReportQuery,
   CashflowSeriesReportResponse,
@@ -18,7 +30,6 @@ import type {
   ComparisonReportResponse,
   PortfolioBalanceSeriesQuery,
   PortfolioBalanceSeriesResponse,
-  ReportBucketResponse,
   ReportInterval,
 } from "@/features/shared/types"
 
@@ -27,230 +38,6 @@ type TransactionType = "Income" | "Expense" | "Transfer" | "Refund"
 
 type ReportTransaction = typeof transactions.$inferSelect
 type ReportCategory = typeof categories.$inferSelect
-
-type Bucket = {
-  key: string
-  label: string
-  start: Date
-  end: Date
-}
-
-// Transaction dates are stored as UTC midnights, so every piece of bucket/date math below
-// must use UTC — mixing in local-time Date methods shifts amounts into the wrong bucket on
-// any non-UTC server.
-function asDateOnly(value: Date) {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()))
-}
-
-function endOfDate(value: Date) {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate(), 23, 59, 59, 999))
-}
-
-function addUtcDays(value: Date, days: number) {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate() + days))
-}
-
-function utcMonthStart(value: Date) {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), 1))
-}
-
-function monthKey(value: Date) {
-  return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}`
-}
-
-function resolveReportInterval(startDate: Date, endDate: Date, requested: ReportInterval | undefined) {
-  if (requested && requested !== "Auto") {
-    return requested
-  }
-
-  const isSameMonth = startDate.getUTCFullYear() === endDate.getUTCFullYear() && startDate.getUTCMonth() === endDate.getUTCMonth()
-  if (isSameMonth) {
-    return "Day" as const
-  }
-
-  const monthSpan = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + endDate.getUTCMonth() - startDate.getUTCMonth()
-  if (monthSpan > 3) {
-    return "Month" as const
-  }
-
-  const daySpan = Math.floor((asDateOnly(endDate).getTime() - asDateOnly(startDate).getTime()) / 86_400_000) + 1
-  if (daySpan > 31) {
-    return "Week" as const
-  }
-
-  return "Day" as const
-}
-
-function resolvePortfolioInterval(startDate: Date, endDate: Date, requested: ReportInterval | undefined) {
-  if (requested && requested !== "Auto") {
-    return requested
-  }
-
-  const isSameMonth = startDate.getUTCFullYear() === endDate.getUTCFullYear() && startDate.getUTCMonth() === endDate.getUTCMonth()
-  if (isSameMonth) {
-    return "Day" as const
-  }
-
-  const monthSpan = (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + endDate.getUTCMonth() - startDate.getUTCMonth()
-  if (monthSpan > 6) {
-    return "Month" as const
-  }
-
-  const daySpan = Math.floor((asDateOnly(endDate).getTime() - asDateOnly(startDate).getTime()) / 86_400_000) + 1
-  if (daySpan > 45) {
-    return "Week" as const
-  }
-
-  return "Day" as const
-}
-
-function buildBuckets(startDate: Date, endDate: Date, interval: ReportInterval): ReportBucketResponse[] {
-  if (interval === "None") {
-    return [{ key: "all", label: "All" }]
-  }
-
-  const buckets: ReportBucketResponse[] = []
-
-  if (interval === "Day") {
-    const singleMonth = startDate.getUTCFullYear() === endDate.getUTCFullYear() && startDate.getUTCMonth() === endDate.getUTCMonth()
-
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 1)) {
-      const key = cursor.toISOString().slice(0, 10)
-      const label = singleMonth ? String(cursor.getUTCDate()) : cursor.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
-
-      buckets.push({ key, label })
-    }
-
-    return buckets
-  }
-
-  if (interval === "Week") {
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 7)) {
-      buckets.push({
-        key: cursor.toISOString().slice(0, 10),
-        label: cursor.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          timeZone: "UTC",
-        }),
-      })
-    }
-
-    return buckets
-  }
-
-  let cursor = utcMonthStart(startDate)
-  const lastMonth = utcMonthStart(endDate)
-  const showYear = cursor.getUTCFullYear() !== lastMonth.getUTCFullYear()
-
-  while (cursor <= lastMonth) {
-    buckets.push({
-      key: monthKey(cursor),
-      label: cursor.toLocaleDateString("en-US", {
-        month: "short",
-        year: showYear ? "2-digit" : undefined,
-        timeZone: "UTC",
-      }),
-    })
-
-    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1))
-  }
-
-  return buckets
-}
-
-function buildPortfolioBuckets(startDate: Date, endDate: Date, interval: ReportInterval): Bucket[] {
-  if (interval === "None") {
-    return [
-      {
-        key: "all",
-        label: "All",
-        start: asDateOnly(startDate),
-        end: endOfDate(endDate),
-      },
-    ]
-  }
-
-  const buckets: Bucket[] = []
-
-  if (interval === "Day") {
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 1)) {
-      buckets.push({
-        key: cursor.toISOString().slice(0, 10),
-        label: cursor.toLocaleDateString("en-US", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        }),
-        start: cursor,
-        end: endOfDate(cursor),
-      })
-    }
-
-    return buckets
-  }
-
-  if (interval === "Week") {
-    for (let cursor = asDateOnly(startDate); cursor <= asDateOnly(endDate); cursor = addUtcDays(cursor, 7)) {
-      const bucketEnd = new Date(Math.min(endOfDate(addUtcDays(cursor, 6)).getTime(), endOfDate(endDate).getTime()))
-      buckets.push({
-        key: bucketEnd.toISOString().slice(0, 10),
-        label: bucketEnd.toLocaleDateString("en-US", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        }),
-        start: cursor,
-        end: bucketEnd,
-      })
-    }
-
-    return buckets
-  }
-
-  let cursor = utcMonthStart(startDate)
-  const lastMonth = utcMonthStart(endDate)
-
-  while (cursor <= lastMonth) {
-    const rawMonthEnd = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 0))
-    const monthEnd = rawMonthEnd > asDateOnly(endDate) ? asDateOnly(endDate) : rawMonthEnd
-
-    buckets.push({
-      key: monthKey(cursor),
-      label: cursor.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-      }),
-      start: cursor,
-      end: endOfDate(monthEnd),
-    })
-
-    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1))
-  }
-
-  return buckets
-}
-
-function resolveBucketKey(startDate: Date, transactionDate: Date, interval: ReportInterval) {
-  if (interval === "None") {
-    return "all"
-  }
-
-  if (interval === "Day") {
-    return transactionDate.toISOString().slice(0, 10)
-  }
-
-  if (interval === "Week") {
-    const dayOffset = Math.floor((asDateOnly(transactionDate).getTime() - asDateOnly(startDate).getTime()) / 86_400_000)
-    const weekOffset = Math.floor(dayOffset / 7) * 7
-    return addUtcDays(startDate, weekOffset).toISOString().slice(0, 10)
-  }
-
-  return monthKey(transactionDate)
-}
 
 function getIncomeAmount(type: TransactionType, amount: number) {
   return type === "Income" ? amount : 0

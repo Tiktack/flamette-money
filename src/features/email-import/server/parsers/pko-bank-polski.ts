@@ -47,7 +47,11 @@ function resolveBody(input: BankEmailInput) {
 }
 
 function cleanFragment(value: string) {
-  const cleaned = value.replace(/[\s ]+/g, " ").trim().replace(/[.,;]$/, "").trim()
+  const cleaned = value
+    .replace(/[\s ]+/g, " ")
+    .trim()
+    .replace(/[.,;]$/, "")
+    .trim()
   return cleaned.length > 0 ? cleaned : null
 }
 
@@ -121,7 +125,7 @@ function parseVerifiedTemplate(body: string): ParsedEmailTransaction | null {
     .filter((match): match is RegExpMatchArray => match !== null)
 
   const firstDetail = detailLines[0] ? splitDetailLine(detailLines[0][3]) : null
-  let description = detailLines[0] ? cleanFragment(detailLines[0][3])?.slice(0, 300) ?? null : null
+  let description = detailLines[0] ? (cleanFragment(detailLines[0][3])?.slice(0, 300) ?? null) : null
   if (description && detailLines.length > 1) {
     // Aggregated settlements may list several components under one total — TO VERIFY.
     description = `${description} (+${detailLines.length - 1} more)`
@@ -209,9 +213,7 @@ function extractAmounts(body: string): AmountMatch[] {
 function extractTransactionAmount(body: string): AmountMatch | null {
   const matches = extractAmounts(body)
   for (const match of matches) {
-    const preceding = body
-      .slice(Math.max(0, match.index - 40), match.index)
-      .toLowerCase()
+    const preceding = body.slice(Math.max(0, match.index - 40), match.index).toLowerCase()
     if (preceding.includes("dostępne środki") || preceding.includes("stan konta") || preceding.includes("saldo")) {
       continue
     }

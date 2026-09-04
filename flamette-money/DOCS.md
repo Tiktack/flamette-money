@@ -12,15 +12,15 @@ host with a local SQLite database — no Cloudflare account or external database
 
 ## Configuration
 
-| Option                                    | Required    | Notes                                                                                                                           |
-| ----------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `better_auth_secret`                      | **Yes**     | Long random string. Generate with `openssl rand -base64 32`.                                                                    |
-| `better_auth_url`                         | Recommended | Public origin (e.g. `https://money.example.com`) served via your Cloudflare Tunnel.                                             |
-| `better_auth_trusted_origins`             | Recommended | Usually the same value as `better_auth_url`.                                                                                    |
-| `better_auth_use_secure_cookies`          | No          | Auto-derived from the URL (https ⇒ on). Set `false` for plain-http LAN access.                                                  |
-| `disable_signups`                         | No          | Turn on to block all new registrations (email + social). Existing users still sign in; the first account can always be created. |
-| `exchange_rate_api_key`                   | No          | Enable live currency conversion in reports.                                                                                     |
-| `google_*` / `github_*`                   | No          | Optional social login (needs a public https URL).                                                                               |
+| Option                           | Required    | Notes                                                                                                                           |
+| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `better_auth_secret`             | **Yes**     | Long random string. Generate with `openssl rand -base64 32`.                                                                    |
+| `better_auth_url`                | Recommended | Public origin (e.g. `https://money.example.com`) served via your Cloudflare Tunnel.                                             |
+| `better_auth_trusted_origins`    | Recommended | Usually the same value as `better_auth_url`.                                                                                    |
+| `better_auth_use_secure_cookies` | No          | Auto-derived from the URL (https ⇒ on). Set `false` for plain-http LAN access.                                                  |
+| `disable_signups`                | No          | Turn on to block all new registrations (email + social). Existing users still sign in; the first account can always be created. |
+| `exchange_rate_api_key`          | No          | Enable live currency conversion in reports.                                                                                     |
+| `google_*` / `github_*`          | No          | Optional social login (needs a public https URL).                                                                               |
 
 The SQLite database is stored at `/data/flamette-money.db` inside the add-on's persistent
 storage, so it survives restarts and updates.

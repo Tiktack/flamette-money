@@ -17,15 +17,7 @@ import {
   normalizeTransactionType,
 } from "@/features/shared/server/normalizers.server"
 
-import type {
-  CreateTransactionRequest,
-  CreateTransactionResponse,
-  GetTransactionResponse,
-  TransactionListItemResponse,
-  TransactionSearchQuery,
-  UpdateTransactionRequest,
-  UpdateTransactionResponse,
-} from "@/features/shared/types"
+import type { TransactionResponse, TransactionSearchQuery, TransactionWriteRequest } from "@/features/shared/types"
 import type { TransactionSearchFacets, TransactionSearchSummary } from "@/features/transactions/types"
 
 type TransactionType = (typeof transactionTypes)[number]
@@ -126,29 +118,7 @@ function normalizeAmount2(type: TransactionType, amount: number, amount2: number
   return amount2 ?? null
 }
 
-function mapTransactionListItem(transaction: TransactionListRow): TransactionListItemResponse {
-  return {
-    id: transaction.id,
-    date: transaction.date.toISOString(),
-    type: transaction.type,
-    amount: transaction.amount,
-    amount2: transaction.amount2,
-    currency: transaction.currency,
-    currency2: transaction.currency2,
-    accountId: transaction.accountId,
-    tripId: transaction.tripId,
-    categoryId: transaction.categoryId,
-    subCategoryId: transaction.subCategoryId,
-    targetAccountId: transaction.targetAccountId,
-    originalTransactionId: transaction.originalTransactionId,
-    isRefund: transaction.isRefund,
-    note: transaction.note,
-    merchantName: transaction.merchantName,
-    location: transaction.location,
-  }
-}
-
-function mapTransactionDetail(transaction: TransactionRecord): GetTransactionResponse & CreateTransactionResponse & UpdateTransactionResponse {
+function mapTransaction(transaction: TransactionListRow): TransactionResponse {
   return {
     id: transaction.id,
     date: transaction.date.toISOString(),
@@ -300,7 +270,7 @@ async function listTransactionFacetRows(userId: string, query?: TransactionSearc
     .where(buildTransactionWhere(userId, normalizeTransactionSearchQuery(query)))
 }
 
-async function validateTransactionRequest(user: UserRecord, request: CreateTransactionRequest | UpdateTransactionRequest, currentTransactionId?: string) {
+async function validateTransactionRequest(user: UserRecord, request: TransactionWriteRequest, currentTransactionId?: string) {
   const type = normalizeTransactionType(request.type)
   const amount = parsePositiveAmount(request.amount, "Amount")
   const amount2 = request.amount2 === null || request.amount2 === undefined ? null : parsePositiveAmount(request.amount2, "Amount2")
@@ -469,16 +439,16 @@ async function validateTransactionRequest(user: UserRecord, request: CreateTrans
   }
 }
 
-export async function getTransactionData(transactionId: string): Promise<GetTransactionResponse> {
+export async function getTransactionData(transactionId: string): Promise<TransactionResponse> {
   const user = await requireUser()
   const transaction = await requireTransaction(user.id, transactionId)
-  return mapTransactionDetail(transaction)
+  return mapTransaction(transaction)
 }
 
-export async function searchTransactionsData(query?: TransactionSearchQuery): Promise<TransactionListItemResponse[]> {
+export async function searchTransactionsData(query?: TransactionSearchQuery): Promise<TransactionResponse[]> {
   const user = await requireUser()
   const rows = await listTransactionRows(user.id, query)
-  return rows.map(mapTransactionListItem)
+  return rows.map(mapTransaction)
 }
 
 export async function searchTransactionsSummaryData(query?: TransactionSearchQuery): Promise<TransactionSearchSummary> {
@@ -580,7 +550,7 @@ export type CreateTransactionForUserOptions = {
   withinTransaction?: (tx: AppTransaction, transactionId: string) => void
 }
 
-export async function createTransactionData(request: CreateTransactionRequest): Promise<CreateTransactionResponse> {
+export async function createTransactionData(request: TransactionWriteRequest): Promise<TransactionResponse> {
   const user = await requireUser()
   return createTransactionForUser(user, request)
 }
@@ -589,9 +559,9 @@ export async function createTransactionData(request: CreateTransactionRequest): 
 // the same validation and balance bookkeeping as interactive creation.
 export async function createTransactionForUser(
   user: UserRecord,
-  request: CreateTransactionRequest,
+  request: TransactionWriteRequest,
   options?: CreateTransactionForUserOptions
-): Promise<CreateTransactionResponse> {
+): Promise<TransactionResponse> {
   const validated = await validateTransactionRequest(user, request)
   const id = crypto.randomUUID()
   const now = new Date()
@@ -638,13 +608,13 @@ export async function createTransactionForUser(
   // re-create a duplicate on the next sync/re-parse.
   try {
     const created = await requireTransaction(user.id, id)
-    return mapTransactionDetail(created)
+    return mapTransaction(created)
   } catch (error) {
     throw new TransactionCommittedButNotReadError(id, { cause: error })
   }
 }
 
-export async function updateTransactionData(transactionId: string, request: UpdateTransactionRequest): Promise<UpdateTransactionResponse> {
+export async function updateTransactionData(transactionId: string, request: TransactionWriteRequest): Promise<TransactionResponse> {
   const user = await requireUser()
   const existing = await requireTransaction(user.id, transactionId)
   const validated = await validateTransactionRequest(user, request, transactionId)
@@ -706,7 +676,7 @@ export async function updateTransactionData(transactionId: string, request: Upda
   })
 
   const updated = await requireTransaction(user.id, existing.id)
-  return mapTransactionDetail(updated)
+  return mapTransaction(updated)
 }
 
 export async function deleteTransactionData(transactionId: string) {

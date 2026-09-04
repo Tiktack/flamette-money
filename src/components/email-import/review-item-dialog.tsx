@@ -37,13 +37,7 @@ export function ReviewItemDialog({
   const dismissItem = useDismissEmailImportItem()
   const restoreItem = useRestoreEmailImportItem()
   const reparseItems = useReparseEmailImportItems()
-  const [actionError, setActionError] = React.useState<string | null>(null)
-
-  React.useEffect(() => {
-    if (itemId) {
-      setActionError(null)
-    }
-  }, [itemId])
+  const [actionError, setActionError] = React.useState<{ itemId: string; message: string } | null>(null)
 
   const item = itemQuery.data
   const parsed = item?.parsed ?? null
@@ -56,14 +50,25 @@ export function ReviewItemDialog({
         onOpenChange(false)
       }
     } catch (error) {
-      setActionError(getApiErrorMessage(error, "The action failed."))
+      if (itemId) {
+        setActionError({ itemId, message: getApiErrorMessage(error, "The action failed.") })
+      }
     }
   }
 
   const busy = dismissItem.isPending || restoreItem.isPending || reparseItems.isPending
+  const visibleActionError = actionError?.itemId === itemId ? actionError.message : null
 
   return (
-    <Dialog open={Boolean(itemId)} onOpenChange={onOpenChange}>
+    <Dialog
+      open={Boolean(itemId)}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setActionError(null)
+        }
+        onOpenChange(nextOpen)
+      }}
+    >
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -95,7 +100,9 @@ export function ReviewItemDialog({
                 <div className="grid gap-3 sm:grid-cols-3">
                   <DetailRow
                     label="Direction"
-                    value={<Badge variant={parsed.direction === "income" ? "secondary" : "outline"}>{parsed.direction === "income" ? "Income" : "Expense"}</Badge>}
+                    value={
+                      <Badge variant={parsed.direction === "income" ? "secondary" : "outline"}>{parsed.direction === "income" ? "Income" : "Expense"}</Badge>
+                    }
                   />
                   <DetailRow label="Amount" value={<span className="font-medium tabular-nums">{formatCurrency(parsed.amount, parsed.currency)}</span>} />
                   <DetailRow label="Booked" value={parsed.bookedAt ? formatDateLabel(parsed.bookedAt) : null} />
@@ -115,9 +122,7 @@ export function ReviewItemDialog({
             {item.parseError && item.status === "unparsed" ? (
               <Alert>
                 <AlertTitle>Not recognized yet</AlertTitle>
-                <AlertDescription>
-                  {item.parseError} Once the parser is updated for this email format, use Re-parse to process it again.
-                </AlertDescription>
+                <AlertDescription>{item.parseError} Once the parser is updated for this email format, use Re-parse to process it again.</AlertDescription>
               </Alert>
             ) : null}
 
@@ -144,10 +149,10 @@ export function ReviewItemDialog({
               </div>
             ) : null}
 
-            {actionError ? (
+            {visibleActionError ? (
               <Alert variant="destructive">
                 <AlertTitle>Action failed</AlertTitle>
-                <AlertDescription>{actionError}</AlertDescription>
+                <AlertDescription>{visibleActionError}</AlertDescription>
               </Alert>
             ) : null}
           </div>

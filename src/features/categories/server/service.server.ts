@@ -6,13 +6,7 @@ import { categories, transactions } from "@/lib/db/schema"
 import { requireCategory, requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeCategoryColor, normalizeCategoryType, normalizeIcon, normalizeRequiredName } from "@/features/shared/server/normalizers.server"
 
-import type {
-  CategoryHierarchyResponse,
-  CreateCategoryRequest,
-  CreateCategoryResponse,
-  UpdateCategoryRequest,
-  UpdateCategoryResponse,
-} from "@/features/shared/types"
+import type { CategoryHierarchyResponse, CategoryResponse, CreateCategoryRequest, UpdateCategoryRequest } from "@/features/shared/types"
 
 type CategoryRecord = typeof categories.$inferSelect
 
@@ -41,7 +35,7 @@ export async function listCategoriesData(): Promise<CategoryHierarchyResponse[]>
   return mapCategoryTree(rows, null)
 }
 
-export async function createCategoryData(request: CreateCategoryRequest): Promise<CreateCategoryResponse> {
+export async function createCategoryData(request: CreateCategoryRequest): Promise<CategoryResponse> {
   const user = await requireUser()
   const name = normalizeRequiredName(request.name)
   const color = normalizeCategoryColor(request.color)
@@ -85,7 +79,7 @@ export async function createCategoryData(request: CreateCategoryRequest): Promis
   }
 }
 
-export async function updateCategoryData(categoryId: string, request: UpdateCategoryRequest): Promise<UpdateCategoryResponse> {
+export async function updateCategoryData(categoryId: string, request: UpdateCategoryRequest): Promise<CategoryResponse> {
   const user = await requireUser()
   const category = await requireCategory(user.id, categoryId)
   const name = normalizeRequiredName(request.name)

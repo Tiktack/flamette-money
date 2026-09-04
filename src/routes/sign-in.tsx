@@ -28,6 +28,12 @@ function normalizeLastLoginMethod(method: string | null): LastLoginMethod | null
   return isLastLoginMethod(method) ? method : null
 }
 
+const subscribeToLastLoginMethod = () => () => {}
+
+function getLastLoginMethodSnapshot() {
+  return normalizeLastLoginMethod(authClient.getLastUsedLoginMethod())
+}
+
 function LastUsedIndicator({ label }: { label: string }) {
   return (
     <Tooltip>
@@ -142,7 +148,7 @@ function SignInPage() {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
-  const [lastLoginMethod, setLastLoginMethod] = React.useState<LastLoginMethod | null>(null)
+  const lastLoginMethod = React.useSyncExternalStore(subscribeToLastLoginMethod, getLastLoginMethodSnapshot, () => null)
   const [busyAction, setBusyAction] = React.useState<"credentials" | null | SocialAuthProvider>(null)
   const isBusy = busyAction !== null
   const socialErrorCallbackUrl = React.useMemo(() => {
@@ -153,10 +159,6 @@ function SignInPage() {
 
     return params.size > 0 ? `/sign-in?${params.toString()}` : "/sign-in"
   }, [redirectTo, search.redirect])
-
-  React.useEffect(() => {
-    setLastLoginMethod(normalizeLastLoginMethod(authClient.getLastUsedLoginMethod()))
-  }, [])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

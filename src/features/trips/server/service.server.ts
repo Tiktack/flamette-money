@@ -11,7 +11,7 @@ import { convertAmountToBase, loadAccountCurrencyMap, resolveTransactionCurrency
 import { requireTrip, requireUser } from "@/features/shared/server/lookups.server"
 import { normalizeCountry, normalizeImageUrl, normalizeRequiredName } from "@/features/shared/server/normalizers.server"
 
-import type { CreateTripRequest, CreateTripResponse, TripListItemResponse, UpdateTripRequest, UpdateTripResponse } from "@/features/shared/types"
+import type { TripListItemResponse, TripResponse, TripWriteRequest } from "@/features/shared/types"
 
 export async function listTripsData(): Promise<TripListItemResponse[]> {
   const user = await requireUser()
@@ -76,7 +76,7 @@ export async function listTripsData(): Promise<TripListItemResponse[]> {
     }))
 }
 
-export async function createTripData(request: CreateTripRequest): Promise<CreateTripResponse> {
+export async function createTripData(request: TripWriteRequest): Promise<TripResponse> {
   const user = await requireUser()
   const name = normalizeRequiredName(request.name)
   const country = normalizeCountry(request.country)
@@ -113,7 +113,7 @@ export async function createTripData(request: CreateTripRequest): Promise<Create
   }
 }
 
-export async function updateTripData(tripId: string, request: UpdateTripRequest): Promise<UpdateTripResponse> {
+export async function updateTripData(tripId: string, request: TripWriteRequest): Promise<TripResponse> {
   const user = await requireUser()
   const trip = await requireTrip(user.id, tripId)
   const name = normalizeRequiredName(request.name)

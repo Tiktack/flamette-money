@@ -430,11 +430,7 @@ function TripDialog({
           </Field>
           <Field>
             <FieldLabel>End date</FieldLabel>
-            <DatePicker
-              min={value.startDate || undefined}
-              value={value.endDate}
-              onValueChange={(endDate) => onChange((state) => ({ ...state, endDate }))}
-            />
+            <DatePicker min={value.startDate || undefined} value={value.endDate} onValueChange={(endDate) => onChange((state) => ({ ...state, endDate }))} />
           </Field>
           <Field className="md:col-span-2">
             <FieldLabel>Image URL</FieldLabel>

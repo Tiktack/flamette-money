@@ -541,8 +541,8 @@ function AccountDialog({
               placeholder="e.g. 6630 — a unique fragment of the account or card number"
             />
             <p className="text-xs text-muted-foreground">
-              Bank notification emails mention a masked account number (like "15..6630"). When it matches this fragment, imported transactions land
-              on this account automatically. Leave empty if unused.
+              Bank notification emails mention a masked account number (like "15..6630"). When it matches this fragment, imported transactions land on this
+              account automatically. Leave empty if unused.
             </p>
           </Field>
           <Field>

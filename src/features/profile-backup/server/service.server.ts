@@ -16,6 +16,7 @@ import {
 import { clearUserScopedData } from "@/features/shared/server/user-data.server"
 
 import type { ImportBackupResponse } from "@/features/shared/types"
+import type { AppTransaction } from "@/lib/db/client.server"
 
 const backupMimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -131,6 +132,41 @@ type OneMoneyParseResult = {
   transactions: OneMoneyTransactionRow[]
   balances: OneMoneyBalanceRow[]
   skippedRows: number
+}
+
+type UserDataReplacement = {
+  userId: string
+  accountRows: Array<typeof accounts.$inferInsert>
+  categoryRows: Array<typeof categories.$inferInsert>
+  tripRows?: Array<typeof trips.$inferInsert>
+  transactionRows: Array<typeof transactions.$inferInsert>
+  afterInsert?: (tx: AppTransaction) => void
+}
+
+// Keep the destructive wipe, all replacement inserts, and format-specific updates
+// in one transaction so a failed import always restores the user's existing data.
+function replaceUserDataAtomically({ userId, accountRows, categoryRows, tripRows = [], transactionRows, afterInsert }: UserDataReplacement) {
+  runDbTransaction((tx) => {
+    clearUserScopedData(tx, userId)
+
+    forEachChunkSync(accountRows, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(accounts).values(chunk).run()
+    })
+
+    forEachChunkSync(categoryRows, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(categories).values(chunk).run()
+    })
+
+    forEachChunkSync(tripRows, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(trips).values(chunk).run()
+    })
+
+    forEachChunkSync(transactionRows, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
+      tx.insert(transactions).values(chunk).run()
+    })
+
+    afterInsert?.(tx)
+  })
 }
 
 function formatIso(value: Date | null | undefined) {
@@ -1013,47 +1049,34 @@ async function importFlametteBackup(user: UserRecord, file: File): Promise<Impor
   const nextSubscriptionType = settings.subscriptionType ?? user.subscriptionType
   const settingsChanged = nextBaseCurrency !== user.baseCurrency || nextSubscriptionType !== user.subscriptionType
 
-  // Wipe and re-import atomically: if any insert fails the whole transaction rolls back
-  // and the user's existing data is left untouched.
-  runDbTransaction((tx) => {
-    clearUserScopedData(tx, user.id)
+  replaceUserDataAtomically({
+    userId: user.id,
+    accountRows: importedAccounts,
+    categoryRows: importedCategories,
+    tripRows: importedTrips,
+    transactionRows: importedTransactions,
+    afterInsert: (tx) => {
+      for (const reference of relatedUpdates) {
+        tx.update(transactions)
+          .set({
+            relatedTransactionId: reference.relatedTransactionId,
+            originalTransactionId: reference.originalTransactionId,
+          })
+          .where(eq(transactions.id, reference.id))
+          .run()
+      }
 
-    forEachChunkSync(importedAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(accounts).values(chunk).run()
-    })
-
-    forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(categories).values(chunk).run()
-    })
-
-    forEachChunkSync(importedTrips, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(trips).values(chunk).run()
-    })
-
-    forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(transactions).values(chunk).run()
-    })
-
-    for (const reference of relatedUpdates) {
-      tx.update(transactions)
-        .set({
-          relatedTransactionId: reference.relatedTransactionId,
-          originalTransactionId: reference.originalTransactionId,
-        })
-        .where(eq(transactions.id, reference.id))
-        .run()
-    }
-
-    if (settingsChanged) {
-      tx.update(users)
-        .set({
-          baseCurrency: nextBaseCurrency,
-          subscriptionType: nextSubscriptionType,
-          updatedAt: now,
-        })
-        .where(eq(users.id, user.id))
-        .run()
-    }
+      if (settingsChanged) {
+        tx.update(users)
+          .set({
+            baseCurrency: nextBaseCurrency,
+            subscriptionType: nextSubscriptionType,
+            updatedAt: now,
+          })
+          .where(eq(users.id, user.id))
+          .run()
+      }
+    },
   })
 
   return {
@@ -1296,21 +1319,11 @@ async function importOneMoneyBackup(user: UserRecord, file: File): Promise<Impor
     updatedBalanceSnapshots += 1
   }
 
-  // Wipe and re-import atomically so a failed import never leaves the user without data.
-  runDbTransaction((tx) => {
-    clearUserScopedData(tx, user.id)
-
-    forEachChunkSync(importedAccounts, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(accounts).values(chunk).run()
-    })
-
-    forEachChunkSync(importedCategories, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(categories).values(chunk).run()
-    })
-
-    forEachChunkSync(importedTransactions, SQLITE_INSERT_BATCH_SIZE, (chunk) => {
-      tx.insert(transactions).values(chunk).run()
-    })
+  replaceUserDataAtomically({
+    userId: user.id,
+    accountRows: importedAccounts,
+    categoryRows: importedCategories,
+    transactionRows: importedTransactions,
   })
 
   return {

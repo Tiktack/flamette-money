@@ -16,9 +16,9 @@ import {
   normalizeSupportedCurrency,
 } from "@/features/shared/server/normalizers.server"
 
-import type { AccountListItemResponse, CreateAccountRequest, CreateAccountResponse, UpdateAccountRequest, UpdateAccountResponse } from "@/features/shared/types"
+import type { AccountResponse, CreateAccountRequest, UpdateAccountRequest } from "@/features/shared/types"
 
-export async function listAccountsData(): Promise<AccountListItemResponse[]> {
+export async function listAccountsData(): Promise<AccountResponse[]> {
   const user = await requireUser()
   const baseCurrency = normalizeCurrencyOrDefault(user.baseCurrency, "USD")
   const fx = await getRatesToBase(baseCurrency)
@@ -54,7 +54,7 @@ function normalizeBankAccountHint(value: string | null | undefined) {
   return trimmed ? trimmed.slice(0, 48) : null
 }
 
-export async function createAccountData(request: CreateAccountRequest): Promise<CreateAccountResponse> {
+export async function createAccountData(request: CreateAccountRequest): Promise<AccountResponse> {
   const user = await requireUser()
   const name = normalizeRequiredName(request.name)
   const description = normalizeDescription(request.description)
@@ -95,7 +95,7 @@ export async function createAccountData(request: CreateAccountRequest): Promise<
   }
 }
 
-export async function updateAccountData(accountId: string, request: UpdateAccountRequest): Promise<UpdateAccountResponse> {
+export async function updateAccountData(accountId: string, request: UpdateAccountRequest): Promise<AccountResponse> {
   const user = await requireUser()
   const account = await requireAccount(user.id, accountId)
   const name = normalizeRequiredName(request.name)

@@ -2,13 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { emailImportInvalidations, invalidateQueries, transactionMutationInvalidations } from "@/features/shared/cache-invalidations"
 
-import {
-  emailConnectionsQueryOptions,
-  emailImportItemQueryOptions,
-  emailImportItemsQueryOptions,
-  emailImportRulesQueryOptions,
-  emailImportStatusQueryOptions,
-} from "./query-options"
+import { emailConnectionsQueryOptions, emailImportItemQueryOptions, emailImportItemsQueryOptions, emailImportRulesQueryOptions } from "./query-options"
 import {
   approveEmailImportItem,
   createEmailConnection,
@@ -56,10 +50,6 @@ export function useEmailImportItem(id?: string) {
   })
 }
 
-export function useEmailImportStatus() {
-  return useQuery(emailImportStatusQueryOptions())
-}
-
 export function useCreateEmailConnection() {
   const queryClient = useQueryClient()
 
@@ -82,7 +72,7 @@ export function useDeleteEmailConnection() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => deleteEmailConnection({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => deleteEmailConnection({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }
@@ -91,7 +81,7 @@ export function useResetEmailConnection() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => resetEmailConnection({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => resetEmailConnection({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }
@@ -137,7 +127,7 @@ export function useDeleteEmailImportRule() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => deleteEmailImportRule({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => deleteEmailImportRule({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }
@@ -146,7 +136,7 @@ export function useReorderEmailImportRules() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (orderedIds: string[]) => reorderEmailImportRules({ data: { orderedIds } }).then(() => undefined),
+    mutationFn: (orderedIds: string[]) => reorderEmailImportRules({ data: { orderedIds } }),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }
@@ -175,7 +165,7 @@ export function useDismissEmailImportItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => dismissEmailImportItem({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => dismissEmailImportItem({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }
@@ -184,7 +174,7 @@ export function useRestoreEmailImportItem() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => restoreEmailImportItem({ data: { id } }).then(() => undefined),
+    mutationFn: (id: string) => restoreEmailImportItem({ data: { id } }),
     onSuccess: async () => invalidateQueries(queryClient, emailImportInvalidations),
   })
 }

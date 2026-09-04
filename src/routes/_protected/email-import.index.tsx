@@ -117,9 +117,9 @@ function EmailImportConnectionsPage() {
           <DialogHeader>
             <DialogTitle>Reset import history</DialogTitle>
             <DialogDescription>
-              This clears "{resetTarget?.name}"'s processed-email records and sync position, so the next sync re-reads the whole mailbox folder from
-              the beginning. Transactions that were already created stay untouched — re-imported emails link back to a matching transaction (same
-              account, day, and amount) instead of duplicating it.
+              This clears "{resetTarget?.name}"'s processed-email records and sync position, so the next sync re-reads the whole mailbox folder from the
+              beginning. Transactions that were already created stay untouched — re-imported emails link back to a matching transaction (same account, day, and
+              amount) instead of duplicating it.
             </DialogDescription>
           </DialogHeader>
           {resetConnection.isError ? (
@@ -144,8 +144,8 @@ function EmailImportConnectionsPage() {
           <DialogHeader>
             <DialogTitle>Delete connection</DialogTitle>
             <DialogDescription>
-              This removes "{deleteTarget?.name}" together with its entire import history (review items and dedupe records). Transactions that were
-              already created stay untouched. Emails still in the mailbox may be imported again if you reconnect it.
+              This removes "{deleteTarget?.name}" together with its entire import history (review items and dedupe records). Transactions that were already
+              created stay untouched. Emails still in the mailbox may be imported again if you reconnect it.
             </DialogDescription>
           </DialogHeader>
           {deleteConnection.isError ? (

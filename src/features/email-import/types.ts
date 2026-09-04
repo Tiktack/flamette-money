@@ -154,12 +154,3 @@ export type EmailImportSyncResult = {
   ignored: number
   errors: number
 }
-
-export type EmailImportStatusSummary = {
-  connectionCount: number
-  enabledConnectionCount: number
-  pendingCount: number
-  unparsedCount: number
-  errorCount: number
-  lastSyncAt: string | null
-}

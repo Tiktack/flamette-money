@@ -1,10 +1,10 @@
 export type {
-  CreateTransactionRequest as TransactionCreateRequest,
-  GetTransactionResponse as TransactionDetail,
-  TransactionListItemResponse as TransactionListItem,
+  TransactionResponse as TransactionDetail,
+  TransactionResponse as TransactionListItem,
   TransactionSearchQuery,
   TransactionType,
-  UpdateTransactionRequest as TransactionUpdateRequest,
+  TransactionWriteRequest as TransactionCreateRequest,
+  TransactionWriteRequest as TransactionUpdateRequest,
 } from "@/features/shared/types"
 
 export type TransactionSearchSummary = {
